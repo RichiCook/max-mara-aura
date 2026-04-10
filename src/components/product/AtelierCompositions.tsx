@@ -1,17 +1,17 @@
 /**
- * Atelier Compositions — Real product photo still-life compositions
+ * Atelier Compositions — AI-composed still-life images using real product photos.
  *
- * FUTURE: This section will pull from a `product_connections` table in the backend
- * where admins define which products are paired together, and the AI generates
- * compositions from those connections. For now, the pairings are hardcoded for demo.
+ * FUTURE: Pull pairings from a `product_connections` table where admins define
+ * which products go together. For now, compositions are built dynamically
+ * from products in the database by category.
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import { Sparkles, X, ExternalLink, ShoppingBag, Loader2, RefreshCw } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Sparkles, RefreshCw, X, ExternalLink, ShoppingBag, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { supabase } from '@/integrations/supabase/client';
-import { useProducts, normalizeImages } from '@/hooks/useProducts';
+import { normalizeImages } from '@/hooks/useProducts';
 import { toast } from 'sonner';
 
 // ── Types ────────────────────────────────────────────────────
@@ -27,54 +27,107 @@ interface Composition {
   id: string;
   name: string;
   styleTag: string;
-  /** Product codes or slugs to look up in the DB */
-  productRefs: { name: string; fallbackPrice: string }[];
   products: CompositionProduct[];
   generatedImage?: string;
+  loading?: boolean;
 }
 
-// ── Demo composition definitions ─────────────────────────────
+// ── Build compositions from real DB products ─────────────────
 
-const COMPOSITION_DEFS: Omit<Composition, 'products' | 'generatedImage'>[] = [
-  {
-    id: 'rouge-sole',
-    name: 'Rouge & Sole',
-    styleTag: 'Evening ritual',
-    productRefs: [
-      { name: 'So Kate 120mm', fallbackPrice: '€695' },
-      { name: 'Rouge Louboutin Eau de Parfum', fallbackPrice: '€290' },
-    ],
-  },
-  {
-    id: 'cabinet-beaute',
-    name: 'Le Cabinet de Beauté',
-    styleTag: 'Beauty edit',
-    productRefs: [
-      { name: 'So Kate 120mm', fallbackPrice: '€695' },
-      { name: 'Beauté Lipstick', fallbackPrice: '€90' },
-      { name: 'Nail Colour', fallbackPrice: '€50' },
-    ],
-  },
-  {
-    id: 'promenade',
-    name: 'Promenade Parisienne',
-    styleTag: 'Day to night',
-    productRefs: [
-      { name: 'So Kate 120mm', fallbackPrice: '€695' },
-      { name: 'Paloma Clutch', fallbackPrice: '€1,290' },
-    ],
-  },
-  {
-    id: 'atelier-rouge',
-    name: "L'Atelier Rouge",
-    styleTag: 'The full world',
-    productRefs: [
-      { name: 'So Kate 120mm', fallbackPrice: '€695' },
-      { name: 'Loubifunk Sneaker', fallbackPrice: '€895' },
-      { name: 'Rouge Louboutin Fragrance', fallbackPrice: '€290' },
-    ],
-  },
-];
+async function buildCompositionsFromDB(): Promise<Composition[]> {
+  // Fetch products from different categories to create interesting pairings
+  const { data: allProducts, error } = await supabase
+    .from('products')
+    .select('name, slug, price, images, category')
+    .not('images', 'is', null)
+    .limit(500);
+
+  if (error || !allProducts?.length) return [];
+
+  // Parse products with images
+  const withImages = allProducts
+    .map((p) => ({
+      name: p.name,
+      slug: p.slug,
+      price: p.price || '',
+      image: normalizeImages(p.images)[0] || '',
+      category: p.category || '',
+    }))
+    .filter((p) => p.image);
+
+  // Find products by category
+  const escarpins = withImages.filter((p) => p.category.includes('Escarpins'));
+  const bags = withImages.filter((p) => p.category.includes('Sacs'));
+  const beauty = withImages.filter((p) => p.category.includes('Beauté'));
+  const parfums = withImages.filter((p) => p.category.includes('Parfums'));
+  const sneakers = withImages.filter((p) => p.category.includes('Sneakers'));
+  const levres = withImages.filter((p) => p.category.includes('Lèvres'));
+  const ongles = withImages.filter((p) => p.category.includes('Ongles'));
+
+  const pick = (arr: typeof withImages) => arr[Math.floor(Math.random() * arr.length)];
+
+  const toProduct = (p: typeof withImages[0]): CompositionProduct => ({
+    name: p.name,
+    price: p.price,
+    image: p.image,
+    slug: p.slug,
+  });
+
+  const compositions: Composition[] = [];
+
+  // Composition 1: Escarpin + Parfum
+  const shoe1 = pick(escarpins);
+  const parfum1 = pick(parfums);
+  if (shoe1 && parfum1) {
+    compositions.push({
+      id: 'rouge-sole',
+      name: 'Rouge & Sole',
+      styleTag: 'Evening ritual',
+      products: [toProduct(shoe1), toProduct(parfum1)],
+    });
+  }
+
+  // Composition 2: Escarpin + Lipstick + Nail
+  const shoe2 = pick(escarpins.filter((s) => s.slug !== shoe1?.slug));
+  const lip = pick(levres);
+  const nail = pick(ongles);
+  if (shoe2 && lip) {
+    const prods = [toProduct(shoe2), toProduct(lip)];
+    if (nail) prods.push(toProduct(nail));
+    compositions.push({
+      id: 'cabinet-beaute',
+      name: 'Le Cabinet de Beauté',
+      styleTag: 'Beauty edit',
+      products: prods,
+    });
+  }
+
+  // Composition 3: Escarpin + Bag
+  const shoe3 = pick(escarpins.filter((s) => s.slug !== shoe1?.slug && s.slug !== shoe2?.slug));
+  const bag = pick(bags);
+  if (shoe3 && bag) {
+    compositions.push({
+      id: 'promenade',
+      name: 'Promenade Parisienne',
+      styleTag: 'Day to night',
+      products: [toProduct(shoe3), toProduct(bag)],
+    });
+  }
+
+  // Composition 4: Sneaker + Beauty + Parfum
+  const snkr = pick(sneakers);
+  const beauty1 = pick(beauty.filter((b) => b.slug !== lip?.slug && b.slug !== nail?.slug));
+  if (snkr && beauty1) {
+    compositions.push({
+      id: 'atelier-rouge',
+      name: "L'Atelier Rouge",
+      styleTag: 'The full world',
+      products: [toProduct(snkr), toProduct(beauty1)],
+    });
+  }
+
+  return compositions;
+}
 
 // ── Component ────────────────────────────────────────────────
 
@@ -82,72 +135,52 @@ const AtelierCompositions = () => {
   const [compositions, setCompositions] = useState<Composition[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [quickViewProduct, setQuickViewProduct] = useState<CompositionProduct | null>(null);
-  const [generatingIds, setGeneratingIds] = useState<Set<string>>(new Set());
-  const { products } = useProducts();
+  const [initialLoading, setInitialLoading] = useState(true);
+  const generatedRef = useRef(new Set<string>());
 
-  // Match composition product refs to real DB products
+  // Build compositions from DB on mount
   useEffect(() => {
-    const built: Composition[] = COMPOSITION_DEFS.map((def) => {
-      const matchedProducts: CompositionProduct[] = def.productRefs.map((ref) => {
-        const dbProduct = products.find(
-          (p) => p.name.toLowerCase().includes(ref.name.toLowerCase()) ||
-                 ref.name.toLowerCase().includes(p.name.toLowerCase())
-        );
-        if (dbProduct) {
-          const images = normalizeImages(dbProduct.images as unknown);
-          return {
-            name: dbProduct.name,
-            price: dbProduct.price || ref.fallbackPrice,
-            image: images[0] || undefined,
-            slug: dbProduct.slug,
-          };
-        }
-        return { name: ref.name, price: ref.fallbackPrice };
-      });
-
-      return { ...def, products: matchedProducts };
+    buildCompositionsFromDB().then((comps) => {
+      setCompositions(comps);
+      setInitialLoading(false);
     });
-    setCompositions(built);
-  }, [products]);
+  }, []);
 
-  // Check for existing generated compositions on mount
+  // Auto-generate compositions once products are loaded
   useEffect(() => {
-    const checkExisting = async () => {
-      const updated = [...compositions];
-      let changed = false;
-      for (const comp of updated) {
-        const { data } = supabase.storage
-          .from('look-images')
-          .getPublicUrl(`compositions/${comp.id}.png`);
-        
-        // Check if the image exists by trying to fetch it
-        try {
-          const resp = await fetch(data.publicUrl, { method: 'HEAD' });
-          if (resp.ok) {
-            comp.generatedImage = data.publicUrl + `?t=${Date.now()}`;
-            changed = true;
-          }
-        } catch { /* doesn't exist yet */ }
-      }
-      if (changed) setCompositions([...updated]);
-    };
-    if (compositions.length > 0) checkExisting();
-  }, [compositions.length]);
+    if (initialLoading || compositions.length === 0) return;
 
-  const generateComposition = useCallback(async (comp: Composition) => {
-    // Need at least 2 products with images
+    compositions.forEach((comp) => {
+      if (!comp.generatedImage && !comp.loading && !generatedRef.current.has(comp.id)) {
+        generatedRef.current.add(comp.id);
+        generateComposition(comp.id);
+      }
+    });
+  }, [initialLoading, compositions.length]);
+
+  const generateComposition = useCallback(async (compId: string) => {
+    setCompositions((prev) =>
+      prev.map((c) => (c.id === compId ? { ...c, loading: true } : c))
+    );
+
+    // Get the current composition data
+    const comp = compositions.find((c) => c.id === compId) ||
+      (await buildCompositionsFromDB()).find((c) => c.id === compId);
+
+    if (!comp) return;
+
     const productsWithImages = comp.products.filter((p) => p.image);
     if (productsWithImages.length < 2) {
-      toast.error('Need at least 2 products with images to generate a composition');
+      setCompositions((prev) =>
+        prev.map((c) => (c.id === compId ? { ...c, loading: false } : c))
+      );
       return;
     }
-
-    setGeneratingIds((prev) => new Set(prev).add(comp.id));
 
     try {
       const { data, error } = await supabase.functions.invoke('generate-composition', {
         body: {
-          compositionId: comp.id,
+          compositionId: compId,
           productImages: productsWithImages.map((p) => ({ url: p.image!, name: p.name })),
           compositionName: comp.name,
           styleTag: comp.styleTag,
@@ -159,23 +192,32 @@ const AtelierCompositions = () => {
 
       setCompositions((prev) =>
         prev.map((c) =>
-          c.id === comp.id ? { ...c, generatedImage: data.imageUrl + `?t=${Date.now()}` } : c
+          c.id === compId ? { ...c, generatedImage: data.imageUrl, loading: false } : c
         )
       );
-      toast.success(`"${comp.name}" composition generated!`);
     } catch (e: any) {
-      console.error('Composition generation error:', e);
-      toast.error(e.message || 'Failed to generate composition');
-    } finally {
-      setGeneratingIds((prev) => {
-        const next = new Set(prev);
-        next.delete(comp.id);
-        return next;
-      });
+      console.error(`Composition ${compId} error:`, e);
+      setCompositions((prev) =>
+        prev.map((c) => (c.id === compId ? { ...c, loading: false } : c))
+      );
+      toast.error(`Failed to generate "${comp.name}"`);
     }
-  }, []);
+  }, [compositions]);
+
+  const regenerate = useCallback(async (compId: string) => {
+    // Delete existing from storage first
+    await supabase.storage.from('look-images').remove([`compositions/${compId}.png`]);
+    generatedRef.current.delete(compId);
+    setCompositions((prev) =>
+      prev.map((c) => (c.id === compId ? { ...c, generatedImage: undefined } : c))
+    );
+    generateComposition(compId);
+  }, [generateComposition]);
 
   const expanded = compositions.find((c) => c.id === expandedId) ?? null;
+
+  if (initialLoading) return null;
+  if (compositions.length === 0) return null;
 
   return (
     <section className="py-8 sm:py-12">
@@ -199,124 +241,105 @@ const AtelierCompositions = () => {
 
         {/* Cards grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-          {compositions.map((comp) => {
-            const isGenerating = generatingIds.has(comp.id);
-            const hasImage = !!comp.generatedImage;
-            const hasProductImages = comp.products.some((p) => p.image);
+          {compositions.map((comp) => (
+            <div key={comp.id} className="text-left group">
+              <div
+                className="relative aspect-[3/4] rounded-lg overflow-hidden cursor-pointer"
+                style={{ backgroundColor: '#faf6f0' }}
+                onClick={() => comp.generatedImage && setExpandedId(comp.id)}
+              >
+                <span className="absolute top-2 left-2 z-10 text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-white/80 backdrop-blur text-[#1a1a1a]">
+                  Featured
+                </span>
 
-            return (
-              <div key={comp.id} className="text-left group">
-                {/* Illustration / Generated image area */}
-                <button
-                  onClick={() => hasImage ? setExpandedId(comp.id) : undefined}
-                  className="w-full focus:outline-none"
-                  disabled={!hasImage}
-                >
-                  <div
-                    className="relative aspect-[3/4] rounded-lg overflow-hidden"
-                    style={{ backgroundColor: '#faf6f0' }}
-                  >
-                    <span className="absolute top-2 left-2 z-10 text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-white/80 backdrop-blur text-[#1a1a1a]">
-                      Featured
-                    </span>
-
-                    {hasImage ? (
-                      <img
-                        src={comp.generatedImage}
-                        alt={comp.name}
-                        className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                    ) : (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-4">
-                        {/* Show product thumbnails as preview */}
-                        <div className="flex items-end justify-center gap-1">
-                          {comp.products.slice(0, 3).map((p, i) => (
-                            <div
-                              key={i}
-                              className="rounded overflow-hidden bg-white shadow-sm"
-                              style={{
-                                width: comp.products.length > 2 ? '60px' : '80px',
-                                height: comp.products.length > 2 ? '80px' : '100px',
-                                transform: `rotate(${(i - 1) * 5}deg)`,
-                              }}
-                            >
-                              {p.image ? (
-                                <img src={p.image} alt={p.name} className="w-full h-full object-contain" />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center text-[8px] text-muted-foreground text-center p-1">
-                                  {p.name}
-                                </div>
-                              )}
-                            </div>
-                          ))}
+                {comp.generatedImage ? (
+                  <img
+                    src={comp.generatedImage}
+                    alt={comp.name}
+                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                ) : comp.loading ? (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+                    <Loader2 className="w-6 h-6 animate-spin text-[#E12B38]" />
+                    <span className="text-[10px] text-muted-foreground">Composing…</span>
+                    {/* Show product thumbnails while generating */}
+                    <div className="flex items-end justify-center gap-1 mt-2">
+                      {comp.products.slice(0, 3).map((p, i) => (
+                        <div
+                          key={i}
+                          className="rounded overflow-hidden bg-white shadow-sm w-12 h-16"
+                          style={{ transform: `rotate(${(i - 1) * 5}deg)` }}
+                        >
+                          {p.image && (
+                            <img src={p.image} alt={p.name} className="w-full h-full object-contain" />
+                          )}
                         </div>
-
-                        {hasProductImages && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-[10px] h-7 gap-1 bg-white/90"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              generateComposition(comp);
-                            }}
-                            disabled={isGenerating}
-                          >
-                            {isGenerating ? (
-                              <Loader2 className="w-3 h-3 animate-spin" />
-                            ) : (
-                              <Sparkles className="w-3 h-3" />
-                            )}
-                            {isGenerating ? 'Composing…' : 'Generate'}
-                          </Button>
-                        )}
-                      </div>
-                    )}
+                      ))}
+                    </div>
                   </div>
-                </button>
-
-                {/* Meta */}
-                <div className="mt-2 space-y-1">
-                  <div className="flex flex-wrap gap-1">
-                    {comp.products.map((p, i) => (
-                      <span
-                        key={i}
-                        className="text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-full border border-[#e8e0d8] bg-white text-[#1a1a1a] truncate max-w-[120px]"
-                      >
-                        {p.name}
-                      </span>
-                    ))}
+                ) : (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-4">
+                    <div className="flex items-end justify-center gap-1">
+                      {comp.products.slice(0, 3).map((p, i) => (
+                        <div
+                          key={i}
+                          className="rounded overflow-hidden bg-white shadow-sm w-14 h-20"
+                          style={{ transform: `rotate(${(i - 1) * 5}deg)` }}
+                        >
+                          {p.image ? (
+                            <img src={p.image} alt={p.name} className="w-full h-full object-contain" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-[7px] text-muted-foreground p-1 text-center">
+                              {p.name}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <p
-                    className="text-xs sm:text-sm font-medium truncate"
-                    style={{ fontFamily: "'Playfair Display', serif", color: '#1a1a1a' }}
-                  >
-                    {comp.name}
+                )}
+              </div>
+
+              {/* Meta */}
+              <div className="mt-2 space-y-1">
+                <div className="flex flex-wrap gap-1">
+                  {comp.products.map((p, i) => (
+                    <span
+                      key={i}
+                      className="text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-full border border-[#e8e0d8] bg-white text-[#1a1a1a] truncate max-w-[120px]"
+                    >
+                      {p.name}
+                    </span>
+                  ))}
+                </div>
+                <p
+                  className="text-xs sm:text-sm font-medium truncate"
+                  style={{ fontFamily: "'Playfair Display', serif", color: '#1a1a1a' }}
+                >
+                  {comp.name}
+                </p>
+                <p className="text-[10px] text-muted-foreground italic">{comp.styleTag}</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-[9px] text-[#C4A265] flex items-center gap-1">
+                    <Sparkles className="w-2.5 h-2.5" /> AI Composed
                   </p>
-                  <p className="text-[10px] text-muted-foreground italic">{comp.styleTag}</p>
-                  <div className="flex items-center gap-2">
-                    <p className="text-[9px] text-[#C4A265] flex items-center gap-1">
-                      <Sparkles className="w-2.5 h-2.5" /> AI Composed
-                    </p>
-                    {hasImage && (
-                      <button
-                        onClick={() => generateComposition(comp)}
-                        disabled={isGenerating}
-                        className="text-[9px] text-muted-foreground hover:text-[#E12B38] flex items-center gap-0.5 transition-colors"
-                        title="Regenerate"
-                      >
-                        <RefreshCw className={`w-2.5 h-2.5 ${isGenerating ? 'animate-spin' : ''}`} />
-                      </button>
-                    )}
-                  </div>
+                  {comp.generatedImage && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); regenerate(comp.id); }}
+                      className="text-[9px] text-muted-foreground hover:text-[#E12B38] flex items-center gap-0.5 transition-colors"
+                      title="Regenerate"
+                    >
+                      <RefreshCw className="w-2.5 h-2.5" />
+                    </button>
+                  )}
                 </div>
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Expanded composition modal */}
+      {/* Expanded modal */}
       {expanded && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
@@ -333,17 +356,16 @@ const AtelierCompositions = () => {
               <X className="w-4 h-4 text-[#1a1a1a]" />
             </button>
 
-            <div className="relative aspect-[3/4] w-full" style={{ backgroundColor: '#faf6f0' }}>
-              {expanded.generatedImage ? (
+            {expanded.generatedImage && (
+              <div className="relative aspect-[3/4] w-full bg-[#faf6f0]">
                 <img
                   src={expanded.generatedImage}
                   alt={expanded.name}
                   className="absolute inset-0 w-full h-full object-cover"
                 />
-              ) : null}
-            </div>
+              </div>
+            )}
 
-            {/* Info bar */}
             <div className="px-5 py-4">
               <h3 className="text-lg font-medium" style={{ fontFamily: "'Playfair Display', serif" }}>
                 {expanded.name}
@@ -368,7 +390,7 @@ const AtelierCompositions = () => {
         </div>
       )}
 
-      {/* Quick-view product drawer */}
+      {/* Quick-view drawer */}
       <Sheet open={!!quickViewProduct} onOpenChange={(open) => { if (!open) setQuickViewProduct(null); }}>
         <SheetContent side="bottom" className="rounded-t-2xl max-h-[70vh]">
           {quickViewProduct && (
@@ -381,15 +403,9 @@ const AtelierCompositions = () => {
 
               <div className="aspect-square rounded-lg mb-4 flex items-center justify-center bg-white">
                 {quickViewProduct.image ? (
-                  <img
-                    src={quickViewProduct.image}
-                    alt={quickViewProduct.name}
-                    className="w-full h-full object-contain rounded-lg"
-                  />
+                  <img src={quickViewProduct.image} alt={quickViewProduct.name} className="w-full h-full object-contain rounded-lg" />
                 ) : (
-                  <div className="flex items-center justify-center text-muted-foreground text-sm">
-                    No image available
-                  </div>
+                  <span className="text-muted-foreground text-sm">No image</span>
                 )}
               </div>
 
@@ -397,21 +413,14 @@ const AtelierCompositions = () => {
               <p className="text-xs text-muted-foreground mb-5">Christian Louboutin</p>
 
               <div className="flex gap-3">
-                {quickViewProduct.slug ? (
-                  <Button
-                    variant="outline"
-                    className="flex-1 gap-2"
-                    onClick={() => {
-                      window.location.href = `/product/${quickViewProduct.slug}`;
-                    }}
-                  >
-                    <ExternalLink className="w-4 h-4" /> View Product
-                  </Button>
-                ) : (
-                  <Button variant="outline" className="flex-1 gap-2" disabled>
-                    <ExternalLink className="w-4 h-4" /> View Product
-                  </Button>
-                )}
+                <Button
+                  variant="outline"
+                  className="flex-1 gap-2"
+                  onClick={() => quickViewProduct.slug && (window.location.href = `/product/${quickViewProduct.slug}`)}
+                  disabled={!quickViewProduct.slug}
+                >
+                  <ExternalLink className="w-4 h-4" /> View Product
+                </Button>
                 <Button className="flex-1 gap-2 bg-[#E12B38] hover:bg-[#c72330] text-white">
                   <ShoppingBag className="w-4 h-4" /> Add to Bag
                 </Button>
