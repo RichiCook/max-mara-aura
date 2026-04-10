@@ -13,7 +13,7 @@ export interface CelebrityContent {
   updated_at: string;
 }
 
-/** Extract product code (SKU) from a Casadei shop URL */
+/** Extract product code (SKU) from a Christian Louboutin shop URL */
 export function extractProductCode(url: string): string | null {
   if (!url) return null;
   const match = url.match(/([A-Z0-9]{10,})\.(html|htm)/i);
