@@ -4,6 +4,7 @@ import { useProducts, Product } from '@/hooks/useProducts';
 import { useProductActivations, useActivations } from '@/hooks/useActivations';
 import { ActivationRenderer } from '@/components/activations/ActivationRenderer';
 import { ProductGeneratedLook } from '@/components/ProductGeneratedLook';
+import AtelierCompositions from '@/components/product/AtelierCompositions';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, ArrowLeft, Settings } from 'lucide-react';
 import ShareToResaleModal from '@/components/ShareToResaleModal';
@@ -51,6 +52,7 @@ const ProductPage = () => {
   const [lookPalette, setLookPalette] = useState<string[]>([]);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [resaleSharingEnabled, setResaleSharingEnabled] = useState(false);
+  const [aiLooksEnabled, setAiLooksEnabled] = useState(false);
 
   // Aura state
   const [passportOpen, setPassportOpen] = useState(false);
@@ -106,6 +108,14 @@ const ProductPage = () => {
         if (data?.value) {
           const val = data.value as { enabled?: boolean };
           setResaleSharingEnabled(val.enabled ?? false);
+        }
+      });
+    // AI-Curated Looks toggle — disabled by default, Atelier Compositions shown instead
+    supabase.from('app_settings').select('value').eq('id', 'ai_looks_enabled').single()
+      .then(({ data }) => {
+        if (data?.value) {
+          const val = data.value as { enabled?: boolean };
+          setAiLooksEnabled(val.enabled ?? false);
         }
       });
   }, []);
@@ -392,14 +402,18 @@ const ProductPage = () => {
       {/* Celebrity Spotlight */}
       <CelebritySpotlight productCode={product.product_code} productCategory={product.category} />
 
-      {/* AI-Curated Total Look */}
-      {product.product_code && (
-        <ProductGeneratedLook
-          productCode={product.product_code}
-          cachedLook={(product as any).generated_look || null}
-          onTrackEvent={trackEvent}
-          onColorPaletteReady={setLookPalette}
-        />
+      {/* AI-Curated Total Look (toggle) or Atelier Compositions (default) */}
+      {aiLooksEnabled ? (
+        product.product_code && (
+          <ProductGeneratedLook
+            productCode={product.product_code}
+            cachedLook={(product as any).generated_look || null}
+            onTrackEvent={trackEvent}
+            onColorPaletteReady={setLookPalette}
+          />
+        )
+      ) : (
+        <AtelierCompositions />
       )}
 
       {/* Activations */}
