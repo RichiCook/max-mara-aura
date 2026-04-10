@@ -494,7 +494,7 @@ TEXT/WATERMARK RULES (CRITICAL):
 - Do NOT render any text, title, or description anywhere on or near the image.
 - The image must be a pure photograph with zero typographic elements.
 
-Collection: ${lookName || 'Champion Sportswear'}`;
+Collection: ${lookName || 'Christian Louboutin'}`;
 }
 
 serve(async (req) => {

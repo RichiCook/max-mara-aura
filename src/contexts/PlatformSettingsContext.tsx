@@ -72,7 +72,7 @@ export const PlatformSettingsProvider = ({ children }: { children: ReactNode }) 
     if (loading) return;
 
     // Update page title
-    document.title = settings.page_title || settings.brand_name || 'Champion';
+    document.title = settings.page_title || settings.brand_name || 'Christian Louboutin';
 
     // Update favicon only if a custom one is set in the database
     if (settings.favicon_url) {
