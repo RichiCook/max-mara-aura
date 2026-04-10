@@ -215,12 +215,12 @@ const ProductPreviewSheet = ({ product, onClose }: ProductPreviewSheetProps) => 
               <div
                 key={idx}
                 className="w-full shrink-0 snap-center"
-                style={{ aspectRatio: '1/1', background: '#f7f7f5', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+                style={{ aspectRatio: '1/1', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
                 <img
                   src={img}
                   alt={`${p?.name} ${idx + 1}`}
-                  style={{ width: '80%', height: '80%', objectFit: 'contain' }}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   referrerPolicy="no-referrer"
                 />
               </div>
@@ -247,7 +247,7 @@ const ProductPreviewSheet = ({ product, onClose }: ProductPreviewSheetProps) => 
 
         {/* Product Info */}
         <div style={{ padding: '16px 20px 0' }}>
-          <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 600, color: '#1a1a1a', margin: 0 }}>
+          <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 600, color: '#1a1a1a', margin: 0 }}>
             {p?.name}
           </h3>
           {(p?.price || p?.product_code) && (
@@ -324,7 +324,7 @@ const ProductPreviewSheet = ({ product, onClose }: ProductPreviewSheetProps) => 
             <div style={{ height: 1, margin: '0 0 20px', background: 'linear-gradient(90deg, transparent, #e8e4df 20%, #e8e4df 80%, transparent)' }} />
 
             <div style={{ padding: '0 20px' }}>
-              <h4 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, fontWeight: 600, color: '#1a1a1a', margin: 0 }}>
+              <h4 style={{ fontFamily: "'Playfair Display', serif", fontSize: 18, fontWeight: 600, color: '#1a1a1a', margin: 0 }}>
                 You may also like
               </h4>
               <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: '#c5c0ba', margin: '2px 0 14px' }}>
@@ -349,9 +349,9 @@ const ProductPreviewSheet = ({ product, onClose }: ProductPreviewSheetProps) => 
                     style={{ minWidth: 140, maxWidth: 140, textDecoration: 'none' }}
                   >
                     <div style={{ borderRadius: 8, border: '1px solid #e4e0db', background: '#fff', overflow: 'hidden' }}>
-                      <div style={{ aspectRatio: '1/1', background: '#f7f7f5', padding: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <div style={{ aspectRatio: '1/1', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
                         {img && (
-                          <img src={img} alt={sp.name} style={{ width: '85%', height: '85%', objectFit: 'contain' }} referrerPolicy="no-referrer" loading="lazy" />
+                          <img src={img} alt={sp.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} referrerPolicy="no-referrer" loading="lazy" />
                         )}
                       </div>
                       <div style={{ padding: '6px 8px 8px' }}>
