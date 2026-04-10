@@ -45,7 +45,7 @@ const isShoeCategory = (category: string | null | undefined): boolean => {
 /**
  * Check if a URL is a plain flat-lay product image (not close-up, not worn/model, not detail)
  * 
- * Champion URL patterns:
+ * Louboutin URL patterns:
  * - _Full.jpg → main flat-lay product shot ✓ BEST
  * - _Full_Front.jpg → front flat-lay ✓ OK  
  * - _Full_Back.jpg → back flat-lay ✓ OK
@@ -59,7 +59,7 @@ const isShoeCategory = (category: string | null | undefined): boolean => {
 const isFlatLayUrl = (url: string): boolean => {
   const lower = url.toLowerCase();
   
-  // Champion patterns: _Full.jpg is the clean flat-lay (no suffix after _Full)
+  // Louboutin patterns: _Full.jpg is the clean flat-lay (no suffix after _Full)
   // Match _Full.jpg but NOT _Full_Crop, _Full_Alt, etc.
   if (lower.includes('_full.jpg') || lower.includes('_full.png')) {
     // Make sure it's truly just "_Full.ext" and not "_Full_Something.ext"

@@ -49,7 +49,7 @@ const GenuineProductBanner = ({ productName, collection, onViewPassport }: Genui
 
       {/* Origin line */}
       <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '12px', color: '#b5ada5', marginTop: '4px' }}>
-        Made in Italy{collection ? ` · ${collection}` : ''}
+        Made in France{collection ? ` · ${collection}` : ''}
       </p>
 
       {/* Divider */}
