@@ -173,7 +173,9 @@ CRITICAL RULES:
 
     // Decode base64 and upload
     const base64Data = imageUrl.replace(/^data:image\/\w+;base64,/, "");
-    const binaryData = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
+    const raw = atob(base64Data);
+    const binaryData = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; i++) binaryData[i] = raw.charCodeAt(i);
 
     const { error: uploadError } = await supabase.storage
       .from("look-images")
