@@ -94,7 +94,7 @@ export const LeadCaptureModule = ({ content, activationId, productId, productCod
         <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#f0ece7', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
           <CheckCircle style={{ width: 28, height: 28, color: '#8b7355' }} />
         </div>
-        <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 600, color: '#1a1a1a', margin: '0 0 6px' }}>
+        <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 600, color: '#1a1a1a', margin: '0 0 6px' }}>
           {content.thankYouMessage || 'Thank you!'}
         </h3>
         {rewardCode && (
@@ -118,7 +118,7 @@ export const LeadCaptureModule = ({ content, activationId, productId, productCod
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
         <span style={{ fontSize: 14, color: '#1a1a1a' }}>✦</span>
         {!hideTitle && (
-          <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 600, color: content.textColor || '#1a1a1a', letterSpacing: '0.02em', margin: 0 }}>
+          <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 600, color: content.textColor || '#1a1a1a', letterSpacing: '0.02em', margin: 0 }}>
             {content.title || 'Get Your Reward'}
           </h3>
         )}

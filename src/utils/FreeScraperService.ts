@@ -1,4 +1,4 @@
-// Updated CORS proxies - January 2026 (christianlouboutin.com compatible)
+// Updated CORS proxies - January 2026 (Champion.com compatible)
 const CORS_PROXIES = [
   "https://corsproxy.io/?",                           // Most reliable, supports all methods
   "https://api.allorigins.win/raw?url=",              // Good fallback, 20/min rate limit

@@ -75,7 +75,7 @@ const LookCardV2 = ({ looks, productCode, loading, loadingMore, onTrackEvent, on
         <div className="px-5 mb-4">
           <div className="flex items-center gap-1.5">
             <span style={{ fontSize: 14, color: '#1a1a1a' }}>✦</span>
-            <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 600, color: '#1a1a1a', letterSpacing: '0.02em' }}>
+            <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 600, color: '#1a1a1a', letterSpacing: '0.02em' }}>
               AI-Curated Looks
             </h2>
           </div>
@@ -110,7 +110,7 @@ const LookCardV2 = ({ looks, productCode, loading, loadingMore, onTrackEvent, on
       <div className="px-5 mb-4">
         <div className="flex items-center gap-1.5">
           <span style={{ fontSize: 14, color: '#1a1a1a' }}>✦</span>
-          <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 600, color: '#1a1a1a', letterSpacing: '0.02em' }}>
+          <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 600, color: '#1a1a1a', letterSpacing: '0.02em' }}>
             AI-Curated Looks
           </h2>
         </div>
@@ -217,7 +217,7 @@ const LookCardV2 = ({ looks, productCode, loading, loadingMore, onTrackEvent, on
                     </div>
                   )}
                   <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 4, background: 'linear-gradient(transparent, rgba(0,0,0,0.6))', padding: '40px 16px 14px' }}>
-                    <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 600, color: '#fff', margin: 0 }}>{look.name}</h3>
+                    <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 600, color: '#fff', margin: 0 }}>{look.name}</h3>
                     {look.description && (
                       <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: 'rgba(255,255,255,0.65)', margin: '2px 0 0' }}>{look.description}</p>
                     )}

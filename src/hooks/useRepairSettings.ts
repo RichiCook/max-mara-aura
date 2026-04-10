@@ -63,7 +63,7 @@ export const DEFAULT_REPAIR_SETTINGS: RepairSettings = {
   enabled: false,
   repairEmail: '',
   emailFields: DEFAULT_EMAIL_FIELDS,
-  repairCentreAddress: 'Christian Louboutin — Repair Service\n29 Rue du Faubourg Saint-Honoré\n75008 Paris, France',
+  repairCentreAddress: 'Casadei S.p.A. — Repair Service\nVia Tessenara 5/7\n47833 Morciano di Romagna (RN), Italy',
   estimatedTurnaround: '10–15 working days after receipt',
   damageTypes: DEFAULT_DAMAGE_TYPES,
   priceRules: DEFAULT_PRICE_RULES,

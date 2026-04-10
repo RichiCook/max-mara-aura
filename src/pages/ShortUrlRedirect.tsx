@@ -66,7 +66,7 @@ const ShortUrlRedirect = () => {
   }, [fetchProduct]);
 
   const logoUrl = defaultLogo;
-  const brandName = 'Christian Louboutin';
+  const brandName = 'Champion';
 
   if (error) {
     return (

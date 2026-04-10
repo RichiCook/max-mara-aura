@@ -100,7 +100,7 @@ const RepairServiceSettings = () => {
             <div className="space-y-2">
               <Label htmlFor="repairEmail">Repair claims email</Label>
               <p className="text-xs text-muted-foreground">Email address where repair requests are sent</p>
-              <Input id="repairEmail" value={local.repairEmail} onChange={e => update('repairEmail', e.target.value)} placeholder="e.g. repairs@christianlouboutin.com" />
+              <Input id="repairEmail" value={local.repairEmail} onChange={e => update('repairEmail', e.target.value)} placeholder="e.g. repairs@casadei.com" />
             </div>
 
             <Separator />

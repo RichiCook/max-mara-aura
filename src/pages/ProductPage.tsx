@@ -33,7 +33,7 @@ const ProductPage = () => {
   const { trackEvent } = useScanTracking();
   const { settings } = usePlatformSettingsContext();
   const logo = settings.logo_url || defaultLogo;
-  const brandName = settings.brand_name || 'Christian Louboutin';
+  const brandName = settings.brand_name || 'Champion';
 
   const { productActivations } = useProductActivations(product?.id || '');
   const { activations } = useActivations();

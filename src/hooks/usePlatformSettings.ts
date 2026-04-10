@@ -16,8 +16,8 @@ export interface PlatformSettings {
 
 const DEFAULT_SETTINGS: PlatformSettings = {
   id: 'default',
-  brand_name: 'Christian Louboutin',
-  page_title: 'Christian Louboutin',
+  brand_name: 'aitems',
+  page_title: 'aitems',
   logo_url: null,
   favicon_url: null,
   primary_color: '#000000',

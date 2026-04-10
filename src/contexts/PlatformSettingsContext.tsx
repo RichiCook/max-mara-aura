@@ -16,8 +16,8 @@ export interface PlatformSettings {
 
 const DEFAULT_SETTINGS: PlatformSettings = {
   id: 'default',
-  brand_name: 'Christian Louboutin',
-  page_title: 'Christian Louboutin',
+  brand_name: 'aitems',
+  page_title: 'aitems',
   logo_url: null,
   favicon_url: null,
   primary_color: '#000000',
@@ -72,7 +72,7 @@ export const PlatformSettingsProvider = ({ children }: { children: ReactNode }) 
     if (loading) return;
 
     // Update page title
-    document.title = settings.page_title || settings.brand_name || 'Christian Louboutin';
+    document.title = settings.page_title || settings.brand_name || 'Champion';
 
     // Update favicon only if a custom one is set in the database
     if (settings.favicon_url) {

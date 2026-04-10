@@ -25,7 +25,7 @@ export const AppHeader = ({ onImportComplete, children }: AppHeaderProps) => {
         <Link to="/">
           <img
             src={logoUrl}
-            alt={settings.brand_name || 'Christian Louboutin'}
+            alt={settings.brand_name || 'aitems'}
             className="h-8"
           />
         </Link>
