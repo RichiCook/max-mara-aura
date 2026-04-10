@@ -7,14 +7,29 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-async function fetchImageAsBase64(url: string): Promise<string> {
-  const resp = await fetch(url, {
+async function fetchImageAsBase64(url: string, supabaseUrl: string): Promise<string> {
+  // Use our image proxy to bypass hotlink protections
+  const proxyUrl = `${supabaseUrl}/functions/v1/export-image-proxy?url=${encodeURIComponent(url)}`;
+  const resp = await fetch(proxyUrl, {
     headers: {
-      "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
       "Accept": "image/*",
     },
   });
-  if (!resp.ok) throw new Error(`Failed to fetch image: ${url} (${resp.status})`);
+  if (!resp.ok) {
+    // Fallback: try direct fetch
+    const directResp = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+        "Referer": new URL(url).origin + "/",
+      },
+    });
+    if (!directResp.ok) throw new Error(`Failed to fetch image: ${url} (proxy: ${resp.status}, direct: ${directResp.status})`);
+    const buffer = await directResp.arrayBuffer();
+    const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+    const contentType = directResp.headers.get("content-type") || "image/jpeg";
+    return `data:${contentType};base64,${base64}`;
+  }
   const buffer = await resp.arrayBuffer();
   const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
   const contentType = resp.headers.get("content-type") || "image/jpeg";
