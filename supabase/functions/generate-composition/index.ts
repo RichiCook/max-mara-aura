@@ -79,7 +79,7 @@ serve(async (req) => {
     const base64Images: { url: string; name: string }[] = [];
     for (const img of productImages) {
       try {
-        const b64 = await fetchImageAsBase64(img.url);
+        const b64 = await fetchImageAsBase64(img.url, supabaseUrl);
         base64Images.push({ url: b64, name: img.name });
         console.log(`Fetched image for ${img.name}`);
       } catch (e) {
