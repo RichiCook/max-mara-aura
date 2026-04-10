@@ -641,7 +641,7 @@ EXCLUSION RULES (MUST FOLLOW):
 IMPORTANT: Every look MUST include this starting product. Build complementary outfits around it.\n`
       : '';
 
-    const prompt = `You are a professional SPORTSWEAR stylist for the Champion brand. Create ${count} complete outfit look(s) using the "${template.name}" template.
+    const prompt = `You are a professional luxury fashion stylist for the Christian Louboutin brand. Create ${count} complete outfit look(s) using the "${template.name}" template.
 ${startingProductContext}
 TEMPLATE: ${template.name}
 DESCRIPTION: ${template.description}
@@ -669,7 +669,7 @@ ${shoePairingHint ? `${startingProduct ? '9' : '8'}. SHOE PAIRING: ${shoePairing
 Return your response as a JSON array with this exact structure:
 [
   {
-    "name": "Creative sportswear look name (e.g., 'Urban Champion', 'Street Power')",
+    "name": "Creative sportswear look name (e.g., 'Parisian Chic', 'Red Sole Elegance')",
     "description": "Brief description of the outfit and its vibe",
     "product_ids": ["id1", "id2", "id3"],
     "style": "${effectiveStyle}",
@@ -689,7 +689,7 @@ Only return the JSON array, no other text.`;
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
         messages: [
-          { role: 'system', content: 'You are a professional sportswear stylist for the Champion brand. You create cohesive athletic and streetwear outfits that work well together in terms of color, style, and sporty appeal. Always respond with valid JSON only. STRICTLY follow exclusion rules.' },
+          { role: 'system', content: 'You are a professional luxury fashion stylist for the Christian Louboutin brand. You create cohesive luxury outfits that work well together in terms of color, style, and elegance. Always respond with valid JSON only. STRICTLY follow exclusion rules.' },
           { role: 'user', content: prompt }
         ],
       }),

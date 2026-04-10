@@ -637,7 +637,7 @@ EXCLUSION RULES (MUST FOLLOW):
       );
     }
 
-    const prompt = `You are a professional SPORTSWEAR stylist creating a complete outfit look for the Champion brand.
+    const prompt = `You are a professional luxury fashion stylist creating a complete outfit look for the Christian Louboutin brand.
 
 HERO PRODUCT (the centerpiece of this outfit - MUST be included):
 - Name: ${heroProduct.name}
@@ -677,7 +677,7 @@ IMPORTANT: In the color_palette, include the main colors of the selected product
 
 RESPOND WITH ONLY A JSON OBJECT (no markdown, no explanation):
 {
-  "name": "Creative Italian-inspired name for this look (e.g., 'Urban Champion', 'Street Power')",
+  "name": "Creative Italian-inspired name for this look (e.g., 'Parisian Chic', 'Red Sole Elegance')",
   "description": "One sentence describing the overall style and occasion",
   "selected_product_codes": ["code1", "code2", ...],
   "style": "${effectiveStyle}",
@@ -695,7 +695,7 @@ RESPOND WITH ONLY A JSON OBJECT (no markdown, no explanation):
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
         messages: [
-          { role: 'system', content: 'You are a professional sportswear stylist for the Champion brand. You create cohesive athletic and streetwear outfits that work well together in terms of color, style, and sporty appeal. Always respond with valid JSON only. STRICTLY follow exclusion rules.' },
+          { role: 'system', content: 'You are a professional luxury fashion stylist for the Christian Louboutin brand. You create cohesive luxury outfits that work well together in terms of color, style, and elegance. Always respond with valid JSON only. STRICTLY follow exclusion rules.' },
           { role: 'user', content: prompt }
         ],
         temperature: 0.7,
