@@ -7,13 +7,21 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  const chunkSize = 8192;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
+
 async function fetchImageAsBase64(url: string, supabaseUrl: string): Promise<string> {
   // Use our image proxy to bypass hotlink protections
   const proxyUrl = `${supabaseUrl}/functions/v1/export-image-proxy?url=${encodeURIComponent(url)}`;
   const resp = await fetch(proxyUrl, {
-    headers: {
-      "Accept": "image/*",
-    },
+    headers: { "Accept": "image/*" },
   });
   if (!resp.ok) {
     // Fallback: try direct fetch
@@ -26,14 +34,12 @@ async function fetchImageAsBase64(url: string, supabaseUrl: string): Promise<str
     });
     if (!directResp.ok) throw new Error(`Failed to fetch image: ${url} (proxy: ${resp.status}, direct: ${directResp.status})`);
     const buffer = await directResp.arrayBuffer();
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
     const contentType = directResp.headers.get("content-type") || "image/jpeg";
-    return `data:${contentType};base64,${base64}`;
+    return `data:${contentType};base64,${arrayBufferToBase64(buffer)}`;
   }
   const buffer = await resp.arrayBuffer();
-  const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
   const contentType = resp.headers.get("content-type") || "image/jpeg";
-  return `data:${contentType};base64,${base64}`;
+  return `data:${contentType};base64,${arrayBufferToBase64(buffer)}`;
 }
 
 serve(async (req) => {
