@@ -64,7 +64,7 @@ const CelebritySpotlight = ({ productCode, productCategory }: CelebritySpotlight
         </p>
         <h2
           className="text-lg sm:text-xl text-foreground"
-          style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 500 }}
+          style={{ fontFamily: "'Playfair Display', serif", fontWeight: 500 }}
         >
           Celebrity Spotlight
         </h2>

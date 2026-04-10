@@ -110,7 +110,7 @@ const DigitalPassportPopup = ({ open, onClose, productName, productCode, collect
               <PulsingDot />
             </div>
             <div>
-              <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 600, color: '#1a1a1a', margin: 0, lineHeight: 1.2 }}>
+              <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 600, color: '#1a1a1a', margin: 0, lineHeight: 1.2 }}>
                 Digital Product Passport
               </h2>
             </div>
@@ -118,7 +118,7 @@ const DigitalPassportPopup = ({ open, onClose, productName, productCode, collect
 
           {/* Product reference */}
           <div style={{ marginLeft: 26, marginTop: 8 }}>
-            <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 15, fontWeight: 500, color: '#555', margin: 0 }}>{productName}</p>
+            <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 15, fontWeight: 500, color: '#555', margin: 0 }}>{productName}</p>
             <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: '#b0a89e', margin: '3px 0 0' }}>
               {productCode && <>{productCode} · </>}Made in Italy
             </p>

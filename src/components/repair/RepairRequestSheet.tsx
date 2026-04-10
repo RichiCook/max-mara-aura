@@ -247,7 +247,7 @@ const RepairRequestSheet = ({ open, onClose, productName, productCode, productId
 const SectionHeader = ({ icon, title }: { icon: React.ReactNode; title: string }) => (
   <div className="flex items-center gap-2.5 mb-4">
     {icon}
-    <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 600, color: '#1a1a1a' }}>{title}</h2>
+    <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 600, color: '#1a1a1a' }}>{title}</h2>
   </div>
 );
 
@@ -541,7 +541,7 @@ function ConfirmationScreen({ productName, damageType, photoCount, onDone }: {
           <Check size={20} strokeWidth={1.5} color="#8b7355" style={{ opacity: 0.8 }} />
         </div>
       </div>
-      <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 600, color: '#1a1a1a', marginBottom: 8 }}>
+      <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 600, color: '#1a1a1a', marginBottom: 8 }}>
         Repair Request Submitted
       </h2>
       <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: '#888', marginBottom: 20 }}>

@@ -37,13 +37,13 @@ const GenuineProductBanner = ({ productName, collection, onViewPassport }: Genui
       {/* Authenticity badge */}
       <div className="flex items-center gap-1.5">
         <ShieldIcon />
-        <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '10.5px', fontWeight: 600, letterSpacing: '0.18em', color: '#a09080', textTransform: 'uppercase' as const }}>
+        <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '10.5px', fontWeight: 600, letterSpacing: '0.18em', color: '#a09080', textTransform: 'uppercase' as const }}>
           Genuine Product
         </span>
       </div>
 
       {/* Product name */}
-      <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '22px', fontWeight: 500, color: '#1a1a1a', marginTop: '8px', lineHeight: 1.3 }}>
+      <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '22px', fontWeight: 500, color: '#1a1a1a', marginTop: '8px', lineHeight: 1.3 }}>
         {productName}
       </h1>
 
