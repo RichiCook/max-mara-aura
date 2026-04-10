@@ -273,9 +273,9 @@ const ProductPage = () => {
                     }}
                   >
                     {images.map((img, idx) => (
-                      <div key={idx} className="w-full shrink-0 snap-center aspect-[3/4] bg-secondary">
+                      <div key={idx} className="w-full shrink-0 snap-center aspect-[3/4] bg-white">
                         {!imageError[idx] ? (
-                          <img src={img} alt={`${product.name} ${idx + 1}`} className="w-full h-full object-cover"
+                          <img src={img} alt={`${product.name} ${idx + 1}`} className="w-full h-full object-contain"
                             onError={() => setImageError(prev => ({ ...prev, [idx]: true }))}
                             loading={idx === 0 ? 'eager' : 'lazy'} referrerPolicy="no-referrer" />
                         ) : (
@@ -297,9 +297,9 @@ const ProductPage = () => {
 
                 {/* Desktop gallery */}
                 <div className="hidden sm:block">
-                  <div className="aspect-[3/4] rounded-lg overflow-hidden bg-secondary">
+                  <div className="aspect-[3/4] rounded-lg overflow-hidden bg-white">
                     {!imageError[currentImage] ? (
-                      <img src={images[currentImage]} alt={product.name} className="w-full h-full object-cover"
+                      <img src={images[currentImage]} alt={product.name} className="w-full h-full object-contain"
                         onError={() => setImageError(prev => ({ ...prev, [currentImage]: true }))}
                         loading="eager" referrerPolicy="no-referrer" />
                     ) : (
