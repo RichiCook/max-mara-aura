@@ -177,7 +177,7 @@ const ProductInfoBlock = ({ price, productCode, description, composition, source
 
       {/* Footer */}
       <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '11px', color: '#ccc', textAlign: 'center' as const, marginTop: 12 }}>
-        Powered by Aitems · Product Intelligence
+        Powered by Christian Louboutin · Product Intelligence
       </p>
 
       {/* Repair Sheet */}
