@@ -30,11 +30,12 @@ const DEMO_PRODUCT: Product = {
   description: "The iconic So Kate 120mm pump features Christian Louboutin's signature red lacquered sole. Crafted in Italy from lustrous patent leather with a sleek pointed toe and stiletto heel, this timeless silhouette embodies Parisian glamour at its most refined.",
   composition: '100% Patent Calf Leather, 100% Leather Sole',
   category: 'Shoes',
+  collection: 'Iconic',
   images: [],
   source_url: null,
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
-  is_available: true,
+  care_instructions: null,
   wear_with: [],
   you_may_also_like: [],
 };
