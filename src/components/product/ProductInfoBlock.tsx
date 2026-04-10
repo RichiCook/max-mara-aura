@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useEffect } from 'react';
 import RepairRequestSheet from '@/components/repair/RepairRequestSheet';
 import { RepairSettings, DEFAULT_REPAIR_SETTINGS } from '@/hooks/useRepairSettings';
 
@@ -15,9 +16,6 @@ interface ProductInfoBlockProps {
 
 const PALETTES: Record<string, string[]> = {
   'warm-naturals': ['#8c7b6b', '#b8a99a', '#d4c8bb', '#ede7e0'],
-  'monochrome': ['#1a1a1a', '#555', '#888', '#bbb'],
-  'earth-tones': ['#7a5c47', '#a67c5b', '#c9a882', '#e3d5c3'],
-  'noir-gold': ['#1a1a1a', '#3d3529', '#8b7355', '#c9b896'],
 };
 
 const parseComposition = (comp: string): { name: string; pct: number }[] => {
@@ -28,7 +26,6 @@ const parseComposition = (comp: string): { name: string; pct: number }[] => {
     parts.push({ pct: parseInt(m[1]), name: m[2].trim() });
   }
   if (parts.length === 0 && comp) {
-    // fallback: just show the raw text
     return [{ pct: 100, name: comp }];
   }
   return parts.sort((a, b) => b.pct - a.pct);
@@ -81,7 +78,6 @@ const ProductInfoBlock = ({ price, productCode, description, composition, source
       {/* Composition */}
       {compParts.length > 0 && (
         <div style={{ padding: '18px 0 0' }}>
-          {/* Header */}
           <div className="flex items-center justify-between">
             <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '11px', fontWeight: 600, color: '#b5ada5', letterSpacing: '0.08em', textTransform: 'uppercase' as const }}>
               Composition
@@ -92,15 +88,11 @@ const ProductInfoBlock = ({ price, productCode, description, composition, source
               ))}
             </div>
           </div>
-
-          {/* Stacked bar */}
           <div className="flex overflow-hidden" style={{ borderRadius: 4, height: 7, marginTop: 10 }}>
             {compParts.map((part, i) => (
               <div key={i} style={{ width: `${part.pct}%`, background: palette[i % palette.length], height: '100%' }} />
             ))}
           </div>
-
-          {/* Legend */}
           <div className="flex flex-wrap gap-x-4 gap-y-1.5" style={{ marginTop: 10 }}>
             {compParts.map((part, i) => (
               <div key={i} className="flex items-center gap-1.5">
@@ -121,14 +113,7 @@ const ProductInfoBlock = ({ price, productCode, description, composition, source
           <button
             onClick={() => setRepairOpen(true)}
             className="flex items-center w-full"
-            style={{
-              padding: '16px',
-              borderRadius: 8,
-              border: '1px solid #e4e0db',
-              background: '#fff',
-              cursor: 'pointer',
-              gap: 12,
-            }}
+            style={{ padding: '16px', borderRadius: 8, border: '1px solid #e4e0db', background: '#fff', cursor: 'pointer', gap: 12 }}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
               <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" />
@@ -155,17 +140,10 @@ const ProductInfoBlock = ({ price, productCode, description, composition, source
           rel="noopener noreferrer"
           className="flex items-center justify-center gap-2"
           style={{
-            display: 'flex',
-            width: '100%',
-            borderRadius: 8,
-            background: '#1a1a1a',
-            color: '#fff',
-            fontFamily: "'DM Sans', sans-serif",
-            fontSize: '15px',
-            fontWeight: 600,
-            padding: '16px 0',
-            textDecoration: 'none',
-            textAlign: 'center' as const,
+            display: 'flex', width: '100%', borderRadius: 8,
+            background: '#E12B38', color: '#fff',
+            fontFamily: "'DM Sans', sans-serif", fontSize: '15px', fontWeight: 600,
+            padding: '16px 0', textDecoration: 'none', textAlign: 'center' as const,
           }}
         >
           View on our Store
@@ -177,7 +155,7 @@ const ProductInfoBlock = ({ price, productCode, description, composition, source
 
       {/* Footer */}
       <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '11px', color: '#ccc', textAlign: 'center' as const, marginTop: 12 }}>
-        Powered by Aitems · Product Intelligence
+        Louboutin × Aura Blockchain · Powered by Aitems · Product Intelligence
       </p>
 
       {/* Repair Sheet */}
