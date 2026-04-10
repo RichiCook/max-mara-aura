@@ -244,7 +244,7 @@ const AtelierCompositions = () => {
           {compositions.map((comp) => (
             <div key={comp.id} className="text-left group">
               <div
-                className="relative aspect-[3/4] rounded-lg overflow-hidden cursor-pointer"
+                className="relative aspect-square rounded-lg overflow-hidden cursor-pointer"
                 style={{ backgroundColor: '#faf6f0' }}
                 onClick={() => comp.generatedImage && setExpandedId(comp.id)}
               >
@@ -256,7 +256,7 @@ const AtelierCompositions = () => {
                   <img
                     src={comp.generatedImage}
                     alt={comp.name}
-                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    className="absolute inset-0 w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
                   />
                 ) : comp.loading ? (
                   <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
@@ -357,11 +357,11 @@ const AtelierCompositions = () => {
             </button>
 
             {expanded.generatedImage && (
-              <div className="relative aspect-[3/4] w-full bg-[#faf6f0]">
+              <div className="relative aspect-square w-full bg-[#faf6f0]">
                 <img
                   src={expanded.generatedImage}
                   alt={expanded.name}
-                  className="absolute inset-0 w-full h-full object-cover"
+                  className="absolute inset-0 w-full h-full object-contain"
                 />
               </div>
             )}
