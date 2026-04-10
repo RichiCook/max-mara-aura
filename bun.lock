@@ -1036,7 +1036,7 @@
 
     "shebang-regex": ["shebang-regex@3.0.0", "", {}, "sha512-7++dFhtcx3353uBaq8DDR4NuxBetBzC7ZQOhmTQInHEd6bSrXdiEyzCvG07Z44UYdLShWUyXt5M/yhz8ekcb1A=="],
 
-    "shopify-buy": ["shopify-buy@3.0.7", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/shopify-buy/-/shopify-buy-3.0.7.tgz", {}, "sha512-HTuC8SSaVSFJRToXbrn54TSjxNt5d4GN//xfHXfHBJYSuHzGouF97CFapjdM+Pz5HjcGST6ife4B64GNo7taYw=="],
+    "shopify-buy": ["shopify-buy@3.0.7", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/shopify-buy/-/shopify-buy-3.0.7.tgz", {}, "sha512-HTuC8SSaVSFJRToXbrn54TSjxNt5d4GN//xfHXfHBJYSuHzGouF97CFapjdM+Pz5HjcGST6ife4B64GNo7taYw=="],
 
     "signal-exit": ["signal-exit@4.1.0", "", {}, "sha512-bzyZ1e88w9O1iNJbKnOlvYTrWPDl46O1bG0D3XInv+9tkPrxrN8jUUTiFlDkkmKWgn1M6CfIA13SuGqOa9Korw=="],
 
