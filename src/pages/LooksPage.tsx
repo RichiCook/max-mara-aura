@@ -350,7 +350,7 @@ const LooksPage = () => {
                   <p className="text-xs text-muted-foreground">
                     {leadCaptureStyle === 'classic'
                       ? 'Standard form style with default UI components.'
-                      : 'Luxury aesthetic with Cormorant Garamond headings, warm earthy tones, and refined inputs.'}
+                      : 'Luxury aesthetic with Playfair Display headings, warm earthy tones, and refined inputs.'}
                   </p>
                 </CardContent>
               </Card>

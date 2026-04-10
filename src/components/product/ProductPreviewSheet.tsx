@@ -247,7 +247,7 @@ const ProductPreviewSheet = ({ product, onClose }: ProductPreviewSheetProps) => 
 
         {/* Product Info */}
         <div style={{ padding: '16px 20px 0' }}>
-          <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 600, color: '#1a1a1a', margin: 0 }}>
+          <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 600, color: '#1a1a1a', margin: 0 }}>
             {p?.name}
           </h3>
           {(p?.price || p?.product_code) && (
@@ -324,7 +324,7 @@ const ProductPreviewSheet = ({ product, onClose }: ProductPreviewSheetProps) => 
             <div style={{ height: 1, margin: '0 0 20px', background: 'linear-gradient(90deg, transparent, #e8e4df 20%, #e8e4df 80%, transparent)' }} />
 
             <div style={{ padding: '0 20px' }}>
-              <h4 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, fontWeight: 600, color: '#1a1a1a', margin: 0 }}>
+              <h4 style={{ fontFamily: "'Playfair Display', serif", fontSize: 18, fontWeight: 600, color: '#1a1a1a', margin: 0 }}>
                 You may also like
               </h4>
               <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: '#c5c0ba', margin: '2px 0 14px' }}>
