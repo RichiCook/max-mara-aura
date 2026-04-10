@@ -228,8 +228,14 @@ const ProductPage = () => {
       {/* Header */}
       <header className="border-b border-border sticky top-0 z-50 transition-colors duration-700" style={resolvedPalette.length > 0 ? { backgroundColor: resolvedPalette[0] + '10', borderColor: resolvedPalette[0] + '25', backdropFilter: 'blur(12px)' } : { backdropFilter: 'blur(12px)', backgroundColor: '#fff' }}>
         <div className="max-w-6xl mx-auto px-4 py-2.5 sm:py-3 flex items-center justify-between">
-          <Link to="/" style={{ fontFamily: "'Playfair Display', serif", fontSize: 16, fontWeight: 700, color: '#1a1a1a', textDecoration: 'none' }}>
-            Christian Louboutin
+          <Link to="/" className="flex items-center gap-2" style={{ textDecoration: 'none' }}>
+            {settings.logo_url ? (
+              <img src={settings.logo_url} alt={settings.brand_name || 'Logo'} className="h-6 sm:h-8 w-auto object-contain" />
+            ) : (
+              <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 16, fontWeight: 700, color: '#1a1a1a' }}>
+                Christian Louboutin
+              </span>
+            )}
           </Link>
           <Button asChild variant="ghost" size="sm" className="text-xs">
             <Link to={`/product/${slug}/edit`}>
