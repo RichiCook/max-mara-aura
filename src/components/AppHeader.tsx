@@ -83,6 +83,7 @@ export const AppHeader = ({ onImportComplete, children }: AppHeaderProps) => {
                   <LayoutGrid className="w-4 h-4 mr-2" />
                   Carousels
                 </Button>
+              </Link>
               <Link to="/api-settings">
                 <Button variant="ghost" className="w-full justify-start">
                   <Settings2 className="w-4 h-4 mr-2" />
