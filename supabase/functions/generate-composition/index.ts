@@ -75,24 +75,25 @@ function buildPrompt(
     hero: "One hero product prominently placed with smaller accent products around it",
   };
 
-  const prompt = `Create an elegant luxury still life product composition photograph.
+  const prompt = `You are given ${productImages.length} product photographs. Create a single elegant still life composition photograph that places ALL of these EXACT products together.
+
 ${backgroundDescriptions[background] || backgroundDescriptions.white}.
 Style: ${styleDescriptions[style] || styleDescriptions.editorial}.
-Arrange these Christian Louboutin products together: ${productNames}.
-Composition theme: "${compositionName}" - ${styleTag}.
 Layout: ${layoutDescriptions[layout] || layoutDescriptions.balanced}.
+Composition theme: "${compositionName}" - ${styleTag}.
 
-CRITICAL RULES:
-- Show EVERY product FULLY visible — NO cropping, NO cutting off any product
-- Each product must be complete and recognizable
-- Square 1:1 aspect ratio composition
-- Products should have breathing room — don't push them to the edges
-- Shoes at a 3/4 angle for dimensionality
-- Bottles/beauty items slightly angled (5-10°) for depth
-- Products relate spatially with shared surface and overlapping shadows
-- Professional studio lighting
-- Ultra high quality, photorealistic
-- No text, no logos, no watermarks${customPrompt ? `\n\nAdditional instructions: ${customPrompt}` : ""}`;
+ABSOLUTE RULES — VIOLATIONS WILL MAKE THE IMAGE UNUSABLE:
+1. You MUST reproduce each product EXACTLY as it appears in the reference photos — same shape, same color, same texture, same design details. Do NOT invent, alter, or reimagine any product.
+2. Every single product must be FULLY visible — no cropping, no cutting off.
+3. Do NOT add any products that are not in the reference images.
+4. Do NOT change the color or design of any product — a red sole must stay red, a black bag must stay black, etc.
+5. Square 1:1 aspect ratio.
+6. Products arranged on a shared surface with natural overlapping shadows.
+7. Professional studio lighting, ultra-high quality, photorealistic.
+8. No text, no logos, no watermarks, no decorative props.
+9. Products should have breathing room — don't push them to edges.
+
+The products in the reference images are: ${productNames}.${customPrompt ? `\n\nAdditional instructions: ${customPrompt}` : ""}`;
 
   return prompt;
 }
