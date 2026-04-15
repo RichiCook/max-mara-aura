@@ -76,7 +76,7 @@ function buildPrompt(
     hero: "One hero product prominently placed with smaller accent products around it",
   };
 
-  const prompt = `You are given ${productImages.length} product photographs. Create a single elegant still life composition photograph that places ALL of these EXACT products together.
+  const prompt = `You are given ${productCount} product photographs. Create a single elegant still life composition photograph that places ALL of these EXACT products together.
 
 ${backgroundDescriptions[background] || backgroundDescriptions.white}.
 Style: ${styleDescriptions[style] || styleDescriptions.editorial}.
