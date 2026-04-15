@@ -1,0 +1,10 @@
+UPDATE campaign_assets SET label = 'Summer 2026' WHERE id = '130d5fef-37df-4e0d-b6b5-1df18b7d4d42';
+UPDATE campaign_assets SET label = 'Summer 2026' WHERE id = '5ab94dbe-5ad7-4b93-a88b-53483ef779b1';
+UPDATE campaign_assets SET label = '2026 Essentials' WHERE id = '00751e08-5b0c-4a47-a5fc-5dbdd257ea59';
+UPDATE campaign_assets SET label = 'Avant-Première — Jaden Smith' WHERE id = '638ab5cb-607d-4e0a-859f-f04c0ac033d8';
+UPDATE campaign_assets SET label = 'Bridal Collection' WHERE id = '8a096c79-beaf-4b11-8af9-8965d63253af';
+UPDATE campaign_assets SET label = 'Cassia Collection' WHERE id = '515b65f3-6dbf-4bd5-8943-bf721751d82f';
+UPDATE campaign_assets SET label = 'Eyewear Collection' WHERE id = '84663431-a5de-436b-976d-f5f1fd5055d3';
+UPDATE campaign_assets SET label = 'Eyewear' WHERE id = 'ad6671dc-2c91-4443-a0f5-dfbd70664a9c';
+UPDATE campaign_assets SET label = 'New Season Bags' WHERE id = '59591251-9705-4a09-9d32-446ad9926fee';
+UPDATE campaign_assets SET label = 'Women — Summer 2026' WHERE id = '77ab54b2-1288-4839-b2e4-b351d7ad4324';
