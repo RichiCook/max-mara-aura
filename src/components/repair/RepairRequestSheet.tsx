@@ -288,7 +288,7 @@ const ActionButton = ({ children, onClick, disabled, variant = 'primary' }: { ch
       background: variant === 'primary' ? (disabled ? '#ccc' : '#1a1a1a') : '#fff',
       color: variant === 'primary' ? '#fff' : '#1a1a1a',
       border: variant === 'secondary' ? '1px solid #e4e0db' : 'none',
-      fontFamily: "'DM Sans', sans-serif",
+      fontFamily: "'Inter', sans-serif",
       fontSize: 13,
       fontWeight: 600,
       padding: '14px 0',
@@ -308,10 +308,10 @@ function Step1DamageType({ damageTypes, selected, onSelect, productName, product
   return (
     <>
       <SectionHeader icon={<WrenchIcon />} title="Request a Repair" />
-      <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#b5ada5', marginBottom: 16 }}>
+      <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: '#b5ada5', marginBottom: 16 }}>
         {productName} · {productCode || 'N/A'}
       </p>
-      <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600, color: '#1a1a1a', marginBottom: 10 }}>
+      <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600, color: '#1a1a1a', marginBottom: 10 }}>
         What needs repairing?
       </p>
       <div className="space-y-2 mb-5">
@@ -330,9 +330,9 @@ function Step1DamageType({ damageTypes, selected, onSelect, productName, product
               }}
             >
               <div>
-                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 500, color: isSelected ? '#fff' : '#1a1a1a' }}>{dt.name}</span>
+                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 500, color: isSelected ? '#fff' : '#1a1a1a' }}>{dt.name}</span>
                 <br />
-                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: isSelected ? 'rgba(255,255,255,0.6)' : '#b5ada5' }}>{dt.description}</span>
+                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: isSelected ? 'rgba(255,255,255,0.6)' : '#b5ada5' }}>{dt.description}</span>
               </div>
               <div style={{ width: 18, height: 18, borderRadius: '50%', border: `2px solid ${isSelected ? '#fff' : '#ddd'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 {isSelected && <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#fff' }} />}
@@ -355,7 +355,7 @@ function Step2Photos({ photos, onUpload, onRemove, fileInputRef, onBack, onConti
   return (
     <>
       <SectionHeader icon={<CameraIcon />} title="Damage Assessment" />
-      <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#b5ada5', marginBottom: 16 }}>
+      <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: '#b5ada5', marginBottom: 16 }}>
         Photos help us pre-assess and provide an accurate estimate
       </p>
 
@@ -378,7 +378,7 @@ function Step2Photos({ photos, onUpload, onRemove, fileInputRef, onBack, onConti
             style={{ width: 80, height: 80, borderRadius: 8, border: '1.5px dashed #ddd8d2', background: '#faf9f7' }}
           >
             <Upload size={16} strokeWidth={1.5} color="#b5ada5" />
-            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, color: '#b5ada5', marginTop: 4 }}>Add</span>
+            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 10, color: '#b5ada5', marginTop: 4 }}>Add</span>
           </button>
         )}
         <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={onUpload} className="hidden" />
@@ -387,7 +387,7 @@ function Step2Photos({ photos, onUpload, onRemove, fileInputRef, onBack, onConti
       {photos.length >= 2 && (
         <div className="flex items-center gap-2 mb-4" style={{ padding: '12px 14px', borderRadius: 8, background: '#f5f0eb' }}>
           <Check size={16} strokeWidth={1.5} color="#8b7355" />
-          <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#8b7355' }}>
+          <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: '#8b7355' }}>
             Pre-assessment ready · Our team will review within 24 hours
           </span>
         </div>
@@ -412,37 +412,37 @@ function Step3Location({ country, city, email, customerName, onCountryChange, on
   return (
     <>
       <SectionHeader icon={<TruckIcon />} title="Shipping Details" />
-      <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#b5ada5', marginBottom: 16 }}>
+      <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: '#b5ada5', marginBottom: 16 }}>
         You ship to us. We repair and return to you.
       </p>
 
       <div className="space-y-3 mb-4">
         <div>
-          <label style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 500, color: '#666', display: 'block', marginBottom: 4 }}>Your name</label>
+          <label style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, fontWeight: 500, color: '#666', display: 'block', marginBottom: 4 }}>Your name</label>
           <input
             value={customerName}
             onChange={e => onNameChange(e.target.value)}
             placeholder="Full name"
-            style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #e8e4df', fontFamily: "'DM Sans', sans-serif", fontSize: 13, outline: 'none' }}
+            style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #e8e4df', fontFamily: "'Inter', sans-serif", fontSize: 13, outline: 'none' }}
           />
         </div>
         <div>
-          <label style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 500, color: '#666', display: 'block', marginBottom: 4 }}>Email</label>
+          <label style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, fontWeight: 500, color: '#666', display: 'block', marginBottom: 4 }}>Email</label>
           <input
             type="email"
             value={email}
             onChange={e => onEmailChange(e.target.value)}
             placeholder="your@email.com"
-            style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #e8e4df', fontFamily: "'DM Sans', sans-serif", fontSize: 13, outline: 'none' }}
+            style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #e8e4df', fontFamily: "'Inter', sans-serif", fontSize: 13, outline: 'none' }}
           />
         </div>
         <div>
-          <label style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 500, color: '#666', display: 'block', marginBottom: 4 }}>Country</label>
+          <label style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, fontWeight: 500, color: '#666', display: 'block', marginBottom: 4 }}>Country</label>
           <div className="relative">
             <select
               value={country}
               onChange={e => onCountryChange(e.target.value)}
-              style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #e8e4df', fontFamily: "'DM Sans', sans-serif", fontSize: 13, outline: 'none', appearance: 'none', background: '#fff' }}
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #e8e4df', fontFamily: "'Inter', sans-serif", fontSize: 13, outline: 'none', appearance: 'none', background: '#fff' }}
             >
               <option value="">Select country</option>
               {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
@@ -451,22 +451,22 @@ function Step3Location({ country, city, email, customerName, onCountryChange, on
           </div>
         </div>
         <div>
-          <label style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 500, color: '#666', display: 'block', marginBottom: 4 }}>City</label>
+          <label style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, fontWeight: 500, color: '#666', display: 'block', marginBottom: 4 }}>City</label>
           <input
             value={city}
             onChange={e => onCityChange(e.target.value)}
             placeholder="City"
-            style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #e8e4df', fontFamily: "'DM Sans', sans-serif", fontSize: 13, outline: 'none' }}
+            style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #e8e4df', fontFamily: "'Inter', sans-serif", fontSize: 13, outline: 'none' }}
           />
         </div>
       </div>
 
       {country && (
         <div className="mb-4" style={{ padding: '14px 16px', borderRadius: 8, background: '#f7f7f5', border: '1px solid #eee' }}>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 600, color: '#b5ada5', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Ship to</p>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: '#1a1a1a', whiteSpace: 'pre-line', lineHeight: 1.5 }}>{repairCentreAddress}</p>
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, fontWeight: 600, color: '#b5ada5', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Ship to</p>
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: '#1a1a1a', whiteSpace: 'pre-line', lineHeight: 1.5 }}>{repairCentreAddress}</p>
           <div style={{ height: 1, background: '#e8e4df', margin: '10px 0' }} />
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#8b7355' }}>⏱ {estimatedTurnaround}</p>
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: '#8b7355' }}>⏱ {estimatedTurnaround}</p>
         </div>
       )}
 
@@ -491,11 +491,11 @@ function Step4Payment({ priceRule, returnShippingCost, warrantyCoverRepair, dama
       <div className="mb-4" style={{ padding: '14px 16px', borderRadius: 8, background: '#f7f7f5' }}>
         <div className="flex items-center gap-2">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
-          <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 500, color: '#1a1a1a' }}>
+          <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 500, color: '#1a1a1a' }}>
             Warranty Status
           </span>
         </div>
-        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#888', marginTop: 6 }}>
+        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: '#888', marginTop: 6 }}>
           Standard repair fees apply. Warranty status confirmed after inspection.
         </p>
       </div>
@@ -503,17 +503,17 @@ function Step4Payment({ priceRule, returnShippingCost, warrantyCoverRepair, dama
       {/* Cost estimate */}
       {priceRule && (
         <div className="mb-4" style={{ padding: '14px 16px', borderRadius: 8, border: '1px solid #e8e4df' }}>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 600, color: '#b5ada5', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Estimated cost</p>
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, fontWeight: 600, color: '#b5ada5', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Estimated cost</p>
           <div className="flex justify-between mb-1">
-            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: '#666' }}>{damageTypeName}</span>
-            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>€{priceRule.min} – €{priceRule.max}</span>
+            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: '#666' }}>{damageTypeName}</span>
+            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>€{priceRule.min} – €{priceRule.max}</span>
           </div>
           <div className="flex justify-between">
-            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: '#666' }}>Return shipping</span>
-            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>€{returnShippingCost}</span>
+            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: '#666' }}>Return shipping</span>
+            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>€{returnShippingCost}</span>
           </div>
           {warrantyCoverRepair && (
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: '#8b7355', fontStyle: 'italic', marginTop: 8 }}>
+            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: '#8b7355', fontStyle: 'italic', marginTop: 8 }}>
               May be covered under warranty — confirmed after inspection
             </p>
           )}
@@ -544,15 +544,15 @@ function ConfirmationScreen({ productName, damageType, photoCount, onDone }: {
       <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 600, color: '#1a1a1a', marginBottom: 8 }}>
         Repair Request Submitted
       </h2>
-      <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: '#888', marginBottom: 20 }}>
+      <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: '#888', marginBottom: 20 }}>
         We'll review your request and get back to you by email.
       </p>
 
       <div className="text-left" style={{ padding: '14px 16px', borderRadius: 8, background: '#f7f7f5', marginBottom: 20 }}>
-        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 600, color: '#b5ada5', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Summary</p>
-        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: '#1a1a1a' }}>{productName}</p>
-        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#888' }}>Repair type: {damageType}</p>
-        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#888' }}>Photos: {photoCount}</p>
+        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, fontWeight: 600, color: '#b5ada5', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Summary</p>
+        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: '#1a1a1a' }}>{productName}</p>
+        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: '#888' }}>Repair type: {damageType}</p>
+        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: '#888' }}>Photos: {photoCount}</p>
       </div>
 
       <ActionButton onClick={onDone}>Done</ActionButton>

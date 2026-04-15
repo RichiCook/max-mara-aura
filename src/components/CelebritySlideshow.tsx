@@ -66,7 +66,7 @@ const CelebritySlideshow = () => {
       <div className="mb-4 sm:mb-6 text-center">
         <p
           className="text-[10.5px] uppercase tracking-[0.14em] mb-1 text-muted-foreground"
-          style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}
+          style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600 }}
         >
           As Seen On
         </p>
@@ -103,7 +103,7 @@ const CelebritySlideshow = () => {
           </div>
           <p
             className="text-sm sm:text-base text-center text-foreground"
-            style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 500 }}
+            style={{ fontFamily: "'Inter', sans-serif", fontWeight: 500 }}
           >
             {celeb.celebrity_name}
           </p>

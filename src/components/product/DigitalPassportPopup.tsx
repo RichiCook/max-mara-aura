@@ -110,7 +110,7 @@ const DigitalPassportPopup = ({ open, onClose, productName, productCode, collect
               <PulsingDot />
             </div>
             <div>
-              <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 600, color: '#1a1a1a', margin: 0, lineHeight: 1.2 }}>
+              <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 600, color: '#1a1a1a', margin: 0, lineHeight: 1.2 }}>
                 Digital Product Passport
               </h2>
             </div>
@@ -118,11 +118,11 @@ const DigitalPassportPopup = ({ open, onClose, productName, productCode, collect
 
           {/* Product reference */}
           <div style={{ marginLeft: 26, marginTop: 8 }}>
-            <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 15, fontWeight: 500, color: '#555', margin: 0 }}>{productName}</p>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: '#b0a89e', margin: '3px 0 0' }}>
+            <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 15, fontWeight: 500, color: '#555', margin: 0 }}>{productName}</p>
+            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: '#b0a89e', margin: '3px 0 0' }}>
               {productCode && <>{productCode} · </>}Made in Italy
             </p>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, margin: '3px 0 0' }}>
+            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, margin: '3px 0 0' }}>
               <span style={{ fontWeight: 600, color: '#1a1a1a' }}>EU ESPR Compliant</span>
               <span style={{ color: '#b0a89e' }}> · Updated 2025-11-14</span>
             </p>
@@ -137,8 +137,8 @@ const DigitalPassportPopup = ({ open, onClose, productName, productCode, collect
           {DATA_ROWS.map((row, i) => (
             <div key={i} className="flex items-center gap-2.5" style={{ padding: '12px 0', borderBottom: i < DATA_ROWS.length - 1 ? '1px solid #f0ece7' : 'none' }}>
               <div style={{ width: 16, flexShrink: 0 }}>{row.icon}</div>
-              <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: '#777', flex: 1 }}>{row.label}</span>
-              <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>{row.value}</span>
+              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: '#777', flex: 1 }}>{row.label}</span>
+              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>{row.value}</span>
             </div>
           ))}
 
@@ -146,14 +146,14 @@ const DigitalPassportPopup = ({ open, onClose, productName, productCode, collect
           <div className="flex gap-2.5" style={{ padding: '12px 0', borderTop: '1px solid #f0ece7' }}>
             <div style={{ width: 16, flexShrink: 0, paddingTop: 2 }}><RecycleIcon /></div>
             <div style={{ flex: 1 }}>
-              <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: '#777' }}>Recyclability</span>
+              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: '#777' }}>Recyclability</span>
               <div className="flex justify-between" style={{ marginTop: 6 }}>
-                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#aaa' }}>Heel</span>
-                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 600, color: '#1a1a1a' }}>Recyclable steel</span>
+                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: '#aaa' }}>Heel</span>
+                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, fontWeight: 600, color: '#1a1a1a' }}>Recyclable steel</span>
               </div>
               <div className="flex justify-between" style={{ marginTop: 4 }}>
-                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#aaa' }}>Upper</span>
-                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 600, color: '#1a1a1a' }}>Textile recycling</span>
+                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: '#aaa' }}>Upper</span>
+                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, fontWeight: 600, color: '#1a1a1a' }}>Textile recycling</span>
               </div>
             </div>
           </div>
@@ -161,13 +161,13 @@ const DigitalPassportPopup = ({ open, onClose, productName, productCode, collect
           {/* Certifications */}
           <div style={{ marginTop: 16 }}>
             <div style={{ marginLeft: 26 }}>
-              <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 600, color: '#b5ada5', textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>
+              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, fontWeight: 600, color: '#b5ada5', textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>
                 Certifications
               </span>
               <div className="flex flex-wrap gap-2" style={{ marginTop: 8 }}>
                 {['OEKO-TEX® Standard 100', 'ISO 14001'].map((cert) => (
                   <span key={cert} style={{
-                    fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 500,
+                    fontFamily: "'Inter', sans-serif", fontSize: 11, fontWeight: 500,
                     padding: '5px 12px', borderRadius: 5, background: '#f5f0eb', color: '#8b7355', border: '1px solid #ebe4db',
                   }}>{cert}</span>
                 ))}
@@ -179,7 +179,7 @@ const DigitalPassportPopup = ({ open, onClose, productName, productCode, collect
           {compParts.length > 0 && (
             <div style={{ marginTop: 16 }}>
               <div style={{ marginLeft: 26 }}>
-                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 600, color: '#b5ada5', textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>
+                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, fontWeight: 600, color: '#b5ada5', textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>
                   Composition
                 </span>
                 <div className="flex overflow-hidden" style={{ borderRadius: 4, height: 6, marginTop: 8 }}>
@@ -191,7 +191,7 @@ const DigitalPassportPopup = ({ open, onClose, productName, productCode, collect
                   {compParts.map((part, i) => (
                     <div key={i} className="flex items-center gap-1">
                       <span style={{ width: 6, height: 6, borderRadius: '50%', background: PALETTES[i % PALETTES.length], display: 'inline-block' }} />
-                      <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: '#777' }}>{part.pct}% {part.name}</span>
+                      <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: '#777' }}>{part.pct}% {part.name}</span>
                     </div>
                   ))}
                 </div>

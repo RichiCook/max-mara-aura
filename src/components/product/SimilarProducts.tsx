@@ -100,7 +100,7 @@ const SimilarProducts = ({ productId, productCode, category, collection }: Simil
             Similar Products
           </h2>
         </div>
-        <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: '#c5c0ba' }}>Based on style</span>
+        <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: '#c5c0ba' }}>Based on style</span>
       </div>
 
       {/* Carousel */}
@@ -131,14 +131,14 @@ const SimilarProducts = ({ productId, productCode, category, collection }: Simil
                   )}
                 </div>
                 <div style={{ padding: '8px 10px 10px' }}>
-                  <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 500, color: '#1a1a1a', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{p.name}</p>
+                  <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, fontWeight: 500, color: '#1a1a1a', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{p.name}</p>
                   {p.price && (
-                    <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: '#b5ada5', margin: '2px 0 0' }}>{p.price}</p>
+                    <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: '#b5ada5', margin: '2px 0 0' }}>{p.price}</p>
                   )}
                   {tag && (
                     <span style={{
                       display: 'inline-block', marginTop: 4,
-                      fontFamily: "'DM Sans', sans-serif", fontSize: 9, fontWeight: 600,
+                      fontFamily: "'Inter', sans-serif", fontSize: 9, fontWeight: 600,
                       color: '#8b7355', background: '#f5f0eb',
                       border: '1px solid #ebe4db', borderRadius: 3,
                       padding: '2px 7px'

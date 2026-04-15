@@ -59,14 +59,14 @@ const AuraPassportModal = ({ open, onClose, productName, productCode, ownerRegis
           {/* Handle bar */}
           <div style={{ width: 40, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.2)', margin: '0 auto 20px' }} />
 
-          <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 600, color: '#C4A265', margin: 0 }}>
+          <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 600, color: '#C4A265', margin: 0 }}>
             Christian Louboutin
           </p>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: '#fff', marginTop: 6, fontWeight: 500 }}>
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 15, color: '#fff', marginTop: 6, fontWeight: 500 }}>
             {productName}
           </p>
           {productCode && (
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>
+            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>
               SKU: {productCode}
             </p>
           )}
@@ -77,7 +77,7 @@ const AuraPassportModal = ({ open, onClose, productName, productCode, ownerRegis
           {/* Aura badge */}
           <div className="flex items-center gap-2">
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#2dd4bf', display: 'inline-block' }} />
-            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 600, letterSpacing: '0.12em', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase' as const }}>
+            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 10, fontWeight: 600, letterSpacing: '0.12em', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase' as const }}>
               Certified by Aura Blockchain Consortium
             </span>
           </div>
@@ -87,23 +87,23 @@ const AuraPassportModal = ({ open, onClose, productName, productCode, ownerRegis
         <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
           {/* Owner status */}
           <div style={{ marginBottom: 20 }}>
-            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', color: '#999', textTransform: 'uppercase' as const }}>
+            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', color: '#999', textTransform: 'uppercase' as const }}>
               Owner
             </span>
             <div className="flex items-center gap-2" style={{ marginTop: 8 }}>
               {ownerRegistered ? (
                 <>
-                  <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 600, color: '#1a1a1a' }}>Owner Registered</span>
+                  <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 600, color: '#1a1a1a' }}>Owner Registered</span>
                   <span style={{
-                    fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 600,
+                    fontFamily: "'Inter', sans-serif", fontSize: 10, fontWeight: 600,
                     padding: '3px 10px', borderRadius: 20, background: '#dcfce7', color: '#166534',
                   }}>Ownership Verified</span>
                 </>
               ) : (
                 <>
-                  <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: '#666' }}>This item has not been claimed</span>
+                  <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, color: '#666' }}>This item has not been claimed</span>
                   <span style={{
-                    fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 600,
+                    fontFamily: "'Inter', sans-serif", fontSize: 10, fontWeight: 600,
                     padding: '3px 10px', borderRadius: 20, background: '#FEF3C7', color: '#92400E',
                   }}>Unclaimed</span>
                 </>
@@ -116,7 +116,7 @@ const AuraPassportModal = ({ open, onClose, productName, productCode, ownerRegis
             <button
               onClick={() => { onClose(); setTimeout(onOpenClaim, 200); }}
               style={{
-                fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 600,
+                fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 600,
                 background: '#E12B38', color: '#fff', border: 'none', borderRadius: 10,
                 padding: '14px 0', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               }}
@@ -124,28 +124,28 @@ const AuraPassportModal = ({ open, onClose, productName, productCode, ownerRegis
               Claim ownership <span style={{ fontSize: 16 }}>⬡</span>
             </button>
             <button style={{
-              fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 500,
+              fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 500,
               background: '#fff', color: '#1a1a1a', border: '1.5px solid #e0e0e0', borderRadius: 10,
               padding: '14px 0', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
             }}>
               Add certificate to your wallet <span style={{ fontSize: 16 }}>📱</span>
             </button>
             <button style={{
-              fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 500,
+              fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 500,
               background: '#1a1a1a', color: '#fff', border: 'none', borderRadius: 10,
               padding: '14px 0', cursor: 'pointer',
             }}>
               Redeem the Digital Artwork
             </button>
             <button style={{
-              fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 500,
+              fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 500,
               background: '#1a1a1a', color: '#fff', border: 'none', borderRadius: 10,
               padding: '14px 0', cursor: 'pointer',
             }}>
               Transfer ownership
             </button>
             <button style={{
-              fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 500,
+              fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 500,
               background: 'none', color: '#C4A265', border: 'none', padding: '8px 0', cursor: 'pointer',
               textDecoration: 'underline', textUnderlineOffset: 3,
             }}>
@@ -155,24 +155,24 @@ const AuraPassportModal = ({ open, onClose, productName, productCode, ownerRegis
 
           {/* Certification History */}
           <div style={{ marginTop: 28, borderTop: '1px solid #f0ece7', paddingTop: 20 }}>
-            <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 18, fontWeight: 600, color: '#1a1a1a', margin: '0 0 16px' }}>
+            <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, fontWeight: 600, color: '#1a1a1a', margin: '0 0 16px' }}>
               Certification History
             </h3>
 
             <div style={{ borderRadius: 10, border: '1px solid #f0ece7', overflow: 'hidden' }}>
               {/* Table header */}
               <div className="grid grid-cols-3" style={{ background: '#faf8f5', padding: '10px 14px', borderBottom: '1px solid #f0ece7' }}>
-                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 600, color: '#999', textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>Date</span>
-                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 600, color: '#999', textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>Event</span>
-                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 600, color: '#999', textTransform: 'uppercase' as const, letterSpacing: '0.06em', textAlign: 'right' as const }}>Status</span>
+                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, fontWeight: 600, color: '#999', textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>Date</span>
+                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, fontWeight: 600, color: '#999', textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>Event</span>
+                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, fontWeight: 600, color: '#999', textTransform: 'uppercase' as const, letterSpacing: '0.06em', textAlign: 'right' as const }}>Status</span>
               </div>
               {historyRows.map((row, i) => (
                 <div key={i} className="grid grid-cols-3 items-center" style={{ padding: '12px 14px', borderBottom: i < historyRows.length - 1 ? '1px solid #f0ece7' : 'none' }}>
-                  <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#888' }}>{row.date}</span>
-                  <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 500, color: '#1a1a1a' }}>{row.event}</span>
+                  <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: '#888' }}>{row.date}</span>
+                  <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, fontWeight: 500, color: '#1a1a1a' }}>{row.event}</span>
                   <div className="flex items-center justify-end gap-1.5">
                     <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#2dd4bf', display: 'inline-block' }} />
-                    <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: '#2dd4bf', fontWeight: 500 }}>{row.status}</span>
+                    <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: '#2dd4bf', fontWeight: 500 }}>{row.status}</span>
                   </div>
                 </div>
               ))}
@@ -185,7 +185,7 @@ const AuraPassportModal = ({ open, onClose, productName, productCode, ownerRegis
           <button
             onClick={onClose}
             style={{
-              width: '100%', fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 500,
+              width: '100%', fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 500,
               background: '#f5f5f5', color: '#666', border: 'none', borderRadius: 10,
               padding: '14px 0', cursor: 'pointer',
             }}

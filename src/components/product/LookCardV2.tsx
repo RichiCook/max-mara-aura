@@ -79,7 +79,7 @@ const LookCardV2 = ({ looks, productCode, loading, loadingMore, onTrackEvent, on
               AI-Curated Looks
             </h2>
           </div>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#b5ada5', marginLeft: 22, marginTop: 2 }}>
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: '#b5ada5', marginLeft: 22, marginTop: 2 }}>
             Curating styling suggestions…
           </p>
         </div>
@@ -90,7 +90,7 @@ const LookCardV2 = ({ looks, productCode, loading, loadingMore, onTrackEvent, on
               <div className="animate-shimmer" style={{ position: 'absolute', inset: 0, background: 'linear-gradient(110deg, #f0ece7 30%, #f8f4f0 50%, #f0ece7 70%)', backgroundSize: '200% 100%' }} />
               <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                 <span style={{ fontSize: 16, opacity: 0.25 }}>✦</span>
-                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 9.5, color: '#c5c0ba', letterSpacing: '0.12em', textTransform: 'uppercase' as const }}>GENERATING LOOK</span>
+                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 9.5, color: '#c5c0ba', letterSpacing: '0.12em', textTransform: 'uppercase' as const }}>GENERATING LOOK</span>
                 <div style={{ width: 100, height: 1.5, borderRadius: 1, background: 'rgba(0,0,0,0.04)', overflow: 'hidden' }}>
                   <div className="animate-shimmer" style={{ width: '60%', height: '100%', background: 'linear-gradient(90deg, #d4c8bb, #8b7355)', borderRadius: 1 }} />
                 </div>
@@ -114,7 +114,7 @@ const LookCardV2 = ({ looks, productCode, loading, loadingMore, onTrackEvent, on
             AI-Curated Looks
           </h2>
         </div>
-        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#b5ada5', marginLeft: 22, marginTop: 2 }}>
+        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: '#b5ada5', marginLeft: 22, marginTop: 2 }}>
           {looks.length} styling suggestion{looks.length !== 1 ? 's' : ''} · swipe to browse
         </p>
       </div>
@@ -178,11 +178,11 @@ const LookCardV2 = ({ looks, productCode, loading, loadingMore, onTrackEvent, on
                             )}
                           </div>
                           <div style={{ padding: '8px 10px', display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 500, color: '#1a1a1a', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, flex: 1, minWidth: 0 }}>
+                            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, fontWeight: 500, color: '#1a1a1a', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, flex: 1, minWidth: 0 }}>
                               {p.name}
                             </p>
                             {isHero && (
-                              <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 9, fontWeight: 600, color: '#fff', background: '#8b7355', padding: '2px 8px', borderRadius: 4, letterSpacing: '0.02em', textTransform: 'uppercase' as const, flexShrink: 0 }}>Featured</span>
+                              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 9, fontWeight: 600, color: '#fff', background: '#8b7355', padding: '2px 8px', borderRadius: 4, letterSpacing: '0.02em', textTransform: 'uppercase' as const, flexShrink: 0 }}>Featured</span>
                             )}
                           </div>
                         </a>
@@ -198,7 +198,7 @@ const LookCardV2 = ({ looks, productCode, loading, loadingMore, onTrackEvent, on
                       <div className="animate-shimmer" style={{ position: 'absolute', inset: 0, background: 'linear-gradient(110deg, #f0ece7 30%, #f8f4f0 50%, #f0ece7 70%)', backgroundSize: '200% 100%', zIndex: 1 }} />
                       <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, zIndex: 1 }}>
                         <span style={{ fontSize: 16, opacity: 0.25 }}>✦</span>
-                        <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 9.5, color: '#c5c0ba', letterSpacing: '0.12em', textTransform: 'uppercase' as const }}>GENERATING LOOK</span>
+                        <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 9.5, color: '#c5c0ba', letterSpacing: '0.12em', textTransform: 'uppercase' as const }}>GENERATING LOOK</span>
                         <div style={{ width: 100, height: 1.5, borderRadius: 1, background: 'rgba(0,0,0,0.04)', overflow: 'hidden' }}>
                           <ProgressBar />
                         </div>
@@ -207,7 +207,7 @@ const LookCardV2 = ({ looks, productCode, loading, loadingMore, onTrackEvent, on
                   ) : lookItem.lookImage ? (
                     <>
                       <img src={lookItem.lookImage} alt={look.name} style={{ width: '100%', height: '100%', objectFit: 'cover', zIndex: 2, position: 'relative' }} />
-                      <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 3, background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(8px)', borderRadius: 5, padding: '4px 9px', fontFamily: "'DM Sans', sans-serif", fontSize: 9, fontWeight: 500, color: '#fff' }}>
+                      <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 3, background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(8px)', borderRadius: 5, padding: '4px 9px', fontFamily: "'Inter', sans-serif", fontSize: 9, fontWeight: 500, color: '#fff' }}>
                         ✦ AI Generated
                       </div>
                     </>
@@ -219,7 +219,7 @@ const LookCardV2 = ({ looks, productCode, loading, loadingMore, onTrackEvent, on
                   <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 4, background: 'linear-gradient(transparent, rgba(0,0,0,0.6))', padding: '40px 16px 14px' }}>
                     <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 600, color: '#fff', margin: 0 }}>{look.name}</h3>
                     {look.description && (
-                      <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: 'rgba(255,255,255,0.65)', margin: '2px 0 0' }}>{look.description}</p>
+                      <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: 'rgba(255,255,255,0.65)', margin: '2px 0 0' }}>{look.description}</p>
                     )}
                   </div>
                 </div>
@@ -238,8 +238,8 @@ const LookCardV2 = ({ looks, productCode, loading, loadingMore, onTrackEvent, on
                           <img src={getFlatLayImage(filterImagesBySku(heroProduct.images, heroProduct.product_code), heroProduct.category) || heroProduct.images[0]} alt={heroProduct.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} referrerPolicy="no-referrer" />
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 500, color: '#fff', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{heroProduct.name}</p>
-                          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 9, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.04em', margin: '2px 0 0' }}>FEATURED</p>
+                          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, fontWeight: 500, color: '#fff', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{heroProduct.name}</p>
+                          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 9, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.04em', margin: '2px 0 0' }}>FEATURED</p>
                         </div>
                         {heroProduct.source_url && <ExternalLink style={{ width: 14, height: 14, stroke: 'rgba(255,255,255,0.4)', flexShrink: 0 }} />}
                       </a>
@@ -259,7 +259,7 @@ const LookCardV2 = ({ looks, productCode, loading, loadingMore, onTrackEvent, on
                             {thumb && <img src={thumb} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} referrerPolicy="no-referrer" />}
                           </div>
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 500, color: '#1a1a1a', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{p.name}</p>
+                            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, fontWeight: 500, color: '#1a1a1a', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{p.name}</p>
                           </div>
                           <ChevronRight style={{ width: 16, height: 16, stroke: '#ccc', strokeWidth: 1.5, flexShrink: 0 }} />
                         </button>
@@ -271,9 +271,9 @@ const LookCardV2 = ({ looks, productCode, loading, loadingMore, onTrackEvent, on
                 {variant !== 'editorial' && (
                   <div style={{ padding: '14px 14px 0' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                      <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: '#b5ada5' }}>Complete this look</span>
+                      <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: '#b5ada5' }}>Complete this look</span>
                       {totalPrice && (
-                        <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 16, fontWeight: 700, color: '#1a1a1a' }}>{totalPrice}</span>
+                        <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 16, fontWeight: 700, color: '#1a1a1a' }}>{totalPrice}</span>
                       )}
                     </div>
                     {shopifyReady && heroProduct?.shopify_handle ? (
@@ -284,7 +284,7 @@ const LookCardV2 = ({ looks, productCode, loading, loadingMore, onTrackEvent, on
                           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                           width: '100%', padding: 13, borderRadius: 6,
                           background: '#1a1a1a', color: '#fff',
-                          fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600,
+                          fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
                           border: 'none', cursor: shopifyLoading ? 'wait' : 'pointer',
                           opacity: shopifyLoading ? 0.6 : 1,
                         }}
@@ -301,7 +301,7 @@ const LookCardV2 = ({ looks, productCode, loading, loadingMore, onTrackEvent, on
                           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                           width: '100%', padding: 13, borderRadius: 6,
                           background: '#1a1a1a', color: '#fff',
-                          fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600,
+                          fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
                           textDecoration: 'none', border: 'none', cursor: 'pointer'
                         }}
                       >
@@ -321,7 +321,7 @@ const LookCardV2 = ({ looks, productCode, loading, loadingMore, onTrackEvent, on
                         next.has(lookIdx) ? next.delete(lookIdx) : next.add(lookIdx);
                         return next;
                       })}
-                      style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: '#c5c0ba', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                      style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: '#c5c0ba', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                     >
                       Styling note {isNoteExpanded ? '▴' : '▾'}
                     </button>
@@ -330,7 +330,7 @@ const LookCardV2 = ({ looks, productCode, loading, loadingMore, onTrackEvent, on
                       overflow: 'hidden',
                       transition: 'max-height 300ms ease'
                     }}>
-                      <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: '#b5ada5', fontStyle: 'italic', lineHeight: 1.55, margin: '6px 0 0' }}>
+                      <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: '#b5ada5', fontStyle: 'italic', lineHeight: 1.55, margin: '6px 0 0' }}>
                         {look.reasoning}
                       </p>
                     </div>
@@ -345,7 +345,7 @@ const LookCardV2 = ({ looks, productCode, loading, loadingMore, onTrackEvent, on
           <div className="shrink-0 snap-center flex items-center justify-center" style={{ minWidth: 'calc(100% - 40px)' }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '40px 0' }}>
               <span style={{ fontSize: 16, opacity: 0.25 }} className="animate-pulse">✦</span>
-              <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: '#c5c0ba' }}>Generating more looks…</span>
+              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: '#c5c0ba' }}>Generating more looks…</span>
             </div>
           </div>
         )}

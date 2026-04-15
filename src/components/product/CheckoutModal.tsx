@@ -86,7 +86,7 @@ const CheckoutModal = ({ url, onClose }: CheckoutModalProps) => {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <ShoppingBag style={{ width: 16, height: 16, color: '#8b7355' }} />
-            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>
+            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>
               Checkout
             </span>
           </div>
@@ -107,7 +107,7 @@ const CheckoutModal = ({ url, onClose }: CheckoutModalProps) => {
               gap: 12, background: '#fff', zIndex: 2,
             }}>
               <Loader2 style={{ width: 24, height: 24, color: '#8b7355' }} className="animate-spin" />
-              <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#b5ada5' }}>
+              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: '#b5ada5' }}>
                 Loading checkout…
               </span>
             </div>
@@ -120,7 +120,7 @@ const CheckoutModal = ({ url, onClose }: CheckoutModalProps) => {
               padding: '48px 24px', gap: 16, minHeight: 300,
             }}>
               <ShoppingBag style={{ width: 32, height: 32, color: '#c5c0ba' }} />
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: '#666', textAlign: 'center', margin: 0 }}>
+              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, color: '#666', textAlign: 'center', margin: 0 }}>
                 The checkout will open on the store's website
               </p>
               <a
@@ -131,7 +131,7 @@ const CheckoutModal = ({ url, onClose }: CheckoutModalProps) => {
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                   padding: '14px 32px', borderRadius: 8,
                   background: '#1a1a1a', color: '#fff',
-                  fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 600,
+                  fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 600,
                   textDecoration: 'none',
                 }}
               >

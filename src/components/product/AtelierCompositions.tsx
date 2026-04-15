@@ -204,10 +204,11 @@ const AtelierCompositions = ({ currentProduct }: AtelierCompositionsProps) => {
     });
   }, [currentProduct?.slug]);
 
-  // Auto-generate compositions that don't have cached images
+  // Auto-generation disabled — compositions display static product images only
+  // To re-enable, uncomment the effect below when the generate-composition edge function is deployed
+  /*
   useEffect(() => {
     if (initialLoading || compositions.length === 0) return;
-
     compositions.forEach((comp) => {
       if (!comp.generatedImage && !comp.loading && !generatedRef.current.has(comp.id)) {
         generatedRef.current.add(comp.id);
@@ -215,6 +216,7 @@ const AtelierCompositions = ({ currentProduct }: AtelierCompositionsProps) => {
       }
     });
   }, [initialLoading, compositions.length]);
+  */
 
   const generateComposition = useCallback(async (compId: string) => {
     setCompositions((prev) =>
@@ -251,11 +253,10 @@ const AtelierCompositions = ({ currentProduct }: AtelierCompositionsProps) => {
         )
       );
     } catch (e: any) {
-      console.error(`Composition ${compId} error:`, e);
+      console.warn(`Composition ${compId} generation skipped:`, e?.message);
       setCompositions((prev) =>
         prev.map((c) => (c.id === compId ? { ...c, loading: false } : c))
       );
-      toast.error(`Failed to generate "${comp.name}"`);
     }
   }, [compositions]);
 
@@ -285,7 +286,7 @@ const AtelierCompositions = ({ currentProduct }: AtelierCompositionsProps) => {
         </div>
         <h2
           className="text-xl sm:text-2xl font-light mb-1"
-          style={{ fontFamily: "'Playfair Display', serif", color: '#1a1a1a' }}
+          style={{ fontFamily: "'Cormorant Garamond', serif", color: '#1a1a1a' }}
         >
           Atelier Compositions
         </h2>
@@ -300,7 +301,7 @@ const AtelierCompositions = ({ currentProduct }: AtelierCompositionsProps) => {
               <div
                 className="relative aspect-square rounded-lg overflow-hidden cursor-pointer"
                 style={{ backgroundColor: '#faf6f0' }}
-                onClick={() => comp.generatedImage && setExpandedId(comp.id)}
+                onClick={() => setExpandedId(comp.id)}
               >
                 <span className="absolute top-2 left-2 z-10 text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-white/80 backdrop-blur text-[#1a1a1a]">
                   Featured
@@ -357,17 +358,18 @@ const AtelierCompositions = ({ currentProduct }: AtelierCompositionsProps) => {
               <div className="mt-2 space-y-1">
                 <div className="flex flex-wrap gap-1">
                   {comp.products.map((p, i) => (
-                    <span
+                    <button
                       key={i}
-                      className="text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-full border border-[#e8e0d8] bg-white text-[#1a1a1a] truncate max-w-[120px]"
+                      onClick={(e) => { e.stopPropagation(); setExpandedId(comp.id); setQuickViewProduct(p); }}
+                      className="text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-full border border-[#e8e0d8] bg-white text-[#1a1a1a] truncate max-w-[120px] cursor-pointer hover:bg-[#f5f0eb] transition-colors"
                     >
                       {p.name}
-                    </span>
+                    </button>
                   ))}
                 </div>
                 <p
                   className="text-xs sm:text-sm font-medium truncate"
-                  style={{ fontFamily: "'Playfair Display', serif", color: '#1a1a1a' }}
+                  style={{ fontFamily: "'Cormorant Garamond', serif", color: '#1a1a1a' }}
                 >
                   {comp.name}
                 </p>
@@ -420,7 +422,7 @@ const AtelierCompositions = ({ currentProduct }: AtelierCompositionsProps) => {
             )}
 
             <div className="px-5 py-4">
-              <h3 className="text-lg font-medium" style={{ fontFamily: "'Playfair Display', serif" }}>
+              <h3 className="text-lg font-medium" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
                 {expanded.name}
               </h3>
               <p className="text-xs text-muted-foreground italic mb-3">{expanded.styleTag}</p>
@@ -449,7 +451,7 @@ const AtelierCompositions = ({ currentProduct }: AtelierCompositionsProps) => {
           {quickViewProduct && (
             <>
               <SheetHeader className="text-left pb-3">
-                <SheetTitle style={{ fontFamily: "'Playfair Display', serif" }}>
+                <SheetTitle style={{ fontFamily: "'Cormorant Garamond', serif" }}>
                   {quickViewProduct.name}
                 </SheetTitle>
               </SheetHeader>

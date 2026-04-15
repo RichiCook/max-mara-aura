@@ -15,6 +15,7 @@ import AIGenerationSettingsPage from "./pages/AIGenerationSettingsPage";
 import LeadsPage from "./pages/LeadsPage";
 import ApiSettingsPage from "./pages/ApiSettingsPage";
 import SettingsPage from "./pages/SettingsPage";
+import ThemeSettingsPage from "./pages/ThemeSettingsPage";
 import ScanAnalyticsPage from "./pages/ScanAnalyticsPage";
 import CelebrityContentPage from "./pages/CelebrityContentPage";
 import AuthPage from "./pages/AuthPage";
@@ -47,6 +48,7 @@ const App = () => (
           <Route path="/leads" element={<PlatformSettingsProvider><ProtectedRoute><LeadsPage /></ProtectedRoute></PlatformSettingsProvider>} />
           <Route path="/api-settings" element={<PlatformSettingsProvider><ProtectedRoute><ApiSettingsPage /></ProtectedRoute></PlatformSettingsProvider>} />
           <Route path="/settings" element={<PlatformSettingsProvider><ProtectedRoute><SettingsPage /></ProtectedRoute></PlatformSettingsProvider>} />
+          <Route path="/settings/theme" element={<PlatformSettingsProvider><ProtectedRoute><ThemeSettingsPage /></ProtectedRoute></PlatformSettingsProvider>} />
           <Route path="/scan-analytics" element={<PlatformSettingsProvider><ProtectedRoute><ScanAnalyticsPage /></ProtectedRoute></PlatformSettingsProvider>} />
           <Route path="/celebrity-content" element={<PlatformSettingsProvider><ProtectedRoute><CelebrityContentPage /></ProtectedRoute></PlatformSettingsProvider>} />
           

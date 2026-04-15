@@ -3,9 +3,10 @@ import { toast } from 'sonner';
 interface AuraDigitalPassportCardProps {
   onOpenClaim: () => void;
   onOpenPassport: () => void;
+  onOpenHistory?: () => void;
 }
 
-const AuraDigitalPassportCard = ({ onOpenClaim, onOpenPassport }: AuraDigitalPassportCardProps) => {
+const AuraDigitalPassportCard = ({ onOpenClaim, onOpenPassport, onOpenHistory }: AuraDigitalPassportCardProps) => {
   return (
     <div
       className="animate-in"
@@ -28,10 +29,10 @@ const AuraDigitalPassportCard = ({ onOpenClaim, onOpenPassport }: AuraDigitalPas
           <path d="M12 2L3 7v5c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z"/>
         </svg>
         <div className="flex-1" style={{ marginLeft: 10 }}>
-          <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 600, color: '#1a1a1a', display: 'block' }}>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: 14, fontWeight: 600, color: '#1a1a1a', display: 'block' }}>
             Digital Passport Available
           </span>
-          <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: '#C4A265', display: 'block', marginTop: 1 }}>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: '#C4A265', display: 'block', marginTop: 1 }}>
             Aura Blockchain Consortium
           </span>
         </div>
@@ -45,7 +46,7 @@ const AuraDigitalPassportCard = ({ onOpenClaim, onOpenPassport }: AuraDigitalPas
         <button
           onClick={onOpenClaim}
           style={{
-            fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 600,
+            fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 600,
             background: '#faf8f5', color: '#1a1a1a', border: '1px solid #f0ece7',
             borderRadius: 8, padding: '10px 4px', cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
@@ -54,9 +55,9 @@ const AuraDigitalPassportCard = ({ onOpenClaim, onOpenPassport }: AuraDigitalPas
           🔐 Claim
         </button>
         <button
-          onClick={onOpenPassport}
+          onClick={onOpenHistory || onOpenPassport}
           style={{
-            fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 600,
+            fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 600,
             background: '#faf8f5', color: '#1a1a1a', border: '1px solid #f0ece7',
             borderRadius: 8, padding: '10px 4px', cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
@@ -67,7 +68,7 @@ const AuraDigitalPassportCard = ({ onOpenClaim, onOpenPassport }: AuraDigitalPas
         <button
           onClick={() => toast('Transfer coming soon')}
           style={{
-            fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 600,
+            fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 600,
             background: '#faf8f5', color: '#1a1a1a', border: '1px solid #f0ece7',
             borderRadius: 8, padding: '10px 4px', cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,

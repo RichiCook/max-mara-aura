@@ -247,18 +247,18 @@ const ProductPreviewSheet = ({ product, onClose }: ProductPreviewSheetProps) => 
 
         {/* Product Info */}
         <div style={{ padding: '16px 20px 0' }}>
-          <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 600, color: '#1a1a1a', margin: 0 }}>
+          <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 600, color: '#1a1a1a', margin: 0 }}>
             {p?.name}
           </h3>
           {(p?.price || p?.product_code) && (
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', margin: '6px 0 0' }}>
               {p?.price && (
-                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 18, fontWeight: 700, color: '#1a1a1a' }}>
+                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 18, fontWeight: 700, color: '#1a1a1a' }}>
                   {p.price}
                 </span>
               )}
               {p?.product_code && (
-                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: '#c5c0ba' }}>
+                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: '#c5c0ba' }}>
                   {p.product_code}
                 </span>
               )}
@@ -267,13 +267,13 @@ const ProductPreviewSheet = ({ product, onClose }: ProductPreviewSheetProps) => 
           {(p as any)?.description && (
             <details style={{ margin: '10px 0 0' }}>
               <summary style={{
-                fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#b5ada5',
+                fontFamily: "'Inter', sans-serif", fontSize: 12, color: '#b5ada5',
                 cursor: 'pointer', listStyle: 'none', display: 'flex', alignItems: 'center', gap: 4,
               }}>
                 <span>Description</span>
                 <ChevronDown style={{ width: 12, height: 12 }} />
               </summary>
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: '#888', lineHeight: 1.65, margin: '6px 0 0' }}>
+              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: '#888', lineHeight: 1.65, margin: '6px 0 0' }}>
                 {(p as any).description}
               </p>
             </details>
@@ -290,7 +290,7 @@ const ProductPreviewSheet = ({ product, onClose }: ProductPreviewSheetProps) => 
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                 width: '100%', padding: 13, borderRadius: 6,
                 background: '#1a1a1a', color: '#fff',
-                fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600,
+                fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
                 border: 'none', cursor: shopifyLoading ? 'wait' : 'pointer',
                 opacity: shopifyLoading ? 0.6 : 1,
               }}
@@ -307,7 +307,7 @@ const ProductPreviewSheet = ({ product, onClose }: ProductPreviewSheetProps) => 
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                 width: '100%', padding: 13, borderRadius: 6,
                 background: '#1a1a1a', color: '#fff',
-                fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600,
+                fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
                 textDecoration: 'none',
               }}
             >
@@ -324,10 +324,10 @@ const ProductPreviewSheet = ({ product, onClose }: ProductPreviewSheetProps) => 
             <div style={{ height: 1, margin: '0 0 20px', background: 'linear-gradient(90deg, transparent, #e8e4df 20%, #e8e4df 80%, transparent)' }} />
 
             <div style={{ padding: '0 20px' }}>
-              <h4 style={{ fontFamily: "'Playfair Display', serif", fontSize: 18, fontWeight: 600, color: '#1a1a1a', margin: 0 }}>
+              <h4 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, fontWeight: 600, color: '#1a1a1a', margin: 0 }}>
                 You may also like
               </h4>
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: '#c5c0ba', margin: '2px 0 14px' }}>
+              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: '#c5c0ba', margin: '2px 0 14px' }}>
                 Based on this product
               </p>
             </div>
@@ -355,14 +355,14 @@ const ProductPreviewSheet = ({ product, onClose }: ProductPreviewSheetProps) => 
                         )}
                       </div>
                       <div style={{ padding: '6px 8px 8px' }}>
-                        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 500, color: '#1a1a1a', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{sp.name}</p>
+                        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, fontWeight: 500, color: '#1a1a1a', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{sp.name}</p>
                         {sp.price && (
-                          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: '#b5ada5', margin: '2px 0 0' }}>{sp.price}</p>
+                          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: '#b5ada5', margin: '2px 0 0' }}>{sp.price}</p>
                         )}
                         {tag && (
                           <span style={{
                             display: 'inline-block', marginTop: 4,
-                            fontFamily: "'DM Sans', sans-serif", fontSize: 9, fontWeight: 600,
+                            fontFamily: "'Inter', sans-serif", fontSize: 9, fontWeight: 600,
                             color: '#8b7355', background: '#f5f0eb',
                             border: '1px solid #ebe4db', borderRadius: 3,
                             padding: '2px 7px',
