@@ -251,11 +251,10 @@ const AtelierCompositions = ({ currentProduct }: AtelierCompositionsProps) => {
         )
       );
     } catch (e: any) {
-      console.error(`Composition ${compId} error:`, e);
+      console.warn(`Composition ${compId} generation skipped:`, e?.message);
       setCompositions((prev) =>
         prev.map((c) => (c.id === compId ? { ...c, loading: false } : c))
       );
-      toast.error(`Failed to generate "${comp.name}"`);
     }
   }, [compositions]);
 
@@ -300,7 +299,7 @@ const AtelierCompositions = ({ currentProduct }: AtelierCompositionsProps) => {
               <div
                 className="relative aspect-square rounded-lg overflow-hidden cursor-pointer"
                 style={{ backgroundColor: '#faf6f0' }}
-                onClick={() => comp.generatedImage && setExpandedId(comp.id)}
+                onClick={() => setExpandedId(comp.id)}
               >
                 <span className="absolute top-2 left-2 z-10 text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-white/80 backdrop-blur text-[#1a1a1a]">
                   Featured
