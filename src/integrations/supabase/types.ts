@@ -163,6 +163,95 @@ export type Database = {
         }
         Relationships: []
       }
+      campaign_assets: {
+        Row: {
+          asset_type: string
+          cached_url: string | null
+          created_at: string | null
+          enabled: boolean | null
+          health_status: string | null
+          id: string
+          label: string
+          last_health_check: string | null
+          media_type: string | null
+          original_url: string
+          render_mode: string | null
+          source_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          asset_type: string
+          cached_url?: string | null
+          created_at?: string | null
+          enabled?: boolean | null
+          health_status?: string | null
+          id?: string
+          label: string
+          last_health_check?: string | null
+          media_type?: string | null
+          original_url: string
+          render_mode?: string | null
+          source_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          asset_type?: string
+          cached_url?: string | null
+          created_at?: string | null
+          enabled?: boolean | null
+          health_status?: string | null
+          id?: string
+          label?: string
+          last_health_check?: string | null
+          media_type?: string | null
+          original_url?: string
+          render_mode?: string | null
+          source_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_assets_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_sources: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          label: string
+          page_url: string
+          season: string
+          slug: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          label: string
+          page_url: string
+          season: string
+          slug: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          label?: string
+          page_url?: string
+          season?: string
+          slug?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       celebrity_content: {
         Row: {
           category: string | null
@@ -591,6 +680,39 @@ export type Database = {
           product_code?: string
           session_id?: string
           target_product_code?: string | null
+        }
+        Relationships: []
+      }
+      scrape_logs: {
+        Row: {
+          assets_found: number | null
+          assets_new: number | null
+          assets_removed: number | null
+          completed_at: string | null
+          error_message: string | null
+          id: string
+          started_at: string | null
+          status: string | null
+        }
+        Insert: {
+          assets_found?: number | null
+          assets_new?: number | null
+          assets_removed?: number | null
+          completed_at?: string | null
+          error_message?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          assets_found?: number | null
+          assets_new?: number | null
+          assets_removed?: number | null
+          completed_at?: string | null
+          error_message?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string | null
         }
         Relationships: []
       }
