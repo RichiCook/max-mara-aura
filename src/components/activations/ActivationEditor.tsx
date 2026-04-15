@@ -107,7 +107,7 @@ export const ActivationEditor = ({
     setEndDate(end);
   };
 
-  const updateContent = (updates: Partial<ActivationContent>) => {
+  const updateContent = (updates: Record<string, any>) => {
     setContent(prev => ({ ...prev, ...updates }));
   };
 
