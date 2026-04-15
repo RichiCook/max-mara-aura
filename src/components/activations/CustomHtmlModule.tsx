@@ -112,7 +112,9 @@ export const CustomHtmlModule = ({ content }: CustomHtmlModuleProps) => {
         ref={iframeRef}
         title="Custom HTML activation"
         srcDoc={srcDoc}
-        className="w-full border-0 bg-transparent"
+        className="w-full border-0 bg-transparent overflow-hidden"
+        style={{ overflow: 'hidden' }}
+        scrolling="no"
         sandbox="allow-scripts allow-forms allow-popups allow-modals"
       />
     </section>
