@@ -1,89 +1,89 @@
 import { CustomHtmlContent } from '@/hooks/useActivations';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 
 interface CustomHtmlModuleProps {
   content: CustomHtmlContent;
 }
 
+const buildSrcDoc = (html?: string, css?: string) => {
+  if (!html) return '';
+
+  const hasFullDocument = /<html[\s>]|<body[\s>]|<!doctype/i.test(html);
+
+  if (hasFullDocument) {
+    if (!css) return html;
+    return html.includes('</head>')
+      ? html.replace('</head>', `<style>${css}</style></head>`)
+      : `${html}<style>${css}</style>`;
+  }
+
+  return `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    ${css ? `<style>${css}</style>` : ''}
+  </head>
+  <body>
+    ${html}
+  </body>
+</html>`;
+};
+
 export const CustomHtmlModule = ({ content }: CustomHtmlModuleProps) => {
   const { html, css } = content;
-  const containerRef = useRef<HTMLDivElement>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  const srcDoc = useMemo(() => buildSrcDoc(html, css), [html, css]);
 
   useEffect(() => {
-    if (css && containerRef.current) {
-      const styleId = `custom-css-${Math.random().toString(36).substr(2, 9)}`;
-      const existingStyle = document.getElementById(styleId);
-      if (existingStyle) {
-        existingStyle.remove();
-      }
+    const iframe = iframeRef.current;
+    if (!iframe || !srcDoc) return;
 
-      const styleElement = document.createElement('style');
-      styleElement.id = styleId;
-      styleElement.textContent = css;
-      document.head.appendChild(styleElement);
-
-      return () => {
-        const style = document.getElementById(styleId);
-        if (style) {
-          style.remove();
-        }
-      };
-    }
-  }, [css]);
-
-  // Execute scripts after HTML is injected
-  useEffect(() => {
-    if (!html || !containerRef.current) return;
-
-    const container = containerRef.current;
-    const originalReadyState = document.readyState;
-
-    const scripts = container.querySelectorAll('script');
-    scripts.forEach((oldScript) => {
-      const newScript = document.createElement('script');
-      Array.from(oldScript.attributes).forEach((attr) => {
-        newScript.setAttribute(attr.name, attr.value);
-      });
-
-      const scriptContent = oldScript.textContent || '';
-      newScript.textContent = scriptContent.replace(
-        /document\.addEventListener\(\s*['\"]DOMContentLoaded['\"]\s*,\s*function\s*\(\)\s*\{([\s\S]*?)\}\s*\)\s*;?/g,
-        '(() => {$1})();'
+    const syncHeight = () => {
+      const doc = iframe.contentDocument;
+      if (!doc) return;
+      const body = doc.body;
+      const htmlEl = doc.documentElement;
+      const nextHeight = Math.max(
+        body?.scrollHeight || 0,
+        body?.offsetHeight || 0,
+        htmlEl?.scrollHeight || 0,
+        htmlEl?.offsetHeight || 0,
       );
-
-      oldScript.parentNode?.replaceChild(newScript, oldScript);
-    });
-
-    const clickables = container.querySelectorAll('[onclick]');
-    clickables.forEach((el) => {
-      const handler = el.getAttribute('onclick');
-      if (handler) {
-        (el as HTMLElement).onclick = () => {
-          try {
-            new Function(handler).call(el);
-          } catch (e) {
-            console.error('Error executing onclick handler:', e);
-          }
-        };
-      }
-    });
-
-    return () => {
-      Object.defineProperty(document, 'readyState', {
-        configurable: true,
-        value: originalReadyState,
-      });
+      iframe.style.height = `${Math.max(nextHeight, 120)}px`;
     };
-  }, [html]);
+
+    const handleLoad = () => {
+      syncHeight();
+      const doc = iframe.contentDocument;
+      if (!doc) return;
+
+      const observer = new ResizeObserver(() => syncHeight());
+      observer.observe(doc.body);
+      observer.observe(doc.documentElement);
+
+      iframe.dataset.resizeObserverAttached = 'true';
+      (iframe as HTMLIFrameElement & { __cleanup?: () => void }).__cleanup = () => observer.disconnect();
+    };
+
+    iframe.addEventListener('load', handleLoad);
+    return () => {
+      iframe.removeEventListener('load', handleLoad);
+      (iframe as HTMLIFrameElement & { __cleanup?: () => void }).__cleanup?.();
+    };
+  }, [srcDoc]);
 
   if (!html) return null;
 
   return (
     <section className="py-12">
-      <div
-        ref={containerRef}
-        className="custom-html-content"
-        dangerouslySetInnerHTML={{ __html: html }}
+      <iframe
+        ref={iframeRef}
+        title="Custom HTML activation"
+        srcDoc={srcDoc}
+        className="w-full border-0 bg-transparent"
+        sandbox="allow-scripts allow-forms allow-popups allow-modals"
       />
     </section>
   );
