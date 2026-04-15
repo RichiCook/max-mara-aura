@@ -23,6 +23,7 @@ import CelebritySpotlight from '@/components/product/CelebritySpotlight';
 import SimilarProducts from '@/components/product/SimilarProducts';
 import { NewsletterSection } from '@/components/product/HeritageNewsletter';
 import CertificationHistoryModal from '@/components/product/CertificationHistoryModal';
+import { CampaignMediaSection } from '@/components/product/CampaignMediaSection';
 
 const DEMO_PRODUCT: Product = {
   id: 'demo-louboutin',
@@ -440,6 +441,11 @@ const ProductPage = () => {
       />
 
       <ShareToResaleModal open={shareModalOpen} onOpenChange={setShareModalOpen} product={product} />
+
+      {/* Campaign Media */}
+      <div className="max-w-6xl mx-auto px-4">
+        <CampaignMediaSection />
+      </div>
 
       {/* Celebrity Spotlight */}
       <CelebritySpotlight productCode={product.product_code} productCategory={product.category} />
