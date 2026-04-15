@@ -110,7 +110,7 @@ const ClaimOwnershipModal = ({ open, onClose, productName, onSuccess }: ClaimOwn
           </p>
 
           {/* 9 digit inputs: 3 groups of 3, responsive sizing */}
-          <div className="flex items-center justify-center gap-1.5 mb-6">
+          <div className="flex items-center justify-center gap-1 mb-6 px-2">
             {[0, 1, 2].map(i => (
               <input
                 key={i}
@@ -122,10 +122,10 @@ const ClaimOwnershipModal = ({ open, onClose, productName, onSuccess }: ClaimOwn
                 onChange={e => handleDigitChange(i, e.target.value)}
                 onKeyDown={e => handleKeyDown(i, e)}
                 onFocus={e => e.target.select()}
-                className="w-9 h-11 text-center font-sans text-lg font-semibold rounded-lg border-[1.5px] border-border outline-none text-foreground bg-secondary focus:ring-2 focus:ring-primary"
+                className="w-8 h-10 text-center font-sans text-base font-semibold rounded-md border-[1.5px] border-border outline-none text-foreground bg-secondary focus:ring-2 focus:ring-primary"
               />
             ))}
-            <span className="font-sans text-muted-foreground text-lg mx-0.5">–</span>
+            <span className="font-sans text-muted-foreground text-base mx-0.5">–</span>
             {[3, 4, 5].map(i => (
               <input
                 key={i}
@@ -137,10 +137,10 @@ const ClaimOwnershipModal = ({ open, onClose, productName, onSuccess }: ClaimOwn
                 onChange={e => handleDigitChange(i, e.target.value)}
                 onKeyDown={e => handleKeyDown(i, e)}
                 onFocus={e => e.target.select()}
-                className="w-9 h-11 text-center font-sans text-lg font-semibold rounded-lg border-[1.5px] border-border outline-none text-foreground bg-secondary focus:ring-2 focus:ring-primary"
+                className="w-8 h-10 text-center font-sans text-base font-semibold rounded-md border-[1.5px] border-border outline-none text-foreground bg-secondary focus:ring-2 focus:ring-primary"
               />
             ))}
-            <span className="font-sans text-muted-foreground text-lg mx-0.5">–</span>
+            <span className="font-sans text-muted-foreground text-base mx-0.5">–</span>
             {[6, 7, 8].map(i => (
               <input
                 key={i}
@@ -152,7 +152,7 @@ const ClaimOwnershipModal = ({ open, onClose, productName, onSuccess }: ClaimOwn
                 onChange={e => handleDigitChange(i, e.target.value)}
                 onKeyDown={e => handleKeyDown(i, e)}
                 onFocus={e => e.target.select()}
-                className="w-9 h-11 text-center font-sans text-lg font-semibold rounded-lg border-[1.5px] border-border outline-none text-foreground bg-secondary focus:ring-2 focus:ring-primary"
+                className="w-8 h-10 text-center font-sans text-base font-semibold rounded-md border-[1.5px] border-border outline-none text-foreground bg-secondary focus:ring-2 focus:ring-primary"
               />
             ))}
           </div>
