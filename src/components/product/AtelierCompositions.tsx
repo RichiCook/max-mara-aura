@@ -204,10 +204,11 @@ const AtelierCompositions = ({ currentProduct }: AtelierCompositionsProps) => {
     });
   }, [currentProduct?.slug]);
 
-  // Auto-generate compositions that don't have cached images
+  // Auto-generation disabled — compositions display static product images only
+  // To re-enable, uncomment the effect below when the generate-composition edge function is deployed
+  /*
   useEffect(() => {
     if (initialLoading || compositions.length === 0) return;
-
     compositions.forEach((comp) => {
       if (!comp.generatedImage && !comp.loading && !generatedRef.current.has(comp.id)) {
         generatedRef.current.add(comp.id);
@@ -215,6 +216,7 @@ const AtelierCompositions = ({ currentProduct }: AtelierCompositionsProps) => {
       }
     });
   }, [initialLoading, compositions.length]);
+  */
 
   const generateComposition = useCallback(async (compId: string) => {
     setCompositions((prev) =>
