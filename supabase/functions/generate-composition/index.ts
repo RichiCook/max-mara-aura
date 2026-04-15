@@ -43,7 +43,8 @@ function buildPrompt(
   productNames: string,
   compositionName: string,
   styleTag: string,
-  settings: Record<string, unknown> | null
+  settings: Record<string, unknown> | null,
+  productCount: number
 ): string {
   const style = (settings?.style as string) || "editorial";
   const background = (settings?.background as string) || "white";
