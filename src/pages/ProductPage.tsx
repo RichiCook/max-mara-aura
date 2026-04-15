@@ -20,7 +20,7 @@ import AuraPassportModal from '@/components/product/AuraPassportModal';
 import ClaimOwnershipModal from '@/components/product/ClaimOwnershipModal';
 import RegistrationSuccessModal from '@/components/product/RegistrationSuccessModal';
 import CelebritySpotlight from '@/components/product/CelebritySpotlight';
-import SimilarProducts from '@/components/product/SimilarProducts';
+import ProductCarousels from '@/components/product/ProductCarousels';
 import { NewsletterSection } from '@/components/product/HeritageNewsletter';
 import CertificationHistoryModal from '@/components/product/CertificationHistoryModal';
 import { CampaignMediaSection } from '@/components/product/CampaignMediaSection';
@@ -487,9 +487,7 @@ const ProductPage = () => {
       {renderActivationsForPosition('before_similar')}
 
       {/* Similar Products */}
-      {product.product_code && (
-        <SimilarProducts productId={product.id} productCode={product.product_code} category={product.category} collection={(product as any).collection} />
-      )}
+      <ProductCarousels product={product} />
 
       {/* Wear With */}
       {product.wear_with && product.wear_with.length > 0 && (
