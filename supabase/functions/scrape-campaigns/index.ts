@@ -20,9 +20,13 @@ function inferLabel(filename: string): string {
   return filename
     .replace(/\.(jpg|jpeg|png|webp|gif|mp4)$/i, "")
     .replace(/[-_]+/g, " ")
-    .replace(/\b(LATEST|COLLECTION|CO|REVAMP|EXPAND|EXPANDS|MENU|DROP|DOWN)\b/gi, "")
+    // Strip common noise words from CL filenames
+    .replace(/\b(LATEST|COLLECTION|COLLECTIONS|CO|REVAMP|REVAMPS|EXPAND|EXPANDS|MENU|DROP|DOWN|LANDING|PAGES?|HOMEPAGE|WYSIWYG|MEDIA|HERO|CAPSULE|NAV|US|CA|EU|P\d+)\b/gi, "")
     .replace(/\s+/g, " ")
-    .trim() || "Untitled asset";
+    .trim()
+    // Title case
+    .replace(/\w\S*/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    || "Untitled asset";
 }
 
 Deno.serve(async (req) => {
