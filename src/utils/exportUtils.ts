@@ -300,7 +300,7 @@ export const exportAsPdf = async (
   const imageHeight = 35;
   const cardHeight = 80;
   
-  const siteUrl = baseUrl || window.location.origin;
+  const siteUrl = baseUrl || 'https://loubotin.lovable.app';
   
   let currentY = margin;
   let currentCol = 0;
