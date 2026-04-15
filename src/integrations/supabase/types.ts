@@ -465,6 +465,91 @@ export type Database = {
           },
         ]
       }
+      product_carousel_items: {
+        Row: {
+          carousel_id: string
+          created_at: string
+          display_order: number
+          id: string
+          source_product_id: string | null
+          target_product_id: string
+        }
+        Insert: {
+          carousel_id: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          source_product_id?: string | null
+          target_product_id: string
+        }
+        Update: {
+          carousel_id?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          source_product_id?: string | null
+          target_product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_carousel_items_carousel_id_fkey"
+            columns: ["carousel_id"]
+            isOneToOne: false
+            referencedRelation: "product_carousels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_carousel_items_source_product_id_fkey"
+            columns: ["source_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_carousel_items_target_product_id_fkey"
+            columns: ["target_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_carousels: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          is_active: boolean
+          layout: Json
+          match_config: Json
+          match_type: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          layout?: Json
+          match_config?: Json
+          match_type?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          layout?: Json
+          match_config?: Json
+          match_type?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       product_pair_scores: {
         Row: {
           click_count: number
