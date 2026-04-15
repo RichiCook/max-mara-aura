@@ -231,6 +231,32 @@ const ProductPage = () => {
   const nextImage = () => setCurrentImage((prev) => (prev + 1) % images.length);
   const prevImage = () => setCurrentImage((prev) => (prev - 1 + images.length) % images.length);
 
+  // Collect all activations (manual + auto-matched) and group by position
+  const allActivations = [
+    ...productActivations.filter(pa => pa.activation).map(pa => pa.activation!),
+    ...autoMatchedActivations,
+  ];
+
+  const getActivationPosition = (a: Activation): string => {
+    return (a.content as any)?.position || 'after_compositions';
+  };
+
+  const renderActivationsForPosition = (position: string) => {
+    const matched = allActivations.filter(a => getActivationPosition(a) === position);
+    if (matched.length === 0) return null;
+    return (
+      <section className="py-6 sm:py-8">
+        <div className="space-y-6">
+          {matched.map(activation => (
+            <div key={activation.id} className={activation.full_width ? '' : 'max-w-6xl mx-auto px-4'}>
+              <ActivationRenderer activation={activation} />
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  };
+
   const handleClaimSuccess = () => {
     setOwnerRegistered(true);
     setSuccessOpen(true);
