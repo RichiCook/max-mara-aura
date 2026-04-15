@@ -14,7 +14,9 @@ export const ProductQRCode = ({ shortCode, productName }: ProductQRCodeProps) =>
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   
-  const shortUrl = `${window.location.origin}/p/${shortCode}`;
+  // Always use the published URL for QR codes so they work when scanned externally
+  const publishedOrigin = 'https://loubotin.lovable.app';
+  const shortUrl = `${publishedOrigin}/p/${shortCode}`;
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(shortUrl);
