@@ -15,20 +15,19 @@ const OwnershipStatusBar = ({ onClick }: OwnershipStatusBarProps) => {
         color: '#fff',
       }}
     >
-      {/* Shield icon */}
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
         <path d="M12 2L3 7v5c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z"/>
         <path d="M9 12l2 2 4-4"/>
       </svg>
-      <div className="flex-1 text-left">
-        <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 600, display: 'block' }}>
+      <div className="flex-1 text-left min-w-0">
+        <span className="font-sans text-[14px] font-semibold block">
           View ownership status
         </span>
-        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, opacity: 0.75, display: 'block', marginTop: 2 }}>
+        <span className="font-mono text-[11px] opacity-75 block mt-0.5 truncate">
           ID : 4A7F92B1C3E800000024
         </span>
       </div>
-      <span style={{ fontSize: 20, opacity: 0.7 }}>›</span>
+      <span className="text-xl opacity-70 shrink-0">›</span>
     </button>
   );
 };

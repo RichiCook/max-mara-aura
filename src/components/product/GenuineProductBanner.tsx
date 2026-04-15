@@ -6,42 +6,27 @@ interface GenuineProductBannerProps {
 
 const GenuineProductBanner = ({ productName, collection, onViewPassport }: GenuineProductBannerProps) => {
   return (
-    <div 
-      className="animate-in"
-      style={{
-        margin: '8px 12px 0',
-        padding: '16px 18px',
-        background: '#fff',
-        borderRadius: '6px',
-        border: '1px solid #e4e0db',
-        boxShadow: '0 1px 10px rgba(0,0,0,0.025)',
-      }}
+    <div
+      className="animate-in mx-3 mt-2 p-4 bg-card rounded-md border border-border"
+      style={{ boxShadow: '0 1px 10px rgba(0,0,0,0.025)' }}
     >
       {/* Badges */}
-      <div className="flex items-center gap-2" style={{ marginBottom: 10 }}>
-        <span style={{
-          fontFamily: "'Inter', sans-serif", fontSize: 10, fontWeight: 600,
-          padding: '3px 10px', borderRadius: 20, background: '#dcfce7', color: '#166534',
-          display: 'inline-flex', alignItems: 'center', gap: 4,
-        }}>
+      <div className="flex items-center gap-2 mb-2.5">
+        <span className="font-sans text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-green-100 text-green-800 inline-flex items-center gap-1">
           ✓ Genuine Product
         </span>
-        <span style={{
-          fontFamily: "'Inter', sans-serif", fontSize: 10, fontWeight: 600,
-          padding: '3px 10px', borderRadius: 20, background: '#FEF3C7', color: '#92400E',
-          display: 'inline-flex', alignItems: 'center', gap: 4,
-        }}>
+        <span className="font-sans text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 inline-flex items-center gap-1">
           ⬡ Aura Certified
         </span>
       </div>
 
       {/* Product name */}
-      <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '22px', fontWeight: 600, color: '#1a1a1a', marginTop: '4px', lineHeight: 1.3 }}>
+      <h1 className="font-serif text-[22px] font-semibold text-foreground mt-1 leading-tight">
         {productName}
       </h1>
 
       {/* Origin line */}
-      <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: '#b5ada5', marginTop: '4px' }}>
+      <p className="font-sans text-[12px] text-muted-foreground mt-1">
         Made in Italy{collection ? ` · ${collection}` : ''}
       </p>
     </div>
