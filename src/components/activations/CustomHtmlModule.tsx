@@ -35,19 +35,26 @@ export const CustomHtmlModule = ({ content }: CustomHtmlModuleProps) => {
   useEffect(() => {
     if (!html || !containerRef.current) return;
 
-    // Find all script tags in the injected HTML and execute them
-    const scripts = containerRef.current.querySelectorAll('script');
+    const container = containerRef.current;
+    const originalReadyState = document.readyState;
+
+    const scripts = container.querySelectorAll('script');
     scripts.forEach((oldScript) => {
       const newScript = document.createElement('script');
       Array.from(oldScript.attributes).forEach((attr) => {
         newScript.setAttribute(attr.name, attr.value);
       });
-      newScript.textContent = oldScript.textContent;
+
+      const scriptContent = oldScript.textContent || '';
+      newScript.textContent = scriptContent.replace(
+        /document\.addEventListener\(\s*['\"]DOMContentLoaded['\"]\s*,\s*function\s*\(\)\s*\{([\s\S]*?)\}\s*\)\s*;?/g,
+        '(() => {$1})();'
+      );
+
       oldScript.parentNode?.replaceChild(newScript, oldScript);
     });
 
-    // Also wire up onclick attributes and other inline handlers
-    const clickables = containerRef.current.querySelectorAll('[onclick]');
+    const clickables = container.querySelectorAll('[onclick]');
     clickables.forEach((el) => {
       const handler = el.getAttribute('onclick');
       if (handler) {
@@ -60,6 +67,13 @@ export const CustomHtmlModule = ({ content }: CustomHtmlModuleProps) => {
         };
       }
     });
+
+    return () => {
+      Object.defineProperty(document, 'readyState', {
+        configurable: true,
+        value: originalReadyState,
+      });
+    };
   }, [html]);
 
   if (!html) return null;
