@@ -26,7 +26,6 @@ const SimilarProducts = ({ productId, productCode, category, collection }: Simil
   const [products, setProducts] = useState<SimilarProduct[]>([]);
   const [enabled, setEnabled] = useState(true);
 
-  // Check if similar products is enabled
   useEffect(() => {
     supabase
       .from('app_settings')
@@ -38,6 +37,7 @@ const SimilarProducts = ({ productId, productCode, category, collection }: Simil
         if (val?.enabled === false) setEnabled(false);
       });
   }, []);
+
   useEffect(() => {
     const fetch = async () => {
       if (!category && !collection) return;
@@ -48,7 +48,6 @@ const SimilarProducts = ({ productId, productCode, category, collection }: Simil
         .neq('id', productId)
         .limit(12);
 
-      // Prefer same category, fallback to collection
       if (category) {
         query = query.eq('category', category);
       } else if (collection) {
@@ -59,7 +58,6 @@ const SimilarProducts = ({ productId, productCode, category, collection }: Simil
       if (data && data.length > 0) {
         setProducts(data.map(p => ({ ...p, images: normalizeImages(p.images) })));
       } else if (category && collection) {
-        // Fallback to collection if category returned nothing
         const { data: fallback } = await supabase
           .from('products')
           .select('id, name, price, images, slug, category, collection, product_code')
@@ -74,13 +72,11 @@ const SimilarProducts = ({ productId, productCode, category, collection }: Simil
 
   if (!enabled || products.length === 0) return null;
 
-  // Generate tag for each product
   const getTag = (p: SimilarProduct): string | null => {
     if (collection && p.collection === collection) return p.collection;
     if (category) {
       const segments = category.split(' > ');
       const pSegments = (p.category || '').split(' > ');
-      // Find common deepest segment
       for (let i = segments.length - 1; i >= 0; i--) {
         if (pSegments.includes(segments[i])) return segments[i];
       }
@@ -89,24 +85,24 @@ const SimilarProducts = ({ productId, productCode, category, collection }: Simil
   };
 
   return (
-    <section className="py-8 border-t" style={{ borderColor: '#e4e0db' }}>
+    <section className="py-8 border-t border-border">
       {/* Header */}
-      <div className="px-5 mb-4" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.5 }}>
+      <div className="px-5 mb-4 flex justify-between items-center">
+        <div className="flex items-center gap-2">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-foreground opacity-50">
             <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
           </svg>
-          <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 600, color: '#1a1a1a', margin: 0 }}>
+          <h2 className="font-serif text-xl font-semibold text-foreground m-0">
             Similar Products
           </h2>
         </div>
-        <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: '#c5c0ba' }}>Based on style</span>
+        <span className="font-sans text-[11px] text-muted-foreground">Based on style</span>
       </div>
 
       {/* Carousel */}
       <div
         className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide"
-        style={{ gap: 10, padding: '0 20px', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        style={{ gap: 10, padding: '0 20px', WebkitOverflowScrolling: 'touch' }}
       >
         {products.map(p => {
           const img = getFlatLayImage(filterImagesBySku(p.images, p.product_code), p.category) || p.images[0];
@@ -118,31 +114,28 @@ const SimilarProducts = ({ productId, productCode, category, collection }: Simil
               className="shrink-0 snap-start"
               style={{ minWidth: 148, maxWidth: 148, textDecoration: 'none' }}
             >
-              <div style={{ borderRadius: 8, border: '1px solid #e4e0db', background: '#fff', overflow: 'hidden' }}>
-                <div style={{ aspectRatio: '1/1', background: '#f7f7f5', padding: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div className="rounded-lg overflow-hidden bg-card">
+                {/* Full-bleed image — no border, no padding */}
+                <div className="aspect-square bg-secondary flex items-center justify-center">
                   {img && (
                     <img
                       src={img}
                       alt={p.name}
-                      style={{ width: '85%', height: '85%', objectFit: 'contain' }}
+                      className="w-full h-full object-cover"
                       referrerPolicy="no-referrer"
                       loading="lazy"
                     />
                   )}
                 </div>
-                <div style={{ padding: '8px 10px 10px' }}>
-                  <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, fontWeight: 500, color: '#1a1a1a', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{p.name}</p>
+                <div className="p-2 pb-2.5">
+                  <p className="font-sans text-[11px] font-medium text-foreground m-0 truncate">{p.name}</p>
                   {p.price && (
-                    <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: '#b5ada5', margin: '2px 0 0' }}>{p.price}</p>
+                    <p className="font-sans text-[11px] text-muted-foreground m-0 mt-0.5">{p.price}</p>
                   )}
                   {tag && (
-                    <span style={{
-                      display: 'inline-block', marginTop: 4,
-                      fontFamily: "'Inter', sans-serif", fontSize: 9, fontWeight: 600,
-                      color: '#8b7355', background: '#f5f0eb',
-                      border: '1px solid #ebe4db', borderRadius: 3,
-                      padding: '2px 7px'
-                    }}>{tag}</span>
+                    <span className="inline-block mt-1 font-sans text-[9px] font-semibold text-accent bg-secondary border border-border rounded px-1.5 py-0.5">
+                      {tag}
+                    </span>
                   )}
                 </div>
               </div>

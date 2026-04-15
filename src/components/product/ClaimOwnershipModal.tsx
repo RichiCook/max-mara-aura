@@ -56,13 +56,6 @@ const ClaimOwnershipModal = ({ open, onClose, productName, onSuccess }: ClaimOwn
 
   if (!visible) return null;
 
-  const inputStyle: React.CSSProperties = {
-    width: 38, height: 48, textAlign: 'center',
-    fontFamily: "'Inter', sans-serif", fontSize: 20, fontWeight: 600,
-    border: '1.5px solid #e0e0e0', borderRadius: 8,
-    outline: 'none', color: '#1a1a1a', background: '#faf8f5',
-  };
-
   return (
     <div
       onClick={onClose}
@@ -92,34 +85,32 @@ const ClaimOwnershipModal = ({ open, onClose, productName, onSuccess }: ClaimOwn
         </div>
 
         {/* Scrollable content */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 24px 24px' }}>
-          <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 600, color: '#1a1a1a', margin: '0 0 4px', textAlign: 'center' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px 24px' }}>
+          <h2 className="font-serif text-[22px] font-semibold text-foreground text-center m-0 mb-1">
             Register my product
           </h2>
-          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: '#999', textAlign: 'center', marginBottom: 20 }}>
+          <p className="font-sans text-[13px] text-muted-foreground text-center mb-5">
             {productName}
           </p>
 
           {/* Product image placeholder */}
-          <div style={{
-            width: 120, height: 120, margin: '0 auto 24px',
-            background: '#f5f0eb', borderRadius: 12,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          <div className="flex items-center justify-center mx-auto mb-6" style={{
+            width: 100, height: 100, background: '#f5f0eb', borderRadius: 12,
           }}>
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#C4A265" strokeWidth="1.5">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#C4A265" strokeWidth="1.5">
               <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
 
-          <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: 16, fontWeight: 600, color: '#1a1a1a', textAlign: 'center', margin: '0 0 4px' }}>
+          <h3 className="font-sans text-[15px] font-semibold text-foreground text-center m-0 mb-1">
             Enter your purchase PIN code:
           </h3>
-          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: '#aaa', textAlign: 'center', marginBottom: 20 }}>
+          <p className="font-sans text-[12px] text-muted-foreground text-center mb-5">
             Found on your receipt or product card
           </p>
 
-          {/* 9 digit inputs: 3 groups of 3 */}
-          <div className="flex items-center justify-center gap-2" style={{ marginBottom: 24 }}>
+          {/* 9 digit inputs: 3 groups of 3, responsive sizing */}
+          <div className="flex items-center justify-center gap-1 mb-6 px-2">
             {[0, 1, 2].map(i => (
               <input
                 key={i}
@@ -130,11 +121,11 @@ const ClaimOwnershipModal = ({ open, onClose, productName, onSuccess }: ClaimOwn
                 value={digits[i]}
                 onChange={e => handleDigitChange(i, e.target.value)}
                 onKeyDown={e => handleKeyDown(i, e)}
-                style={inputStyle}
                 onFocus={e => e.target.select()}
+                className="w-8 h-10 text-center font-sans text-base font-semibold rounded-md border-[1.5px] border-border outline-none text-foreground bg-secondary focus:ring-2 focus:ring-primary"
               />
             ))}
-            <span style={{ width: 8 }} />
+            <span className="font-sans text-muted-foreground text-base mx-0.5">–</span>
             {[3, 4, 5].map(i => (
               <input
                 key={i}
@@ -145,11 +136,11 @@ const ClaimOwnershipModal = ({ open, onClose, productName, onSuccess }: ClaimOwn
                 value={digits[i]}
                 onChange={e => handleDigitChange(i, e.target.value)}
                 onKeyDown={e => handleKeyDown(i, e)}
-                style={inputStyle}
                 onFocus={e => e.target.select()}
+                className="w-8 h-10 text-center font-sans text-base font-semibold rounded-md border-[1.5px] border-border outline-none text-foreground bg-secondary focus:ring-2 focus:ring-primary"
               />
             ))}
-            <span style={{ width: 8 }} />
+            <span className="font-sans text-muted-foreground text-base mx-0.5">–</span>
             {[6, 7, 8].map(i => (
               <input
                 key={i}
@@ -160,21 +151,22 @@ const ClaimOwnershipModal = ({ open, onClose, productName, onSuccess }: ClaimOwn
                 value={digits[i]}
                 onChange={e => handleDigitChange(i, e.target.value)}
                 onKeyDown={e => handleKeyDown(i, e)}
-                style={inputStyle}
                 onFocus={e => e.target.select()}
+                className="w-8 h-10 text-center font-sans text-base font-semibold rounded-md border-[1.5px] border-border outline-none text-foreground bg-secondary focus:ring-2 focus:ring-primary"
               />
             ))}
           </div>
 
           {/* Checkbox */}
-          <label className="flex items-start gap-3" style={{ marginBottom: 20, cursor: 'pointer' }}>
+          <label className="flex items-start gap-3 mb-5 cursor-pointer">
             <input
               type="checkbox"
               checked={agreed}
               onChange={e => setAgreed(e.target.checked)}
-              style={{ marginTop: 3, accentColor: '#E12B38', width: 16, height: 16 }}
+              className="mt-0.5"
+              style={{ accentColor: '#E12B38', width: 16, height: 16 }}
             />
-            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: '#666', lineHeight: 1.5 }}>
+            <span className="font-sans text-[12px] text-muted-foreground leading-relaxed">
               I confirm that I have read and agree with the Terms and Conditions and that I am aware that once the pin code is activated, no returns or changes are allowed.
             </span>
           </label>
@@ -183,21 +175,21 @@ const ClaimOwnershipModal = ({ open, onClose, productName, onSuccess }: ClaimOwn
           <button
             onClick={handleSubmit}
             disabled={!canSubmit}
+            className="w-full font-sans text-[15px] font-semibold border-none rounded-[10px] py-4 transition-colors"
             style={{
-              width: '100%', fontFamily: "'Inter', sans-serif", fontSize: 15, fontWeight: 600,
-              background: canSubmit ? '#E12B38' : '#e8e8e8', color: canSubmit ? '#fff' : '#bbb',
-              border: 'none', borderRadius: 10, padding: '15px 0', cursor: canSubmit ? 'pointer' : 'default',
-              transition: 'background 0.2s',
+              background: canSubmit ? '#E12B38' : '#e8e8e8',
+              color: canSubmit ? '#fff' : '#bbb',
+              cursor: canSubmit ? 'pointer' : 'default',
             }}
           >
             Register Ownership
           </button>
 
-          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: '#C4A265', textAlign: 'center', marginTop: 14, cursor: 'pointer' }}>
+          <p className="font-sans text-[12px] text-accent text-center mt-3.5 cursor-pointer">
             Need help?
           </p>
 
-          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: '#bbb', textAlign: 'center', marginTop: 16, lineHeight: 1.6 }}>
+          <p className="font-sans text-[11px] text-muted-foreground text-center mt-4 leading-relaxed">
             We advise that once the above pin code is activated, the ownership of this product will be certified as a part of its traceability journey. As a result, Christian Louboutin will then no longer be able to accept returns or exchanges for this item.
           </p>
         </div>

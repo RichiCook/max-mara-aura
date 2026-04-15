@@ -1,6 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useEffect } from 'react';
 import RepairRequestSheet from '@/components/repair/RepairRequestSheet';
 import { RepairSettings, DEFAULT_REPAIR_SETTINGS } from '@/hooks/useRepairSettings';
 
@@ -52,52 +51,52 @@ const ProductInfoBlock = ({ price, productCode, description, composition, source
   }, []);
 
   return (
-    <div style={{ padding: '0 16px' }}>
+    <div className="px-4">
       {/* Price row */}
-      <div className="flex items-baseline justify-between" style={{ padding: '18px 0 0' }}>
+      <div className="flex items-baseline justify-between pt-4">
         <div className="flex items-baseline gap-2">
           {price && (
             <>
-              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', fontWeight: 500, color: '#b5ada5' }}>RRP:</span>
-              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '26px', fontWeight: 700, color: '#1a1a1a' }}>{price}</span>
+              <span className="font-sans text-[12px] font-medium text-muted-foreground">RRP:</span>
+              <span className="font-sans text-[26px] font-bold text-foreground">{price}</span>
             </>
           )}
         </div>
         {productCode && (
-          <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: '#c5c0ba' }}>{productCode}</span>
+          <span className="font-sans text-[11px] text-muted-foreground">{productCode}</span>
         )}
       </div>
 
       {/* Description */}
       {description && (
-        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', lineHeight: 1.75, color: '#666', padding: '14px 0 0' }}>
+        <p className="font-sans text-[14px] leading-7 text-muted-foreground pt-3.5">
           {description}
         </p>
       )}
 
       {/* Composition */}
       {compParts.length > 0 && (
-        <div style={{ padding: '18px 0 0' }}>
+        <div className="pt-4">
           <div className="flex items-center justify-between">
-            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', fontWeight: 600, color: '#b5ada5', letterSpacing: '0.08em', textTransform: 'uppercase' as const }}>
+            <span className="font-sans text-[11px] font-semibold text-muted-foreground tracking-wider uppercase">
               Composition
             </span>
             <div className="flex items-center gap-1">
               {palette.map((c, i) => (
-                <span key={i} style={{ width: 8, height: 8, borderRadius: 2, background: c, display: 'inline-block' }} />
+                <span key={i} className="inline-block w-2 h-2 rounded-sm" style={{ background: c }} />
               ))}
             </div>
           </div>
-          <div className="flex overflow-hidden" style={{ borderRadius: 4, height: 7, marginTop: 10 }}>
+          <div className="flex overflow-hidden rounded mt-2.5" style={{ height: 7 }}>
             {compParts.map((part, i) => (
               <div key={i} style={{ width: `${part.pct}%`, background: palette[i % palette.length], height: '100%' }} />
             ))}
           </div>
-          <div className="flex flex-wrap gap-x-4 gap-y-1.5" style={{ marginTop: 10 }}>
+          <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-2.5">
             {compParts.map((part, i) => (
               <div key={i} className="flex items-center gap-1.5">
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: palette[i % palette.length], display: 'inline-block', flexShrink: 0 }} />
-                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: '#777' }}>
+                <span className="inline-block w-2 h-2 rounded-full shrink-0" style={{ background: palette[i % palette.length] }} />
+                <span className="font-sans text-[12px] text-muted-foreground">
                   {part.pct}% {part.name}
                 </span>
               </div>
@@ -109,20 +108,19 @@ const ProductInfoBlock = ({ price, productCode, description, composition, source
       {/* Repair Button */}
       {repairSettings && (
         <>
-          <div style={{ height: 1, background: 'linear-gradient(90deg, transparent, #e8e4df 20%, #e8e4df 80%, transparent)', margin: '26px 0' }} />
+          <div className="my-6" style={{ height: 1, background: 'linear-gradient(90deg, transparent, hsl(var(--border)) 20%, hsl(var(--border)) 80%, transparent)' }} />
           <button
             onClick={() => setRepairOpen(true)}
-            className="flex items-center w-full"
-            style={{ padding: '16px', borderRadius: 8, border: '1px solid #e4e0db', background: '#fff', cursor: 'pointer', gap: 12 }}
+            className="flex items-center w-full p-4 rounded-lg border border-border bg-card cursor-pointer gap-3"
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground shrink-0">
               <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" />
             </svg>
-            <div className="flex-1 text-left">
-              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600, color: '#1a1a1a', display: 'block' }}>Request a Repair</span>
-              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: '#b5ada5' }}>Ship to us · Photo assessment included</span>
+            <div className="flex-1 text-left min-w-0">
+              <span className="font-sans text-[13px] font-semibold text-foreground block">Request a Repair</span>
+              <span className="font-sans text-[11px] text-muted-foreground">Ship to us · Photo assessment included</span>
             </div>
-            <svg width="8" height="14" viewBox="0 0 8 14" fill="none" stroke="#ccc" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+            <svg width="8" height="14" viewBox="0 0 8 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground shrink-0">
               <path d="M1 1l6 6-6 6" />
             </svg>
           </button>
@@ -130,7 +128,7 @@ const ProductInfoBlock = ({ price, productCode, description, composition, source
       )}
 
       {/* Divider */}
-      <div style={{ height: 1, background: 'linear-gradient(90deg, transparent, #e8e4df 20%, #e8e4df 80%, transparent)', margin: '26px 0' }} />
+      <div className="my-6" style={{ height: 1, background: 'linear-gradient(90deg, transparent, hsl(var(--border)) 20%, hsl(var(--border)) 80%, transparent)' }} />
 
       {/* CTA */}
       {sourceUrl && (
@@ -138,13 +136,8 @@ const ProductInfoBlock = ({ price, productCode, description, composition, source
           href={sourceUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center justify-center gap-2"
-          style={{
-            display: 'flex', width: '100%', borderRadius: 8,
-            background: '#E12B38', color: '#fff',
-            fontFamily: "'Inter', sans-serif", fontSize: '15px', fontWeight: 600,
-            padding: '16px 0', textDecoration: 'none', textAlign: 'center' as const,
-          }}
+          className="flex items-center justify-center gap-2 w-full rounded-lg font-sans text-[15px] font-semibold py-4 no-underline text-center"
+          style={{ background: '#E12B38', color: '#fff' }}
         >
           View on our Store
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.5 }}>
@@ -154,7 +147,7 @@ const ProductInfoBlock = ({ price, productCode, description, composition, source
       )}
 
       {/* Footer */}
-      <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: '#ccc', textAlign: 'center' as const, marginTop: 12 }}>
+      <p className="font-sans text-[11px] text-muted-foreground text-center mt-3">
         Louboutin × Aura Blockchain · Powered by Aitems · Product Intelligence
       </p>
 
