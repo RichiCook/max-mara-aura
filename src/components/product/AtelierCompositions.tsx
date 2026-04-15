@@ -1,9 +1,7 @@
 /**
  * Atelier Compositions — AI-composed still-life images using real product photos.
- *
- * FUTURE: Pull pairings from a `product_connections` table where admins define
- * which products go together. For now, compositions are built dynamically
- * from products in the database by category.
+ * Always includes the current page's product in every composition.
+ * Preloads cached images from storage before triggering AI generation.
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -32,10 +30,32 @@ interface Composition {
   loading?: boolean;
 }
 
-// ── Build compositions from real DB products ─────────────────
+interface AtelierCompositionsProps {
+  currentProduct?: {
+    name: string;
+    slug: string;
+    price: string | null;
+    images: string[];
+    category: string | null;
+    product_code: string | null;
+  };
+}
 
-async function buildCompositionsFromDB(): Promise<Composition[]> {
-  // Fetch products from different categories to create interesting pairings
+// ── Helpers ──────────────────────────────────────────────────
+
+function pick<T>(arr: T[]): T | undefined {
+  return arr.length ? arr[Math.floor(Math.random() * arr.length)] : undefined;
+}
+
+function toCompProduct(p: { name: string; slug: string; price: string; image: string }): CompositionProduct {
+  return { name: p.name, price: p.price, image: p.image, slug: p.slug };
+}
+
+// ── Build compositions always including the main product ─────
+
+async function buildCompositions(
+  mainProduct: AtelierCompositionsProps['currentProduct']
+): Promise<Composition[]> {
   const { data: allProducts, error } = await supabase
     .from('products')
     .select('name, slug, price, images, category')
@@ -44,7 +64,6 @@ async function buildCompositionsFromDB(): Promise<Composition[]> {
 
   if (error || !allProducts?.length) return [];
 
-  // Parse products with images
   const withImages = allProducts
     .map((p) => ({
       name: p.name,
@@ -53,100 +72,139 @@ async function buildCompositionsFromDB(): Promise<Composition[]> {
       image: normalizeImages(p.images)[0] || '',
       category: p.category || '',
     }))
-    .filter((p) => p.image);
+    .filter((p) => p.image && p.slug !== mainProduct?.slug);
 
-  // Find products by category
-  const escarpins = withImages.filter((p) => p.category.includes('Escarpins'));
-  const bags = withImages.filter((p) => p.category.includes('Sacs'));
-  const beauty = withImages.filter((p) => p.category.includes('Beauté'));
-  const parfums = withImages.filter((p) => p.category.includes('Parfums'));
-  const sneakers = withImages.filter((p) => p.category.includes('Sneakers'));
-  const levres = withImages.filter((p) => p.category.includes('Lèvres'));
-  const ongles = withImages.filter((p) => p.category.includes('Ongles'));
+  // Main product as a CompositionProduct
+  const mainCP: CompositionProduct | null = mainProduct
+    ? {
+        name: mainProduct.name,
+        price: mainProduct.price || '',
+        image: mainProduct.images[0] || '',
+        slug: mainProduct.slug,
+      }
+    : null;
 
-  const pick = (arr: typeof withImages) => arr[Math.floor(Math.random() * arr.length)];
+  if (!mainCP || !mainCP.image) return [];
 
-  const toProduct = (p: typeof withImages[0]): CompositionProduct => ({
-    name: p.name,
-    price: p.price,
-    image: p.image,
-    slug: p.slug,
-  });
+  // Categorise companion products
+  const byCategory = (keyword: string) => withImages.filter((p) => p.category.includes(keyword));
+  const escarpins = byCategory('Escarpins');
+  const bags = byCategory('Sacs');
+  const parfums = byCategory('Parfums');
+  const levres = byCategory('Lèvres');
+  const ongles = byCategory('Ongles');
+  const sneakers = byCategory('Sneakers');
+  const beauty = byCategory('Beauté');
 
   const compositions: Composition[] = [];
+  const usedSlugs = new Set<string>();
 
-  // Composition 1: Escarpin + Parfum
-  const shoe1 = pick(escarpins);
-  const parfum1 = pick(parfums);
-  if (shoe1 && parfum1) {
+  const pickUnused = (arr: typeof withImages) => {
+    const available = arr.filter((p) => !usedSlugs.has(p.slug));
+    const p = pick(available);
+    if (p) usedSlugs.add(p.slug);
+    return p;
+  };
+
+  // Composition 1: Main + Parfum (or bag fallback)
+  const companion1 = pickUnused(parfums) || pickUnused(bags);
+  if (companion1) {
     compositions.push({
-      id: 'rouge-sole',
+      id: `comp-${mainProduct!.slug}-1`,
       name: 'Rouge & Sole',
       styleTag: 'Evening ritual',
-      products: [toProduct(shoe1), toProduct(parfum1)],
+      products: [mainCP, toCompProduct(companion1)],
     });
   }
 
-  // Composition 2: Escarpin + Lipstick + Nail
-  const shoe2 = pick(escarpins.filter((s) => s.slug !== shoe1?.slug));
-  const lip = pick(levres);
-  const nail = pick(ongles);
-  if (shoe2 && lip) {
-    const prods = [toProduct(shoe2), toProduct(lip)];
-    if (nail) prods.push(toProduct(nail));
+  // Composition 2: Main + Lip + Nail
+  const lip = pickUnused(levres);
+  const nail = pickUnused(ongles);
+  if (lip) {
+    const prods = [mainCP, toCompProduct(lip)];
+    if (nail) prods.push(toCompProduct(nail));
     compositions.push({
-      id: 'cabinet-beaute',
+      id: `comp-${mainProduct!.slug}-2`,
       name: 'Le Cabinet de Beauté',
       styleTag: 'Beauty edit',
       products: prods,
     });
   }
 
-  // Composition 3: Escarpin + Bag
-  const shoe3 = pick(escarpins.filter((s) => s.slug !== shoe1?.slug && s.slug !== shoe2?.slug));
-  const bag = pick(bags);
-  if (shoe3 && bag) {
+  // Composition 3: Main + Bag (or sneaker)
+  const bag = pickUnused(bags) || pickUnused(sneakers);
+  if (bag) {
     compositions.push({
-      id: 'promenade',
+      id: `comp-${mainProduct!.slug}-3`,
       name: 'Promenade Parisienne',
       styleTag: 'Day to night',
-      products: [toProduct(shoe3), toProduct(bag)],
+      products: [mainCP, toCompProduct(bag)],
     });
   }
 
-  // Composition 4: Sneaker + Beauty + Parfum
-  const snkr = pick(sneakers);
-  const beauty1 = pick(beauty.filter((b) => b.slug !== lip?.slug && b.slug !== nail?.slug));
-  if (snkr && beauty1) {
+  // Composition 4: Main + Beauty item + Escarpin
+  const beautyItem = pickUnused(beauty) || pickUnused(parfums);
+  const shoe = pickUnused(escarpins);
+  if (beautyItem) {
+    const prods = [mainCP, toCompProduct(beautyItem)];
+    if (shoe) prods.push(toCompProduct(shoe));
     compositions.push({
-      id: 'atelier-rouge',
+      id: `comp-${mainProduct!.slug}-4`,
       name: "L'Atelier Rouge",
       styleTag: 'The full world',
-      products: [toProduct(snkr), toProduct(beauty1)],
+      products: prods,
     });
   }
 
   return compositions;
 }
 
+// ── Preload cached images from storage ───────────────────────
+
+async function preloadCachedImages(compositions: Composition[]): Promise<Composition[]> {
+  if (compositions.length === 0) return compositions;
+
+  const { data: files } = await supabase.storage
+    .from('look-images')
+    .list('compositions');
+
+  if (!files?.length) return compositions;
+
+  const existingIds = new Set(files.map((f) => f.name.replace('.png', '')));
+
+  return compositions.map((comp) => {
+    if (existingIds.has(comp.id)) {
+      const { data } = supabase.storage.from('look-images').getPublicUrl(`compositions/${comp.id}.png`);
+      return { ...comp, generatedImage: data.publicUrl + `?t=${Date.now()}` };
+    }
+    return comp;
+  });
+}
+
 // ── Component ────────────────────────────────────────────────
 
-const AtelierCompositions = () => {
+const AtelierCompositions = ({ currentProduct }: AtelierCompositionsProps) => {
   const [compositions, setCompositions] = useState<Composition[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [quickViewProduct, setQuickViewProduct] = useState<CompositionProduct | null>(null);
   const [initialLoading, setInitialLoading] = useState(true);
   const generatedRef = useRef(new Set<string>());
 
-  // Build compositions from DB on mount
+  // Build compositions from DB on mount, including main product
   useEffect(() => {
-    buildCompositionsFromDB().then((comps) => {
-      setCompositions(comps);
+    if (!currentProduct) {
+      setInitialLoading(false);
+      return;
+    }
+
+    buildCompositions(currentProduct).then(async (comps) => {
+      const withCached = await preloadCachedImages(comps);
+      setCompositions(withCached);
       setInitialLoading(false);
     });
-  }, []);
+  }, [currentProduct?.slug]);
 
-  // Auto-generate compositions once products are loaded
+  // Auto-generate compositions that don't have cached images
   useEffect(() => {
     if (initialLoading || compositions.length === 0) return;
 
@@ -163,10 +221,7 @@ const AtelierCompositions = () => {
       prev.map((c) => (c.id === compId ? { ...c, loading: true } : c))
     );
 
-    // Get the current composition data
-    const comp = compositions.find((c) => c.id === compId) ||
-      (await buildCompositionsFromDB()).find((c) => c.id === compId);
-
+    const comp = compositions.find((c) => c.id === compId);
     if (!comp) return;
 
     const productsWithImages = comp.products.filter((p) => p.image);
@@ -205,7 +260,6 @@ const AtelierCompositions = () => {
   }, [compositions]);
 
   const regenerate = useCallback(async (compId: string) => {
-    // Delete existing from storage first
     await supabase.storage.from('look-images').remove([`compositions/${compId}.png`]);
     generatedRef.current.delete(compId);
     setCompositions((prev) =>
@@ -236,7 +290,7 @@ const AtelierCompositions = () => {
           Atelier Compositions
         </h2>
         <p className="text-xs sm:text-sm text-muted-foreground mb-6">
-          Curated pairings · tap to explore
+          Curated pairings featuring this product · tap to explore
         </p>
 
         {/* Cards grid */}
@@ -262,7 +316,6 @@ const AtelierCompositions = () => {
                   <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
                     <Loader2 className="w-6 h-6 animate-spin text-[#E12B38]" />
                     <span className="text-[10px] text-muted-foreground">Composing…</span>
-                    {/* Show product thumbnails while generating */}
                     <div className="flex items-end justify-center gap-1 mt-2">
                       {comp.products.slice(0, 3).map((p, i) => (
                         <div

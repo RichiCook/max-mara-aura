@@ -413,7 +413,14 @@ const ProductPage = () => {
           />
         )
       ) : (
-        <AtelierCompositions />
+        <AtelierCompositions currentProduct={product ? {
+          name: product.name,
+          slug: product.slug,
+          price: product.price,
+          images: product.images,
+          category: product.category,
+          product_code: product.product_code,
+        } : undefined} />
       )}
 
       {/* Activations */}
