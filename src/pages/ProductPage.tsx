@@ -369,6 +369,9 @@ const ProductPage = () => {
         onOpenHistory={() => setHistoryOpen(true)}
       />
 
+      {/* Activations: above_product_info */}
+      {renderActivationsForPosition('above_product_info')}
+
       <ProductInfoBlock
         price={product.price}
         productCode={product.product_code}
@@ -378,6 +381,9 @@ const ProductPage = () => {
         productName={product.name}
         productId={product.id}
       />
+
+      {/* Activations: below_product_info */}
+      {renderActivationsForPosition('below_product_info')}
 
       {/* Aura Modals */}
       <AuraPassportModal
@@ -412,6 +418,9 @@ const ProductPage = () => {
       {/* Celebrity Spotlight */}
       <CelebritySpotlight productCode={product.product_code} productCategory={product.category} />
 
+      {/* Activations: after_celebrity */}
+      {renderActivationsForPosition('after_celebrity')}
+
       {/* AI-Curated Total Look (toggle) or Atelier Compositions (default) */}
       {aiLooksEnabled ? (
         product.product_code && (
@@ -433,31 +442,20 @@ const ProductPage = () => {
         } : undefined} />
       )}
 
-      {/* Activations */}
-      {(productActivations.length > 0 || autoMatchedActivations.length > 0) && (
-        <section className="py-6 sm:py-8">
-          <div className="space-y-6">
-            {productActivations.map((pa) =>
-              pa.activation ? (
-                <div key={pa.id} className={pa.activation.full_width ? '' : 'max-w-6xl mx-auto px-4'}>
-                  <ActivationRenderer activation={pa.activation} />
-                </div>
-              ) : null
-            )}
-            {autoMatchedActivations.map((activation) => (
-              <div key={activation.id} className={activation.full_width ? '' : 'max-w-6xl mx-auto px-4'}>
-                <ActivationRenderer activation={activation} />
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+      {/* Activations: after_compositions (default position) */}
+      {renderActivationsForPosition('after_compositions')}
 
       {/* Heritage Section */}
       <HeritageSection />
 
+      {/* Activations: before_heritage — rendered above heritage but labeled for clarity */}
+      {renderActivationsForPosition('before_heritage')}
+
       {/* Newsletter Section */}
       <NewsletterSection />
+
+      {/* Activations: before_similar */}
+      {renderActivationsForPosition('before_similar')}
 
       {/* Similar Products */}
       {product.product_code && (
