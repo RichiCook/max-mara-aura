@@ -180,7 +180,7 @@ serve(async (req) => {
     }
 
     const productNames = base64Images.map((img) => img.name).join(", ");
-    const prompt = buildPrompt(productNames, compositionName, styleTag, compSettings);
+    const prompt = buildPrompt(productNames, compositionName, styleTag, compSettings, base64Images.length);
 
     const refNote = refImages.length > 0
       ? `\n\nUse the last ${Math.min(refImages.length, 2)} image(s) as STYLE REFERENCE ONLY — match their lighting, composition style, and mood. Do NOT reproduce those products.`
