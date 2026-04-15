@@ -356,12 +356,13 @@ const AtelierCompositions = ({ currentProduct }: AtelierCompositionsProps) => {
               <div className="mt-2 space-y-1">
                 <div className="flex flex-wrap gap-1">
                   {comp.products.map((p, i) => (
-                    <span
+                    <button
                       key={i}
-                      className="text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-full border border-[#e8e0d8] bg-white text-[#1a1a1a] truncate max-w-[120px]"
+                      onClick={(e) => { e.stopPropagation(); setExpandedId(comp.id); setQuickViewProduct(p); }}
+                      className="text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-full border border-[#e8e0d8] bg-white text-[#1a1a1a] truncate max-w-[120px] cursor-pointer hover:bg-[#f5f0eb] transition-colors"
                     >
                       {p.name}
-                    </span>
+                    </button>
                   ))}
                 </div>
                 <p
