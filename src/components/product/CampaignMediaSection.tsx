@@ -43,9 +43,11 @@ export function CampaignMediaSection() {
       <h3 className="font-serif text-lg mb-3">From the Campaign</h3>
       <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 snap-x snap-mandatory scrollbar-hide">
         {assets.map((asset, idx) => (
-          <button
+          <a
             key={asset.id}
-            onClick={() => setLightboxIdx(idx)}
+            href={(asset.campaign_sources as any)?.page_url || '#'}
+            target="_blank"
+            rel="noopener noreferrer"
             className="snap-start shrink-0 w-[85%] max-w-[360px] rounded-lg overflow-hidden bg-muted"
           >
             <div className="aspect-video relative">
@@ -61,7 +63,7 @@ export function CampaignMediaSection() {
                 {(asset.campaign_sources as any)?.label}
               </p>
             </div>
-          </button>
+          </a>
         ))}
       </div>
 
