@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useState } from 'react';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface CampaignAsset {
@@ -9,7 +8,7 @@ interface CampaignAsset {
   cached_url: string | null;
   render_mode: string;
   label: string;
-  campaign_sources: { label: string } | null;
+  campaign_sources: { label: string; page_url: string } | null;
 }
 
 function getAssetUrl(asset: CampaignAsset): string {
@@ -21,14 +20,13 @@ function getAssetUrl(asset: CampaignAsset): string {
 }
 
 export function CampaignMediaSection() {
-  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
 
   const { data: assets } = useQuery({
     queryKey: ['campaign-assets-enabled'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('campaign_assets')
-        .select('id, original_url, cached_url, render_mode, label, campaign_sources(label)')
+        .select('id, original_url, cached_url, render_mode, label, campaign_sources(label, page_url)')
         .eq('enabled', true)
         .order('created_at', { ascending: false });
       if (error) throw error;
