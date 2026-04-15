@@ -471,11 +471,11 @@ const ProductPage = () => {
       {/* Activations: after_compositions (default position) */}
       {renderActivationsForPosition('after_compositions')}
 
+      {/* Activations: before_heritage */}
+      {renderActivationsForPosition('before_heritage')}
+
       {/* Heritage Section */}
       <HeritageSection />
-
-      {/* Activations: before_heritage — rendered above heritage but labeled for clarity */}
-      {renderActivationsForPosition('before_heritage')}
 
       {/* Newsletter Section */}
       <NewsletterSection />
