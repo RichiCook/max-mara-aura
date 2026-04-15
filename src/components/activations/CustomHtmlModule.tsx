@@ -1,5 +1,5 @@
 import { CustomHtmlContent } from '@/hooks/useActivations';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 interface CustomHtmlModuleProps {
   content: CustomHtmlContent;
@@ -12,35 +12,92 @@ const HEIGHT_BRIDGE_STYLE = `
     min-height: 0 !important;
     height: auto !important;
     overflow: visible !important;
+    background: transparent;
   }
 `;
 
 const HEIGHT_BRIDGE_SCRIPT = `
 (function () {
-  const sendHeight = () => {
-    window.parent.postMessage({ type: 'custom-html-module-height' }, '*');
-  };
+  var lastHeight = 0;
 
-  const scheduleHeightSync = () => {
-    requestAnimationFrame(() => {
+  function getContentHeight() {
+    var h = Math.max(
+      document.body ? document.body.scrollHeight : 0,
+      document.body ? document.body.offsetHeight : 0,
+      document.documentElement ? document.documentElement.scrollHeight : 0,
+      document.documentElement ? document.documentElement.offsetHeight : 0
+    );
+    // Also check bounding rect of all direct children
+    if (document.body) {
+      var children = document.body.children;
+      for (var i = 0; i < children.length; i++) {
+        var rect = children[i].getBoundingClientRect();
+        var bottom = rect.top + rect.height;
+        if (bottom > h) h = bottom;
+      }
+    }
+    return Math.ceil(h) || 0;
+  }
+
+  function sendHeight() {
+    var h = getContentHeight();
+    // Always send so parent can shrink
+    lastHeight = h;
+    window.parent.postMessage({ type: 'custom-html-height', height: h }, '*');
+  }
+
+  function schedule() {
+    requestAnimationFrame(function () {
       requestAnimationFrame(sendHeight);
     });
-  };
+  }
 
-  window.addEventListener('load', scheduleHeightSync);
-  window.addEventListener('resize', scheduleHeightSync);
-  document.addEventListener('click', () => {
-    scheduleHeightSync();
+  window.addEventListener('load', function () {
+    schedule();
+    setTimeout(sendHeight, 100);
+    setTimeout(sendHeight, 300);
+    setTimeout(sendHeight, 600);
+    setTimeout(sendHeight, 1200);
+  });
+  window.addEventListener('resize', schedule);
+
+  document.addEventListener('click', function () {
+    schedule();
+    setTimeout(sendHeight, 50);
     setTimeout(sendHeight, 150);
     setTimeout(sendHeight, 350);
     setTimeout(sendHeight, 700);
   }, true);
-  document.addEventListener('transitionend', scheduleHeightSync, true);
-  document.addEventListener('animationend', scheduleHeightSync, true);
-  document.addEventListener('input', scheduleHeightSync, true);
+  document.addEventListener('input', schedule, true);
+  document.addEventListener('change', schedule, true);
+  document.addEventListener('transitionend', function () {
+    schedule();
+    setTimeout(sendHeight, 50);
+  }, true);
+  document.addEventListener('animationend', schedule, true);
 
+  // Watch for images loading
+  document.addEventListener('load', function (e) {
+    if (e.target && (e.target.tagName === 'IMG' || e.target.tagName === 'IFRAME')) {
+      schedule();
+      setTimeout(sendHeight, 100);
+    }
+  }, true);
+
+  // Font readiness
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(function () {
+      schedule();
+      setTimeout(sendHeight, 100);
+    });
+  }
+
+  // MutationObserver
   if (document.body) {
-    new MutationObserver(scheduleHeightSync).observe(document.body, {
+    new MutationObserver(function () {
+      schedule();
+      setTimeout(sendHeight, 50);
+    }).observe(document.body, {
       childList: true,
       subtree: true,
       attributes: true,
@@ -48,20 +105,22 @@ const HEIGHT_BRIDGE_SCRIPT = `
     });
   }
 
+  // ResizeObserver
   if (window.ResizeObserver) {
-    const observer = new ResizeObserver(scheduleHeightSync);
-    observer.observe(document.documentElement);
-    if (document.body) observer.observe(document.body);
+    var ro = new ResizeObserver(schedule);
+    ro.observe(document.documentElement);
+    if (document.body) ro.observe(document.body);
   }
 
-  setInterval(sendHeight, 1000);
-  scheduleHeightSync();
+  // Periodic fallback
+  setInterval(sendHeight, 2000);
+  schedule();
 })();
 `;
 
 const injectEnhancements = (markup: string, css?: string) => {
   const styleTag = `<style>${HEIGHT_BRIDGE_STYLE}${css ? `\n${css}` : ''}</style>`;
-  const scriptTag = `<script>${HEIGHT_BRIDGE_SCRIPT}</script>`;
+  const scriptTag = `<script>${HEIGHT_BRIDGE_SCRIPT}<\/script>`;
 
   let nextMarkup = markup;
 
@@ -101,84 +160,51 @@ const buildSrcDoc = (html?: string, css?: string) => {
 </html>`, css);
 };
 
-const measureIframeHeight = (iframe: HTMLIFrameElement) => {
-  const doc = iframe.contentDocument;
-  if (!doc) return;
-
-  const previousHeight = iframe.style.height;
-  iframe.style.height = '1px';
-
-  const nextHeight = Math.max(
-    doc.body?.scrollHeight || 0,
-    doc.body?.offsetHeight || 0,
-    doc.documentElement?.scrollHeight || 0,
-    doc.documentElement?.offsetHeight || 0,
-    doc.documentElement?.clientHeight || 0,
-    120,
-  );
-
-  iframe.style.height = `${nextHeight}px`;
-
-  if (!nextHeight) {
-    iframe.style.height = previousHeight || '120px';
-  }
-};
-
 export const CustomHtmlModule = ({ content }: CustomHtmlModuleProps) => {
   const { html, css } = content;
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [height, setHeight] = useState(0);
 
   const srcDoc = useMemo(() => buildSrcDoc(html, css), [html, css]);
 
+  // Reset height when content changes
   useEffect(() => {
-    let rafId: number | null = null;
+    setHeight(0);
+  }, [srcDoc]);
 
-    const scheduleMeasure = () => {
-      if (rafId) cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(() => {
-        const iframe = iframeRef.current;
-        if (!iframe) return;
-        measureIframeHeight(iframe);
-      });
-    };
-
+  useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       const iframe = iframeRef.current;
       if (!iframe || event.source !== iframe.contentWindow) return;
-      if (event.data?.type !== 'custom-html-module-height') return;
+      if (event.data?.type !== 'custom-html-height') return;
 
-      scheduleMeasure();
-      setTimeout(scheduleMeasure, 150);
-      setTimeout(scheduleMeasure, 350);
+      const reportedHeight = event.data.height;
+      if (typeof reportedHeight === 'number' && reportedHeight > 0) {
+        setHeight(reportedHeight);
+      }
     };
 
     window.addEventListener('message', handleMessage);
-    return () => {
-      window.removeEventListener('message', handleMessage);
-      if (rafId) cancelAnimationFrame(rafId);
-    };
+    return () => window.removeEventListener('message', handleMessage);
   }, []);
 
   if (!html) return null;
 
   return (
-    <section className="py-12">
+    <div>
       <iframe
         ref={iframeRef}
         title="Custom HTML activation"
         srcDoc={srcDoc}
-        onLoad={() => {
-          const iframe = iframeRef.current;
-          if (!iframe) return;
-          measureIframeHeight(iframe);
-          setTimeout(() => measureIframeHeight(iframe), 150);
-          setTimeout(() => measureIframeHeight(iframe), 400);
+        className="w-full border-0 bg-transparent"
+        style={{
+          overflow: 'hidden',
+          height: height > 0 ? `${height}px` : '0px',
+          display: height > 0 || !srcDoc ? 'block' : 'block',
         }}
-        className="w-full border-0 bg-transparent overflow-hidden"
-        style={{ overflow: 'hidden', height: '120px' }}
         scrolling="no"
         sandbox="allow-scripts allow-forms allow-popups allow-modals"
       />
-    </section>
+    </div>
   );
 };
