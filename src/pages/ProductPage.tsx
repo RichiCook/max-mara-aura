@@ -61,6 +61,7 @@ const ProductPage = () => {
   const [claimOpen, setClaimOpen] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
   const [ownerRegistered, setOwnerRegistered] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   const { trackEvent } = useScanTracking();
   const { settings } = usePlatformSettingsContext();
