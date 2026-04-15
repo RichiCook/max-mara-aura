@@ -9,30 +9,16 @@ const HEIGHT_BRIDGE_STYLE = `
   html, body {
     margin: 0;
     padding: 0;
-    min-height: auto !important;
+    min-height: 0 !important;
+    height: auto !important;
     overflow: visible !important;
   }
 `;
 
 const HEIGHT_BRIDGE_SCRIPT = `
 (function () {
-  const getHeight = () => {
-    const body = document.body;
-    const html = document.documentElement;
-    return Math.max(
-      body ? body.scrollHeight : 0,
-      body ? body.offsetHeight : 0,
-      html ? html.scrollHeight : 0,
-      html ? html.offsetHeight : 0,
-      html ? html.clientHeight : 0
-    );
-  };
-
   const sendHeight = () => {
-    window.parent.postMessage(
-      { type: 'custom-html-module-height', height: getHeight() },
-      '*'
-    );
+    window.parent.postMessage({ type: 'custom-html-module-height' }, '*');
   };
 
   const scheduleHeightSync = () => {
@@ -115,6 +101,29 @@ const buildSrcDoc = (html?: string, css?: string) => {
 </html>`, css);
 };
 
+const measureIframeHeight = (iframe: HTMLIFrameElement) => {
+  const doc = iframe.contentDocument;
+  if (!doc) return;
+
+  const previousHeight = iframe.style.height;
+  iframe.style.height = '1px';
+
+  const nextHeight = Math.max(
+    doc.body?.scrollHeight || 0,
+    doc.body?.offsetHeight || 0,
+    doc.documentElement?.scrollHeight || 0,
+    doc.documentElement?.offsetHeight || 0,
+    doc.documentElement?.clientHeight || 0,
+    120,
+  );
+
+  iframe.style.height = `${nextHeight}px`;
+
+  if (!nextHeight) {
+    iframe.style.height = previousHeight || '120px';
+  }
+};
+
 export const CustomHtmlModule = ({ content }: CustomHtmlModuleProps) => {
   const { html, css } = content;
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -122,34 +131,33 @@ export const CustomHtmlModule = ({ content }: CustomHtmlModuleProps) => {
   const srcDoc = useMemo(() => buildSrcDoc(html, css), [html, css]);
 
   useEffect(() => {
+    let rafId: number | null = null;
+
+    const scheduleMeasure = () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        const iframe = iframeRef.current;
+        if (!iframe) return;
+        measureIframeHeight(iframe);
+      });
+    };
+
     const handleMessage = (event: MessageEvent) => {
       const iframe = iframeRef.current;
       if (!iframe || event.source !== iframe.contentWindow) return;
       if (event.data?.type !== 'custom-html-module-height') return;
 
-      const nextHeight = Math.max(Number(event.data.height) || 0, 120);
-      iframe.style.height = `${nextHeight}px`;
+      scheduleMeasure();
+      setTimeout(scheduleMeasure, 150);
+      setTimeout(scheduleMeasure, 350);
     };
 
     window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
+    return () => {
+      window.removeEventListener('message', handleMessage);
+      if (rafId) cancelAnimationFrame(rafId);
+    };
   }, []);
-
-  const syncHeightFallback = () => {
-    const iframe = iframeRef.current;
-    const doc = iframe?.contentDocument;
-    if (!iframe || !doc) return;
-
-    const nextHeight = Math.max(
-      doc.body?.scrollHeight || 0,
-      doc.body?.offsetHeight || 0,
-      doc.documentElement?.scrollHeight || 0,
-      doc.documentElement?.offsetHeight || 0,
-      120,
-    );
-
-    iframe.style.height = `${nextHeight}px`;
-  };
 
   if (!html) return null;
 
@@ -160,9 +168,11 @@ export const CustomHtmlModule = ({ content }: CustomHtmlModuleProps) => {
         title="Custom HTML activation"
         srcDoc={srcDoc}
         onLoad={() => {
-          syncHeightFallback();
-          setTimeout(syncHeightFallback, 150);
-          setTimeout(syncHeightFallback, 400);
+          const iframe = iframeRef.current;
+          if (!iframe) return;
+          measureIframeHeight(iframe);
+          setTimeout(() => measureIframeHeight(iframe), 150);
+          setTimeout(() => measureIframeHeight(iframe), 400);
         }}
         className="w-full border-0 bg-transparent overflow-hidden"
         style={{ overflow: 'hidden', height: '120px' }}
