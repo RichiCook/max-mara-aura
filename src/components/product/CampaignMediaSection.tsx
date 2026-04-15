@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface CampaignAsset {
   id: string;
@@ -64,39 +63,6 @@ export function CampaignMediaSection() {
           </a>
         ))}
       </div>
-
-      {/* Lightbox */}
-      {lightboxIdx !== null && (
-        <div className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center" onClick={() => setLightboxIdx(null)}>
-          <button className="absolute top-4 right-4 text-white/70 hover:text-white z-10" onClick={() => setLightboxIdx(null)}>
-            <X className="w-6 h-6" />
-          </button>
-          {lightboxIdx > 0 && (
-            <button
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-white/70 hover:text-white z-10"
-              onClick={(e) => { e.stopPropagation(); setLightboxIdx(lightboxIdx - 1); }}
-            >
-              <ChevronLeft className="w-8 h-8" />
-            </button>
-          )}
-          {lightboxIdx < assets.length - 1 && (
-            <button
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/70 hover:text-white z-10"
-              onClick={(e) => { e.stopPropagation(); setLightboxIdx(lightboxIdx + 1); }}
-            >
-              <ChevronRight className="w-8 h-8" />
-            </button>
-          )}
-          <div className="max-w-[90vw] max-h-[85vh]" onClick={(e) => e.stopPropagation()}>
-            <img
-              src={getAssetUrl(assets[lightboxIdx])}
-              alt={assets[lightboxIdx].label}
-              className="max-w-full max-h-[80vh] object-contain"
-            />
-            <p className="text-white text-center text-sm mt-2">{assets[lightboxIdx].label}</p>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
