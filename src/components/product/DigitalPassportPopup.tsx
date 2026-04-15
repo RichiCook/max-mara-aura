@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 
 interface DigitalPassportPopupProps {
   open: boolean;
@@ -57,43 +57,78 @@ const DATA_ROWS = [
   { icon: <MapPinIcon />, label: 'Materials Origin', value: 'Italy / France' },
 ];
 
+const SWIPE_THRESHOLD = 80;
+
 const DigitalPassportPopup = ({ open, onClose, productName, productCode, collection, composition }: DigitalPassportPopupProps) => {
   const [visible, setVisible] = useState(false);
   const [animating, setAnimating] = useState(false);
+  const [dragY, setDragY] = useState(0);
+  const dragStart = useRef<number | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (open) {
       setVisible(true);
+      setDragY(0);
       requestAnimationFrame(() => setAnimating(true));
     } else {
       setAnimating(false);
+      setDragY(0);
       const t = setTimeout(() => setVisible(false), 300);
       return () => clearTimeout(t);
     }
   }, [open]);
 
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    const scrollEl = scrollRef.current;
+    if (scrollEl && scrollEl.scrollTop > 5) return;
+    dragStart.current = e.touches[0].clientY;
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (dragStart.current === null) return;
+    const delta = e.touches[0].clientY - dragStart.current;
+    if (delta > 0) {
+      setDragY(delta);
+    }
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    if (dragStart.current === null) return;
+    if (dragY > SWIPE_THRESHOLD) {
+      onClose();
+    } else {
+      setDragY(0);
+    }
+    dragStart.current = null;
+  }, [dragY, onClose]);
+
   if (!visible) return null;
 
   const compParts = composition ? parseComposition(composition) : [];
+  const backdropOpacity = animating ? Math.max(0, 1 - dragY / 300) : 0;
 
   return (
     <div
       onClick={onClose}
       style={{
-        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 10000,
-        opacity: animating ? 1 : 0, transition: 'opacity 0.3s ease',
+        position: 'fixed', inset: 0, background: `rgba(0,0,0,${0.5 * backdropOpacity})`, zIndex: 10000,
+        opacity: animating || dragY > 0 ? 1 : 0, transition: dragY > 0 ? 'none' : 'opacity 0.3s ease',
       }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
         style={{
           position: 'fixed', top: 38, bottom: 38, left: 22, right: 22,
           background: '#fff', borderRadius: 14,
           boxShadow: '0 8px 60px rgba(0,0,0,0.2)',
           overflow: 'hidden', display: 'flex', flexDirection: 'column',
-          transform: animating ? 'translateY(0)' : 'translateY(20px)',
+          transform: animating ? `translateY(${dragY}px)` : 'translateY(20px)',
           opacity: animating ? 1 : 0,
-          transition: 'transform 0.3s ease, opacity 0.3s ease',
+          transition: dragY > 0 ? 'none' : 'transform 0.3s ease, opacity 0.3s ease',
         }}
       >
         {/* Header */}
@@ -132,7 +167,7 @@ const DigitalPassportPopup = ({ open, onClose, productName, productCode, collect
         </div>
 
         {/* Scrollable content */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '0 18px 18px' }}>
+        <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '0 18px 18px' }}>
           {/* Data rows */}
           {DATA_ROWS.map((row, i) => (
             <div key={i} className="flex items-center gap-2.5" style={{ padding: '12px 0', borderBottom: i < DATA_ROWS.length - 1 ? '1px solid #f0ece7' : 'none' }}>
