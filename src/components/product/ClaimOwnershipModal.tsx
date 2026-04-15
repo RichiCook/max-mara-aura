@@ -58,7 +58,7 @@ const ClaimOwnershipModal = ({ open, onClose, productName, onSuccess }: ClaimOwn
 
   const inputStyle: React.CSSProperties = {
     width: 38, height: 48, textAlign: 'center',
-    fontFamily: "'DM Sans', sans-serif", fontSize: 20, fontWeight: 600,
+    fontFamily: "'Inter', sans-serif", fontSize: 20, fontWeight: 600,
     border: '1.5px solid #e0e0e0', borderRadius: 8,
     outline: 'none', color: '#1a1a1a', background: '#faf8f5',
   };
@@ -93,10 +93,10 @@ const ClaimOwnershipModal = ({ open, onClose, productName, onSuccess }: ClaimOwn
 
         {/* Scrollable content */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '16px 24px 24px' }}>
-          <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 600, color: '#1a1a1a', margin: '0 0 4px', textAlign: 'center' }}>
+          <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 600, color: '#1a1a1a', margin: '0 0 4px', textAlign: 'center' }}>
             Register my product
           </h2>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: '#999', textAlign: 'center', marginBottom: 20 }}>
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: '#999', textAlign: 'center', marginBottom: 20 }}>
             {productName}
           </p>
 
@@ -111,10 +111,10 @@ const ClaimOwnershipModal = ({ open, onClose, productName, onSuccess }: ClaimOwn
             </svg>
           </div>
 
-          <h3 style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 16, fontWeight: 600, color: '#1a1a1a', textAlign: 'center', margin: '0 0 4px' }}>
+          <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: 16, fontWeight: 600, color: '#1a1a1a', textAlign: 'center', margin: '0 0 4px' }}>
             Enter your purchase PIN code:
           </h3>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#aaa', textAlign: 'center', marginBottom: 20 }}>
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: '#aaa', textAlign: 'center', marginBottom: 20 }}>
             Found on your receipt or product card
           </p>
 
@@ -174,7 +174,7 @@ const ClaimOwnershipModal = ({ open, onClose, productName, onSuccess }: ClaimOwn
               onChange={e => setAgreed(e.target.checked)}
               style={{ marginTop: 3, accentColor: '#E12B38', width: 16, height: 16 }}
             />
-            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#666', lineHeight: 1.5 }}>
+            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: '#666', lineHeight: 1.5 }}>
               I confirm that I have read and agree with the Terms and Conditions and that I am aware that once the pin code is activated, no returns or changes are allowed.
             </span>
           </label>
@@ -184,7 +184,7 @@ const ClaimOwnershipModal = ({ open, onClose, productName, onSuccess }: ClaimOwn
             onClick={handleSubmit}
             disabled={!canSubmit}
             style={{
-              width: '100%', fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 600,
+              width: '100%', fontFamily: "'Inter', sans-serif", fontSize: 15, fontWeight: 600,
               background: canSubmit ? '#E12B38' : '#e8e8e8', color: canSubmit ? '#fff' : '#bbb',
               border: 'none', borderRadius: 10, padding: '15px 0', cursor: canSubmit ? 'pointer' : 'default',
               transition: 'background 0.2s',
@@ -193,11 +193,11 @@ const ClaimOwnershipModal = ({ open, onClose, productName, onSuccess }: ClaimOwn
             Register Ownership
           </button>
 
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#C4A265', textAlign: 'center', marginTop: 14, cursor: 'pointer' }}>
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: '#C4A265', textAlign: 'center', marginTop: 14, cursor: 'pointer' }}>
             Need help?
           </p>
 
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: '#bbb', textAlign: 'center', marginTop: 16, lineHeight: 1.6 }}>
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: '#bbb', textAlign: 'center', marginTop: 16, lineHeight: 1.6 }}>
             We advise that once the above pin code is activated, the ownership of this product will be certified as a part of its traceability journey. As a result, Christian Louboutin will then no longer be able to accept returns or exchanges for this item.
           </p>
         </div>

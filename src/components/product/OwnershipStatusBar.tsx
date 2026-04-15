@@ -21,7 +21,7 @@ const OwnershipStatusBar = ({ onClick }: OwnershipStatusBarProps) => {
         <path d="M9 12l2 2 4-4"/>
       </svg>
       <div className="flex-1 text-left">
-        <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 600, display: 'block' }}>
+        <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 600, display: 'block' }}>
           View ownership status
         </span>
         <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, opacity: 0.75, display: 'block', marginTop: 2 }}>

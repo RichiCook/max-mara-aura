@@ -242,7 +242,7 @@ const ProductPage = () => {
             {settings.logo_url ? (
               <img src={settings.logo_url} alt={settings.brand_name || 'Logo'} className="h-6 sm:h-8 w-auto object-contain" />
             ) : (
-              <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 16, fontWeight: 700, color: '#1a1a1a' }}>
+              <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 16, fontWeight: 700, color: '#1a1a1a' }}>
                 Christian Louboutin
               </span>
             )}
@@ -340,8 +340,8 @@ const ProductPage = () => {
                   <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#C4A265" strokeWidth="1" style={{ margin: '0 auto 12px' }}>
                     <path d="M12 2L3 7v5c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
-                  <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 16, color: '#C4A265' }}>Christian Louboutin</p>
-                  <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#999', marginTop: 4 }}>Product Image</p>
+                  <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 16, color: '#C4A265' }}>Christian Louboutin</p>
+                  <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: '#999', marginTop: 4 }}>Product Image</p>
                 </div>
               </div>
             )}
@@ -489,10 +489,10 @@ const ProductPage = () => {
         <div className="max-w-6xl mx-auto px-4 py-5 sm:py-6">
           <div className="flex items-center justify-between">
             <div>
-              <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 13, fontWeight: 600, color: '#1a1a1a', opacity: 0.4 }}>
+              <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 13, fontWeight: 600, color: '#1a1a1a', opacity: 0.4 }}>
                 Louboutin × Aura Blockchain
               </span>
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, color: '#ccc', marginTop: 2 }}>
+              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 10, color: '#ccc', marginTop: 2 }}>
                 Powered by Aitems · Product Intelligence
               </p>
             </div>

@@ -285,7 +285,7 @@ const AtelierCompositions = ({ currentProduct }: AtelierCompositionsProps) => {
         </div>
         <h2
           className="text-xl sm:text-2xl font-light mb-1"
-          style={{ fontFamily: "'Playfair Display', serif", color: '#1a1a1a' }}
+          style={{ fontFamily: "'Cormorant Garamond', serif", color: '#1a1a1a' }}
         >
           Atelier Compositions
         </h2>
@@ -367,7 +367,7 @@ const AtelierCompositions = ({ currentProduct }: AtelierCompositionsProps) => {
                 </div>
                 <p
                   className="text-xs sm:text-sm font-medium truncate"
-                  style={{ fontFamily: "'Playfair Display', serif", color: '#1a1a1a' }}
+                  style={{ fontFamily: "'Cormorant Garamond', serif", color: '#1a1a1a' }}
                 >
                   {comp.name}
                 </p>
@@ -420,7 +420,7 @@ const AtelierCompositions = ({ currentProduct }: AtelierCompositionsProps) => {
             )}
 
             <div className="px-5 py-4">
-              <h3 className="text-lg font-medium" style={{ fontFamily: "'Playfair Display', serif" }}>
+              <h3 className="text-lg font-medium" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
                 {expanded.name}
               </h3>
               <p className="text-xs text-muted-foreground italic mb-3">{expanded.styleTag}</p>
@@ -449,7 +449,7 @@ const AtelierCompositions = ({ currentProduct }: AtelierCompositionsProps) => {
           {quickViewProduct && (
             <>
               <SheetHeader className="text-left pb-3">
-                <SheetTitle style={{ fontFamily: "'Playfair Display', serif" }}>
+                <SheetTitle style={{ fontFamily: "'Cormorant Garamond', serif" }}>
                   {quickViewProduct.name}
                 </SheetTitle>
               </SheetHeader>

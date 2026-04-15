@@ -20,14 +20,14 @@ const GenuineProductBanner = ({ productName, collection, onViewPassport }: Genui
       {/* Badges */}
       <div className="flex items-center gap-2" style={{ marginBottom: 10 }}>
         <span style={{
-          fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 600,
+          fontFamily: "'Inter', sans-serif", fontSize: 10, fontWeight: 600,
           padding: '3px 10px', borderRadius: 20, background: '#dcfce7', color: '#166534',
           display: 'inline-flex', alignItems: 'center', gap: 4,
         }}>
           ✓ Genuine Product
         </span>
         <span style={{
-          fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 600,
+          fontFamily: "'Inter', sans-serif", fontSize: 10, fontWeight: 600,
           padding: '3px 10px', borderRadius: 20, background: '#FEF3C7', color: '#92400E',
           display: 'inline-flex', alignItems: 'center', gap: 4,
         }}>
@@ -36,12 +36,12 @@ const GenuineProductBanner = ({ productName, collection, onViewPassport }: Genui
       </div>
 
       {/* Product name */}
-      <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '22px', fontWeight: 600, color: '#1a1a1a', marginTop: '4px', lineHeight: 1.3 }}>
+      <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '22px', fontWeight: 600, color: '#1a1a1a', marginTop: '4px', lineHeight: 1.3 }}>
         {productName}
       </h1>
 
       {/* Origin line */}
-      <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '12px', color: '#b5ada5', marginTop: '4px' }}>
+      <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: '#b5ada5', marginTop: '4px' }}>
         Made in Italy{collection ? ` · ${collection}` : ''}
       </p>
     </div>

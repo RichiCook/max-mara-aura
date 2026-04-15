@@ -99,12 +99,12 @@ export const LeadCaptureModule = ({ content, activationId, productId, productCod
         </h3>
         {rewardCode && (
           <div style={{ margin: '20px auto 0', padding: '16px 20px', background: '#f8f5f1', border: '1px solid #e8e4df', borderRadius: 8, maxWidth: 280 }}>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: '#b5ada5', margin: '0 0 6px', letterSpacing: '0.06em', textTransform: 'uppercase' as const }}>Your reward code</p>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 22, fontWeight: 700, color: '#1a1a1a', letterSpacing: '0.08em', margin: 0 }}>{rewardCode}</p>
+            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: '#b5ada5', margin: '0 0 6px', letterSpacing: '0.06em', textTransform: 'uppercase' as const }}>Your reward code</p>
+            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 22, fontWeight: 700, color: '#1a1a1a', letterSpacing: '0.08em', margin: 0 }}>{rewardCode}</p>
           </div>
         )}
         {content.rewardType === 'code_email' && (
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#b5ada5', marginTop: 14 }}>
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: '#b5ada5', marginTop: 14 }}>
             We've also sent this code to your email.
           </p>
         )}
@@ -125,7 +125,7 @@ export const LeadCaptureModule = ({ content, activationId, productId, productCod
       </div>
 
       {content.description && (
-        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: content.textColor ? `${content.textColor}99` : '#888', lineHeight: 1.55, margin: '0 0 20px', paddingLeft: 22 }}>
+        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: content.textColor ? `${content.textColor}99` : '#888', lineHeight: 1.55, margin: '0 0 20px', paddingLeft: 22 }}>
           {content.description}
         </p>
       )}
@@ -133,7 +133,7 @@ export const LeadCaptureModule = ({ content, activationId, productId, productCod
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         {/* Email */}
         <div>
-          <label style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 600, color: content.textColor || '#1a1a1a', letterSpacing: '0.04em', textTransform: 'uppercase' as const, marginBottom: 6, display: 'block' }}>
+          <label style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, fontWeight: 600, color: content.textColor || '#1a1a1a', letterSpacing: '0.04em', textTransform: 'uppercase' as const, marginBottom: 6, display: 'block' }}>
             Email *
           </label>
           <input
@@ -145,7 +145,7 @@ export const LeadCaptureModule = ({ content, activationId, productId, productCod
             style={{
               width: '100%',
               padding: '12px 14px',
-              fontFamily: "'DM Sans', sans-serif",
+              fontFamily: "'Inter', sans-serif",
               fontSize: 14,
               color: '#1a1a1a',
               background: '#f8f5f1',
@@ -159,14 +159,14 @@ export const LeadCaptureModule = ({ content, activationId, productId, productCod
             onBlur={(e) => { e.currentTarget.style.borderColor = errors.email ? '#c0392b' : '#e4e0db'; }}
           />
           {errors.email && (
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: '#c0392b', marginTop: 4 }}>{errors.email}</p>
+            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: '#c0392b', marginTop: 4 }}>{errors.email}</p>
           )}
         </div>
 
         {/* Name */}
         {content.collectName && (
           <div>
-            <label style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 600, color: content.textColor || '#1a1a1a', letterSpacing: '0.04em', textTransform: 'uppercase' as const, marginBottom: 6, display: 'block' }}>
+            <label style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, fontWeight: 600, color: content.textColor || '#1a1a1a', letterSpacing: '0.04em', textTransform: 'uppercase' as const, marginBottom: 6, display: 'block' }}>
               Name
             </label>
             <input
@@ -178,7 +178,7 @@ export const LeadCaptureModule = ({ content, activationId, productId, productCod
               style={{
                 width: '100%',
                 padding: '12px 14px',
-                fontFamily: "'DM Sans', sans-serif",
+                fontFamily: "'Inter', sans-serif",
                 fontSize: 14,
                 color: '#1a1a1a',
                 background: '#f8f5f1',
@@ -197,7 +197,7 @@ export const LeadCaptureModule = ({ content, activationId, productId, productCod
         {/* Phone */}
         {content.collectPhone && (
           <div>
-            <label style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 600, color: content.textColor || '#1a1a1a', letterSpacing: '0.04em', textTransform: 'uppercase' as const, marginBottom: 6, display: 'block' }}>
+            <label style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, fontWeight: 600, color: content.textColor || '#1a1a1a', letterSpacing: '0.04em', textTransform: 'uppercase' as const, marginBottom: 6, display: 'block' }}>
               Phone
             </label>
             <input
@@ -208,7 +208,7 @@ export const LeadCaptureModule = ({ content, activationId, productId, productCod
               style={{
                 width: '100%',
                 padding: '12px 14px',
-                fontFamily: "'DM Sans', sans-serif",
+                fontFamily: "'Inter', sans-serif",
                 fontSize: 14,
                 color: '#1a1a1a',
                 background: '#f8f5f1',
@@ -222,7 +222,7 @@ export const LeadCaptureModule = ({ content, activationId, productId, productCod
               onBlur={(e) => { e.currentTarget.style.borderColor = errors.phone ? '#c0392b' : '#e4e0db'; }}
             />
             {errors.phone && (
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: '#c0392b', marginTop: 4 }}>{errors.phone}</p>
+              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: '#c0392b', marginTop: 4 }}>{errors.phone}</p>
             )}
           </div>
         )}
@@ -241,7 +241,7 @@ export const LeadCaptureModule = ({ content, activationId, productId, productCod
             borderRadius: 6,
             background: submitting ? '#555' : '#1a1a1a',
             color: '#fff',
-            fontFamily: "'DM Sans', sans-serif",
+            fontFamily: "'Inter', sans-serif",
             fontSize: 13,
             fontWeight: 600,
             border: 'none',
