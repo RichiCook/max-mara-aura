@@ -275,8 +275,8 @@ const AtelierCompositions = ({ currentProduct }: AtelierCompositionsProps) => {
   if (compositions.length === 0) return null;
 
   return (
-    <section className="py-8 sm:py-12">
-      <div className="max-w-6xl mx-auto px-4">
+    <section className="py-8 sm:py-12 overflow-hidden">
+      <div className="max-w-6xl mx-auto px-4 overflow-hidden">
         {/* Header */}
         <div className="flex items-center gap-2 mb-1">
           <Sparkles className="w-4 h-4 text-[#E12B38]" />
