@@ -107,7 +107,7 @@ export const ActivationEditor = ({
     setEndDate(end);
   };
 
-  const updateContent = (updates: Partial<ActivationContent>) => {
+  const updateContent = (updates: Record<string, any>) => {
     setContent(prev => ({ ...prev, ...updates }));
   };
 
@@ -513,6 +513,27 @@ export const ActivationEditor = ({
               </Select>
             </div>
 
+          <div>
+              <Label htmlFor="position">Page Position</Label>
+              <Select
+                value={(content as any).position || 'after_compositions'}
+                onValueChange={(v) => updateContent({ position: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="above_product_info">Above Product Info</SelectItem>
+                  <SelectItem value="below_product_info">Below Product Info</SelectItem>
+                  <SelectItem value="after_celebrity">After Celebrity Spotlight</SelectItem>
+                  <SelectItem value="after_compositions">After Compositions (default)</SelectItem>
+                  <SelectItem value="before_heritage">Before Heritage Section</SelectItem>
+                  <SelectItem value="before_similar">Before Similar Products</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
           <div className="flex items-center gap-3">
             <Switch
               id="hideTitle"
@@ -533,7 +554,6 @@ export const ActivationEditor = ({
             <Label htmlFor="fullWidth" className="text-sm">
               Full width (edge-to-edge display)
             </Label>
-          </div>
           </div>
 
           {/* Collection Targeting */}
