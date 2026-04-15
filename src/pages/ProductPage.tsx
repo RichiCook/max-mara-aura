@@ -366,6 +366,7 @@ const ProductPage = () => {
       <AuraDigitalPassportCard
         onOpenClaim={() => setClaimOpen(true)}
         onOpenPassport={() => setPassportOpen(true)}
+        onOpenHistory={() => setHistoryOpen(true)}
       />
 
       <ProductInfoBlock
@@ -398,6 +399,12 @@ const ProductPage = () => {
         onClose={() => setSuccessOpen(false)}
         productName={product.name}
         onViewPassport={() => setPassportOpen(true)}
+      />
+      <CertificationHistoryModal
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        productName={product.name}
+        ownerRegistered={ownerRegistered}
       />
 
       <ShareToResaleModal open={shareModalOpen} onOpenChange={setShareModalOpen} product={product} />
@@ -445,6 +452,12 @@ const ProductPage = () => {
           </div>
         </section>
       )}
+
+      {/* Heritage Section */}
+      <HeritageSection />
+
+      {/* Newsletter Section */}
+      <NewsletterSection />
 
       {/* Similar Products */}
       {product.product_code && (
