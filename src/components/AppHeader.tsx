@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Bookmark, Layers, Sparkles, Users, Settings2, LogOut, Palette, Upload, BarChart3, Menu, Star, ImageIcon } from 'lucide-react';
+import { Bookmark, Layers, Sparkles, Users, Settings2, LogOut, Palette, Upload, BarChart3, Menu, Star, ImageIcon, LayoutGrid } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -78,6 +78,11 @@ export const AppHeader = ({ onImportComplete, children }: AppHeaderProps) => {
                   Campaign Assets
                 </Button>
               </Link>
+              <Link to="/admin/carousels">
+                <Button variant="ghost" className="w-full justify-start">
+                  <LayoutGrid className="w-4 h-4 mr-2" />
+                  Carousels
+                </Button>
               <Link to="/api-settings">
                 <Button variant="ghost" className="w-full justify-start">
                   <Settings2 className="w-4 h-4 mr-2" />
