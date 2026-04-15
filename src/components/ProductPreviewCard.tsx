@@ -16,7 +16,8 @@ export const ProductPreviewCard = ({ product }: ProductPreviewCardProps) => {
   const cardRef = useRef<HTMLDivElement>(null);
 
   const mainImage = getMainProductImage(product.images, product.product_code, product.category);
-  const shortUrl = product.short_code ? `${window.location.origin}/p/${product.short_code}` : null;
+  const publishedOrigin = 'https://loubotin.lovable.app';
+  const shortUrl = product.short_code ? `${publishedOrigin}/p/${product.short_code}` : null;
 
   // Get the last segment of category as fallback for collection
   const collectionDisplay = product.collection || (() => {
