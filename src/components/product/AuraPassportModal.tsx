@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 
 interface AuraPassportModalProps {
   open: boolean;
@@ -9,20 +9,53 @@ interface AuraPassportModalProps {
   onOpenClaim: () => void;
 }
 
+const SWIPE_THRESHOLD = 80;
+
 const AuraPassportModal = ({ open, onClose, productName, productCode, ownerRegistered, onOpenClaim }: AuraPassportModalProps) => {
   const [visible, setVisible] = useState(false);
   const [animating, setAnimating] = useState(false);
+  const [dragY, setDragY] = useState(0);
+  const dragStart = useRef<number | null>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (open) {
       setVisible(true);
+      setDragY(0);
       requestAnimationFrame(() => requestAnimationFrame(() => setAnimating(true)));
     } else {
       setAnimating(false);
+      setDragY(0);
       const t = setTimeout(() => setVisible(false), 350);
       return () => clearTimeout(t);
     }
   }, [open]);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    const el = sheetRef.current;
+    if (!el) return;
+    // Only allow swipe when scrolled to top
+    if (el.scrollTop > 5) return;
+    dragStart.current = e.touches[0].clientY;
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (dragStart.current === null) return;
+    const delta = e.touches[0].clientY - dragStart.current;
+    if (delta > 0) {
+      setDragY(delta);
+    }
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    if (dragStart.current === null) return;
+    if (dragY > SWIPE_THRESHOLD) {
+      onClose();
+    } else {
+      setDragY(0);
+    }
+    dragStart.current = null;
+  }, [dragY, onClose]);
 
   if (!visible) return null;
 
@@ -34,30 +67,35 @@ const AuraPassportModal = ({ open, onClose, productName, productCode, ownerRegis
     ...(ownerRegistered ? [{ date: today, event: 'Ownership Registration', status: 'Success' }] : []),
   ];
 
+  const backdropOpacity = animating ? Math.max(0, 1 - dragY / 300) : 0;
+
   return (
     <div
       onClick={onClose}
       style={{
-        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 10000,
-        opacity: animating ? 1 : 0, transition: 'opacity 0.35s ease',
+        position: 'fixed', inset: 0, background: `rgba(0,0,0,${0.6 * backdropOpacity})`, zIndex: 10000,
+        opacity: animating || dragY > 0 ? 1 : 0, transition: dragY > 0 ? 'none' : 'opacity 0.35s ease',
       }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
         style={{
           position: 'fixed', bottom: 0, left: 0, right: 0,
           maxHeight: '92vh',
           background: '#fff', borderRadius: '20px 20px 0 0',
           boxShadow: '0 -8px 60px rgba(0,0,0,0.25)',
           overflow: 'hidden', display: 'flex', flexDirection: 'column',
-          transform: animating ? 'translateY(0)' : 'translateY(100%)',
-          transition: 'transform 0.35s cubic-bezier(0.32, 0.72, 0, 1)',
+          transform: animating ? `translateY(${dragY}px)` : 'translateY(100%)',
+          transition: dragY > 0 ? 'none' : 'transform 0.35s cubic-bezier(0.32, 0.72, 0, 1)',
         }}
       >
         {/* Dark header */}
         <div style={{ background: '#1a1a1a', padding: '24px 20px 20px', flexShrink: 0 }}>
           {/* Handle bar */}
-          <div style={{ width: 40, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.2)', margin: '0 auto 20px' }} />
+          <div style={{ width: 40, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.3)', margin: '0 auto 20px' }} />
 
           <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 600, color: '#C4A265', margin: 0 }}>
             Christian Louboutin
@@ -84,7 +122,7 @@ const AuraPassportModal = ({ open, onClose, productName, productCode, ownerRegis
         </div>
 
         {/* Scrollable content */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
+        <div ref={sheetRef} style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
           {/* Owner status */}
           <div style={{ marginBottom: 20 }}>
             <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', color: '#999', textTransform: 'uppercase' as const }}>
