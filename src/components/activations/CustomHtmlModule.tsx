@@ -40,6 +40,10 @@ export const CustomHtmlModule = ({ content }: CustomHtmlModuleProps) => {
     const iframe = iframeRef.current;
     if (!iframe || !srcDoc) return;
 
+    let resizeObserver: ResizeObserver | null = null;
+    let mutationObserver: MutationObserver | null = null;
+    let rafId: number | null = null;
+
     const syncHeight = () => {
       const doc = iframe.contentDocument;
       if (!doc) return;
@@ -51,7 +55,15 @@ export const CustomHtmlModule = ({ content }: CustomHtmlModuleProps) => {
         htmlEl?.scrollHeight || 0,
         htmlEl?.offsetHeight || 0,
       );
-      iframe.style.height = `${Math.max(nextHeight, 120)}px`;
+      const h = Math.max(nextHeight, 120);
+      if (iframe.style.height !== `${h}px`) {
+        iframe.style.height = `${h}px`;
+      }
+    };
+
+    const debouncedSync = () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(syncHeight);
     };
 
     const handleLoad = () => {
@@ -59,18 +71,36 @@ export const CustomHtmlModule = ({ content }: CustomHtmlModuleProps) => {
       const doc = iframe.contentDocument;
       if (!doc) return;
 
-      const observer = new ResizeObserver(() => syncHeight());
-      observer.observe(doc.body);
-      observer.observe(doc.documentElement);
+      resizeObserver = new ResizeObserver(debouncedSync);
+      resizeObserver.observe(doc.body);
+      resizeObserver.observe(doc.documentElement);
 
-      iframe.dataset.resizeObserverAttached = 'true';
-      (iframe as HTMLIFrameElement & { __cleanup?: () => void }).__cleanup = () => observer.disconnect();
+      // Watch for DOM changes (expand/collapse, dynamic content)
+      mutationObserver = new MutationObserver(debouncedSync);
+      mutationObserver.observe(doc.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['style', 'class', 'hidden', 'open'],
+      });
+
+      // Listen to transition/animation ends inside iframe
+      doc.addEventListener('transitionend', debouncedSync);
+      doc.addEventListener('animationend', debouncedSync);
+      // Click may trigger expand — re-measure after
+      doc.addEventListener('click', () => {
+        debouncedSync();
+        setTimeout(syncHeight, 300);
+        setTimeout(syncHeight, 600);
+      });
     };
 
     iframe.addEventListener('load', handleLoad);
     return () => {
       iframe.removeEventListener('load', handleLoad);
-      (iframe as HTMLIFrameElement & { __cleanup?: () => void }).__cleanup?.();
+      resizeObserver?.disconnect();
+      mutationObserver?.disconnect();
+      if (rafId) cancelAnimationFrame(rafId);
     };
   }, [srcDoc]);
 
@@ -82,7 +112,9 @@ export const CustomHtmlModule = ({ content }: CustomHtmlModuleProps) => {
         ref={iframeRef}
         title="Custom HTML activation"
         srcDoc={srcDoc}
-        className="w-full border-0 bg-transparent"
+        className="w-full border-0 bg-transparent overflow-hidden"
+        style={{ overflow: 'hidden' }}
+        scrolling="no"
         sandbox="allow-scripts allow-forms allow-popups allow-modals"
       />
     </section>
