@@ -501,18 +501,18 @@ const ProductPage = () => {
       )}
 
       {/* Footer */}
-      <footer className="mt-6 sm:mt-10" style={{ borderTop: '1px solid hsl(var(--border))' }}>
+      <footer className="mt-6 sm:mt-10 border-t border-border">
         <div className="max-w-6xl mx-auto px-4 py-5 sm:py-6">
           <div className="flex items-center justify-between">
-            <div>
-              <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 13, fontWeight: 600, color: '#1a1a1a', opacity: 0.4 }}>
+            <div className="min-w-0">
+              <span className="font-serif text-[13px] font-semibold text-foreground opacity-40 block">
                 Louboutin × Aura Blockchain
               </span>
-              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 10, color: '#ccc', marginTop: 2 }}>
+              <p className="font-sans text-[10px] text-muted-foreground mt-0.5">
                 Powered by Aitems · Product Intelligence
               </p>
             </div>
-            <Button asChild variant="ghost" size="sm" className="text-xs">
+            <Button asChild variant="ghost" size="sm" className="text-xs shrink-0">
               <Link to="/">
                 <ArrowLeft className="w-3.5 h-3.5 sm:mr-1.5" />
                 <span className="hidden sm:inline">Back</span>
