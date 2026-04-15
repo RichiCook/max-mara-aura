@@ -204,9 +204,7 @@ const AtelierCompositions = ({ currentProduct }: AtelierCompositionsProps) => {
     });
   }, [currentProduct?.slug]);
 
-  // Auto-generation disabled — compositions display static product images only
-  // To re-enable, uncomment the effect below when the generate-composition edge function is deployed
-  /*
+  // Auto-generate compositions that don't have cached images
   useEffect(() => {
     if (initialLoading || compositions.length === 0) return;
     compositions.forEach((comp) => {
@@ -216,7 +214,6 @@ const AtelierCompositions = ({ currentProduct }: AtelierCompositionsProps) => {
       }
     });
   }, [initialLoading, compositions.length]);
-  */
 
   const generateComposition = useCallback(async (compId: string) => {
     setCompositions((prev) =>
