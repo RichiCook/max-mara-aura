@@ -21,6 +21,8 @@ import ClaimOwnershipModal from '@/components/product/ClaimOwnershipModal';
 import RegistrationSuccessModal from '@/components/product/RegistrationSuccessModal';
 import CelebritySpotlight from '@/components/product/CelebritySpotlight';
 import SimilarProducts from '@/components/product/SimilarProducts';
+import { HeritageSection, NewsletterSection } from '@/components/product/HeritageNewsletter';
+import CertificationHistoryModal from '@/components/product/CertificationHistoryModal';
 
 const DEMO_PRODUCT: Product = {
   id: 'demo-louboutin',
