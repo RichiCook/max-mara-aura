@@ -18,6 +18,7 @@ import SettingsPage from "./pages/SettingsPage";
 import ThemeSettingsPage from "./pages/ThemeSettingsPage";
 import ScanAnalyticsPage from "./pages/ScanAnalyticsPage";
 import CelebrityContentPage from "./pages/CelebrityContentPage";
+import AdminMediaManager from "./pages/AdminMediaManager";
 import AuthPage from "./pages/AuthPage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { PlatformSettingsProvider } from "./contexts/PlatformSettingsContext";
@@ -51,6 +52,7 @@ const App = () => (
           <Route path="/settings/theme" element={<PlatformSettingsProvider><ProtectedRoute><ThemeSettingsPage /></ProtectedRoute></PlatformSettingsProvider>} />
           <Route path="/scan-analytics" element={<PlatformSettingsProvider><ProtectedRoute><ScanAnalyticsPage /></ProtectedRoute></PlatformSettingsProvider>} />
           <Route path="/celebrity-content" element={<PlatformSettingsProvider><ProtectedRoute><CelebrityContentPage /></ProtectedRoute></PlatformSettingsProvider>} />
+          <Route path="/admin/media-manager" element={<PlatformSettingsProvider><ProtectedRoute><AdminMediaManager /></ProtectedRoute></PlatformSettingsProvider>} />
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
