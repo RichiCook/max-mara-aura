@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Inter:wght@400;500;600&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Inter:wght@400;500;600&display=swap");
 
 @layer base {
   :root {
@@ -45,14 +45,14 @@
     --sidebar-border: 30 15% 88%;
     --sidebar-ring: 356 76% 53%;
 
-    --louboutin-red: #E12B38;
+    --louboutin-red: #e12b38;
     --louboutin-dark: #1a1a1a;
-    --louboutin-cream: #F7F3EF;
-    --aura-gold: #C4A265;
+    --louboutin-cream: #f7f3ef;
+    --aura-gold: #c4a265;
     --aura-teal: #2dd4bf;
 
-    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-    --font-serif: 'Cormorant Garamond', Georgia, serif;
+    --font-sans: '"NB Akademie"', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    --font-serif: '"NB Akademie" Garamond', Georgia, serif;
   }
 
   .dark {
@@ -115,16 +115,18 @@
 
   @keyframes ken-burns-pan {
     0% {
-      transform: scale(1.0) translate(0%, 0%);
+      transform: scale(1) translate(0%, 0%);
     }
     33% {
-      transform: scale(var(--kb-zoom, 1.06)) translate(calc(-1.5% * var(--kb-intensity, 1)), calc(-1% * var(--kb-intensity, 1)));
+      transform: scale(var(--kb-zoom, 1.06))
+        translate(calc(-1.5% * var(--kb-intensity, 1)), calc(-1% * var(--kb-intensity, 1)));
     }
     66% {
-      transform: scale(calc(1 + (var(--kb-zoom, 1.06) - 1) * 0.67)) translate(calc(1% * var(--kb-intensity, 1)), calc(-0.5% * var(--kb-intensity, 1)));
+      transform: scale(calc(1 + (var(--kb-zoom, 1.06) - 1) * 0.67))
+        translate(calc(1% * var(--kb-intensity, 1)), calc(-0.5% * var(--kb-intensity, 1)));
     }
     100% {
-      transform: scale(1.0) translate(0%, 0%);
+      transform: scale(1) translate(0%, 0%);
     }
   }
 
@@ -143,6 +145,13 @@
 }
 
 @keyframes pulse-halo {
-  0%, 100% { transform: scale(1); opacity: 0.4; }
-  50% { transform: scale(2.5); opacity: 0; }
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.4;
+  }
+  50% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
 }
