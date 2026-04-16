@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Trash2, Loader2, Eye, EyeOff, Pencil, Check, X, Sparkles, BarChart3, RefreshCw } from 'lucide-react';
+import { Plus, Trash2, Loader2, Eye, EyeOff, Pencil, Check, X, Sparkles, ChevronDown } from 'lucide-react';
 import { AppHeader } from '@/components/AppHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,8 +10,10 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Slider } from '@/components/ui/slider';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useToast } from '@/hooks/use-toast';
 import { useCarouselDefinitions, CarouselDefinition } from '@/hooks/useProductCarousels';
+import { useDependenceRules } from '@/hooks/useDependenceRules';
 import { supabase } from '@/integrations/supabase/client';
 
 const MATCH_TYPES = [
@@ -52,44 +54,42 @@ const DISPLAY_POSITIONS = [
 
 const CATEGORY_OPTIONS = ['all', 'Shoes', 'Bags', 'Accessories', 'Beauty'];
 
+const TARGET_CATEGORIES = [
+  { value: 'same', label: 'Same as current product' },
+  { value: 'shoes', label: 'Shoes' },
+  { value: 'bags', label: 'Bags' },
+  { value: 'small_leather_goods', label: 'Small Leather Goods' },
+  { value: 'accessories', label: 'Accessories' },
+  { value: 'eyewear', label: 'Eyewear' },
+  { value: 'beauty', label: 'Beauty & Fragrance' },
+  { value: 'any', label: 'Any category (no filter)' },
+  { value: 'dependence_rules', label: 'Custom — use Global Dependence Rules' },
+];
+
 const TITLE_DEFAULTS: Record<string, string> = {
-  category: 'Similar Products',
-  collection: 'From the Collection',
-  color: 'Same Color',
-  manual: 'Our Picks',
-  complete_look: 'Complete the Look',
-  material: 'Same Material',
-  silhouette: 'Same Silhouette',
-  heel_height: 'Similar Heel Height',
-  price_range: 'Similar Price',
-  recently_viewed: 'Recently Viewed',
-  customers_also_viewed: 'Customers Also Viewed',
-  ai_recommend: 'You May Also Like',
-  trending: 'Trending Now',
-  new_arrivals: 'New Arrivals',
+  category: 'Similar Products', collection: 'From the Collection', color: 'Same Color',
+  manual: 'Our Picks', complete_look: 'Complete the Look', material: 'Same Material',
+  silhouette: 'Same Silhouette', heel_height: 'Similar Heel Height', price_range: 'Similar Price',
+  recently_viewed: 'Recently Viewed', customers_also_viewed: 'Customers Also Viewed',
+  ai_recommend: 'You May Also Like', trending: 'Trending Now', new_arrivals: 'New Arrivals',
 };
 
 const CarouselSettingsPage = () => {
   const { carousels, loading, createCarousel, updateCarousel, deleteCarousel, refetch, installEssentials } = useCarouselDefinitions();
+  const { rules: dependenceRules } = useDependenceRules();
   const { toast } = useToast();
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<Partial<CarouselDefinition>>({});
+  const [editForm, setEditForm] = useState<Partial<CarouselDefinition & { target_category: string; target_attribute_overrides: Record<string, any>; use_dependence_rules: boolean; linked_rule_ids: string[] }>>({});
   const [analytics, setAnalytics] = useState<Record<string, { views: number; clicks: number }>>({});
 
-  // Fetch analytics
   useEffect(() => {
     const fetchAnalytics = async () => {
-      const { data } = await supabase
-        .from('recommendation_clicks')
-        .select('carousel_id')
-        .gte('clicked_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
+      const { data } = await supabase.from('recommendation_clicks').select('carousel_id').gte('clicked_at', new Date(Date.now() - 30 * 86400000).toISOString());
       if (data) {
         const counts: Record<string, number> = {};
         for (const row of data) counts[row.carousel_id] = (counts[row.carousel_id] || 0) + 1;
         const result: Record<string, { views: number; clicks: number }> = {};
-        for (const [id, clicks] of Object.entries(counts)) {
-          result[id] = { views: Math.round(clicks / 0.077), clicks }; // Estimate views from CTR
-        }
+        for (const [id, clicks] of Object.entries(counts)) result[id] = { views: Math.round(clicks / 0.077), clicks };
         setAnalytics(result);
       }
     };
@@ -97,43 +97,25 @@ const CarouselSettingsPage = () => {
   }, [carousels]);
 
   const handleCreate = async () => {
-    const result = await createCarousel({
-      name: 'New Carousel',
-      match_type: 'category',
-      match_config: { fallback_to_collection: true, max_items: 12 },
-      layout: { card_size: 'small', columns: 4 },
-    });
+    const result = await createCarousel({ name: 'New Carousel', match_type: 'category', match_config: { fallback_to_collection: true, max_items: 12 }, layout: { card_size: 'small', columns: 4 } });
     if (result.success) toast({ title: 'Carousel created' });
     else toast({ title: 'Failed', description: result.error, variant: 'destructive' });
   };
 
-  const handleInstallEssentials = async () => {
-    await installEssentials();
-    toast({ title: 'Essential carousels installed' });
-  };
+  const handleToggleActive = async (id: string, isActive: boolean) => { await updateCarousel(id, { is_active: !isActive } as any); };
+  const handleDelete = async (id: string) => { if (confirm('Delete this carousel?')) { const r = await deleteCarousel(id); if (r.success) toast({ title: 'Deleted' }); } };
 
-  const handleToggleActive = async (id: string, isActive: boolean) => {
-    await updateCarousel(id, { is_active: !isActive } as any);
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm('Delete this carousel?')) return;
-    const result = await deleteCarousel(id);
-    if (result.success) toast({ title: 'Deleted' });
-  };
-
-  const startEdit = (c: CarouselDefinition) => {
+  const startEdit = (c: any) => {
     setEditingId(c.id);
     setEditForm({
-      name: c.name,
-      match_type: c.match_type,
-      match_config: { ...c.match_config },
-      layout: { ...c.layout },
-      display_position: c.display_position,
-      show_on_categories: [...c.show_on_categories],
-      min_products: c.min_products,
-      sort_by: c.sort_by,
-      exclude_current: c.exclude_current,
+      name: c.name, match_type: c.match_type, match_config: { ...c.match_config },
+      layout: { ...c.layout }, display_position: c.display_position,
+      show_on_categories: [...c.show_on_categories], min_products: c.min_products,
+      sort_by: c.sort_by, exclude_current: c.exclude_current,
+      target_category: c.target_category || 'same',
+      target_attribute_overrides: c.target_attribute_overrides || {},
+      use_dependence_rules: c.use_dependence_rules || false,
+      linked_rule_ids: c.linked_rule_ids || [],
     });
   };
 
@@ -143,8 +125,6 @@ const CarouselSettingsPage = () => {
     if (result.success) { setEditingId(null); toast({ title: 'Updated' }); }
     else toast({ title: 'Failed', description: result.error, variant: 'destructive' });
   };
-
-  const cancelEdit = () => { setEditingId(null); setEditForm({}); };
 
   const moveCarousel = async (id: string, direction: 'up' | 'down') => {
     const idx = carousels.findIndex(c => c.id === id);
@@ -159,22 +139,22 @@ const CarouselSettingsPage = () => {
 
   const updateMatchType = (v: string) => {
     setEditForm(f => ({
-      ...f,
-      match_type: v,
+      ...f, match_type: v,
       name: f.name === TITLE_DEFAULTS[f.match_type || ''] || f.name === 'New Carousel' ? TITLE_DEFAULTS[v] || f.name : f.name,
-      match_config: {
-        ...f.match_config,
-        max_items: f.match_config?.max_items || 12,
-      },
+    }));
+  };
+
+  const updateTargetCategory = (v: string) => {
+    setEditForm(f => ({
+      ...f,
+      target_category: v,
+      use_dependence_rules: v === 'dependence_rules',
+      exclude_current: v !== 'same' ? false : f.exclude_current,
     }));
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <div className="min-h-screen bg-background flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div>;
   }
 
   return (
@@ -189,35 +169,23 @@ const CarouselSettingsPage = () => {
             </div>
             <div className="flex gap-2">
               {carousels.length === 0 && (
-                <Button variant="outline" onClick={handleInstallEssentials}>
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Install Essentials
+                <Button variant="outline" onClick={() => installEssentials().then(() => toast({ title: 'Essentials installed' }))}>
+                  <Sparkles className="w-4 h-4 mr-2" />Install Essentials
                 </Button>
               )}
-              <Button onClick={handleCreate}>
-                <Plus className="w-4 h-4 mr-2" />
-                Add Carousel
-              </Button>
+              <Button onClick={handleCreate}><Plus className="w-4 h-4 mr-2" />Add Carousel</Button>
             </div>
           </div>
         </header>
 
         {carousels.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <p className="text-muted-foreground mb-4">No carousels configured yet</p>
-              <div className="flex gap-3 justify-center">
-                <Button variant="outline" onClick={handleInstallEssentials}>
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Install Essential Carousels
-                </Button>
-                <Button onClick={handleCreate}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create Custom
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <Card><CardContent className="py-12 text-center">
+            <p className="text-muted-foreground mb-4">No carousels configured yet</p>
+            <div className="flex gap-3 justify-center">
+              <Button variant="outline" onClick={() => installEssentials().then(() => toast({ title: 'Essentials installed' }))}><Sparkles className="w-4 h-4 mr-2" />Install Essentials</Button>
+              <Button onClick={handleCreate}><Plus className="w-4 h-4 mr-2" />Create Custom</Button>
+            </div>
+          </CardContent></Card>
         ) : (
           <div className="space-y-4">
             {carousels.map((carousel, idx) => {
@@ -226,6 +194,8 @@ const CarouselSettingsPage = () => {
               const sizeLabel = CARD_SIZES.find(s => s.value === carousel.layout.card_size)?.label || carousel.layout.card_size;
               const stats = analytics[carousel.id];
               const ctr = stats ? ((stats.clicks / stats.views) * 100).toFixed(1) : null;
+              const targetCat = (carousel as any).target_category || 'same';
+              const targetLabel = TARGET_CATEGORIES.find(t => t.value === targetCat)?.label || 'Same';
 
               return (
                 <Card key={carousel.id} className={!carousel.is_active ? 'opacity-60' : ''}>
@@ -241,17 +211,14 @@ const CarouselSettingsPage = () => {
                         ) : (
                           <CardTitle className="text-lg">{carousel.name}</CardTitle>
                         )}
-                        <Badge variant={carousel.is_active ? 'default' : 'secondary'}>
-                          {carousel.is_active ? 'Active' : 'Inactive'}
-                        </Badge>
-                        {MATCH_TYPES.find(m => m.value === carousel.match_type)?.group === 'Smart' && (
-                          <Badge variant="outline" className="text-[10px]">Smart</Badge>
-                        )}
+                        <Badge variant={carousel.is_active ? 'default' : 'secondary'}>{carousel.is_active ? 'Active' : 'Inactive'}</Badge>
+                        {MATCH_TYPES.find(m => m.value === carousel.match_type)?.group === 'Smart' && <Badge variant="outline" className="text-[10px]">Smart</Badge>}
+                        {targetCat !== 'same' && <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">Cross-category</Badge>}
                       </div>
                       <div className="flex items-center gap-2">
                         {isEditing ? (
                           <>
-                            <Button size="sm" variant="ghost" onClick={cancelEdit}><X className="w-4 h-4" /></Button>
+                            <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}><X className="w-4 h-4" /></Button>
                             <Button size="sm" onClick={saveEdit}><Check className="w-4 h-4 mr-1" />Save</Button>
                           </>
                         ) : (
@@ -259,12 +226,8 @@ const CarouselSettingsPage = () => {
                             <Button size="sm" variant="ghost" onClick={() => handleToggleActive(carousel.id, carousel.is_active)}>
                               {carousel.is_active ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                             </Button>
-                            <Button size="sm" variant="ghost" onClick={() => startEdit(carousel)}>
-                              <Pencil className="w-4 h-4" />
-                            </Button>
-                            <Button size="sm" variant="ghost" className="text-destructive" onClick={() => handleDelete(carousel.id)}>
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => startEdit(carousel)}><Pencil className="w-4 h-4" /></Button>
+                            <Button size="sm" variant="ghost" className="text-destructive" onClick={() => handleDelete(carousel.id)}><Trash2 className="w-4 h-4" /></Button>
                           </>
                         )}
                       </div>
@@ -293,14 +256,23 @@ const CarouselSettingsPage = () => {
                           </Select>
                         </div>
 
+                        {/* Target Category — NEW */}
+                        <div className="space-y-2">
+                          <Label>Show products from category</Label>
+                          <Select value={editForm.target_category || 'same'} onValueChange={updateTargetCategory}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              {TARGET_CATEGORIES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
                         {/* Card Size */}
                         <div className="space-y-2">
                           <Label>Card Size</Label>
                           <Select value={editForm.layout?.card_size || 'small'} onValueChange={v => setEditForm(f => ({ ...f, layout: { ...f.layout!, card_size: v as any } }))}>
                             <SelectTrigger><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              {CARD_SIZES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
-                            </SelectContent>
+                            <SelectContent>{CARD_SIZES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
                           </Select>
                         </div>
 
@@ -323,21 +295,17 @@ const CarouselSettingsPage = () => {
                           <Label>Display Position</Label>
                           <Select value={editForm.display_position || 'below_product_info'} onValueChange={v => setEditForm(f => ({ ...f, display_position: v }))}>
                             <SelectTrigger><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              {DISPLAY_POSITIONS.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
-                            </SelectContent>
+                            <SelectContent>{DISPLAY_POSITIONS.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent>
                           </Select>
                         </div>
 
-                        {/* Sort By (for rule-based types) */}
+                        {/* Sort By */}
                         {['category', 'collection', 'color', 'material', 'silhouette'].includes(editForm.match_type || '') && (
                           <div className="space-y-2">
                             <Label>Sort By</Label>
                             <Select value={editForm.sort_by || 'newest'} onValueChange={v => setEditForm(f => ({ ...f, sort_by: v }))}>
                               <SelectTrigger><SelectValue /></SelectTrigger>
-                              <SelectContent>
-                                {SORT_OPTIONS.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
-                              </SelectContent>
+                              <SelectContent>{SORT_OPTIONS.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
                             </Select>
                           </div>
                         )}
@@ -351,14 +319,12 @@ const CarouselSettingsPage = () => {
                             const selected = (editForm.show_on_categories || ['all']).includes(cat);
                             return (
                               <Badge key={cat} variant={selected ? 'default' : 'outline'} className="cursor-pointer"
-                                onClick={() => {
-                                  setEditForm(f => {
-                                    const current = f.show_on_categories || ['all'];
-                                    if (cat === 'all') return { ...f, show_on_categories: ['all'] };
-                                    const without = current.filter(c => c !== 'all' && c !== cat);
-                                    return { ...f, show_on_categories: selected ? (without.length ? without : ['all']) : [...without, cat] };
-                                  });
-                                }}>
+                                onClick={() => setEditForm(f => {
+                                  const current = f.show_on_categories || ['all'];
+                                  if (cat === 'all') return { ...f, show_on_categories: ['all'] };
+                                  const without = current.filter(c => c !== 'all' && c !== cat);
+                                  return { ...f, show_on_categories: selected ? (without.length ? without : ['all']) : [...without, cat] };
+                                })}>
                                 {cat === 'all' ? 'All' : cat}
                               </Badge>
                             );
@@ -366,8 +332,81 @@ const CarouselSettingsPage = () => {
                         </div>
                       </div>
 
-                      {/* Conditional fields */}
-                      {/* Category fallback */}
+                      {/* Linked Dependence Rules (when using rules) */}
+                      {editForm.target_category === 'dependence_rules' && (
+                        <div className="space-y-2">
+                          <Label>Use these rules</Label>
+                          <div className="flex gap-1.5 flex-wrap">
+                            {dependenceRules.filter(r => r.status === 'approved').map(rule => {
+                              const sel = (editForm.linked_rule_ids || []).includes(rule.id);
+                              return (
+                                <Badge key={rule.id} variant={sel ? 'default' : 'outline'} className="cursor-pointer text-xs"
+                                  onClick={() => setEditForm(f => ({
+                                    ...f,
+                                    linked_rule_ids: sel
+                                      ? (f.linked_rule_ids || []).filter(id => id !== rule.id)
+                                      : [...(f.linked_rule_ids || []), rule.id],
+                                  }))}>
+                                  {rule.name}
+                                </Badge>
+                              );
+                            })}
+                            {dependenceRules.filter(r => r.status === 'approved').length === 0 && (
+                              <p className="text-xs text-muted-foreground">No approved rules yet. Create and approve rules first.</p>
+                            )}
+                          </div>
+                          {(editForm.linked_rule_ids || []).length === 0 && dependenceRules.filter(r => r.status === 'approved').length > 0 && (
+                            <p className="text-xs text-muted-foreground">Leave empty to use ALL matching approved rules</p>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Attribute Override (collapsible) */}
+                      {['color', 'material', 'silhouette', 'heel_height', 'price_range'].includes(editForm.match_type || '') && editForm.target_category !== 'same' && (
+                        <Collapsible>
+                          <CollapsibleTrigger className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground">
+                            <ChevronDown className="w-4 h-4" />
+                            Attribute override
+                          </CollapsibleTrigger>
+                          <CollapsibleContent className="mt-3 space-y-3">
+                            <div className="flex items-center gap-2">
+                              <Switch
+                                checked={!!editForm.target_attribute_overrides?.enabled}
+                                onCheckedChange={v => setEditForm(f => ({
+                                  ...f,
+                                  target_attribute_overrides: { ...(f.target_attribute_overrides || {}), enabled: v },
+                                }))}
+                              />
+                              <Label className="text-sm">Override attribute from current product</Label>
+                            </div>
+                            {editForm.target_attribute_overrides?.enabled && (
+                              <div className="space-y-2">
+                                {editForm.match_type === 'color' && (
+                                  <div><Label className="text-xs">Specific color</Label>
+                                    <Input value={editForm.target_attribute_overrides?.color || ''} placeholder="e.g. Louboutin red"
+                                      onChange={e => setEditForm(f => ({ ...f, target_attribute_overrides: { ...f.target_attribute_overrides, color: e.target.value } }))} /></div>
+                                )}
+                                {editForm.match_type === 'material' && (
+                                  <div><Label className="text-xs">Specific material</Label>
+                                    <Input value={editForm.target_attribute_overrides?.material || ''} placeholder="e.g. Patent calf"
+                                      onChange={e => setEditForm(f => ({ ...f, target_attribute_overrides: { ...f.target_attribute_overrides, material: e.target.value } }))} /></div>
+                                )}
+                                {editForm.match_type === 'silhouette' && (
+                                  <div><Label className="text-xs">Specific silhouette</Label>
+                                    <Select value={editForm.target_attribute_overrides?.silhouette || ''} onValueChange={v => setEditForm(f => ({ ...f, target_attribute_overrides: { ...f.target_attribute_overrides, silhouette: v } }))}>
+                                      <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+                                      <SelectContent>
+                                        {['Kate', 'So Kate', 'Miss Z', 'Cassia', 'Fanny', 'Jane', 'Hot Chick', 'Iriza', 'Vieira'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                                      </SelectContent>
+                                    </Select></div>
+                                )}
+                              </div>
+                            )}
+                          </CollapsibleContent>
+                        </Collapsible>
+                      )}
+
+                      {/* Conditional fields per match type */}
                       {editForm.match_type === 'category' && (
                         <div className="flex items-center gap-2">
                           <Switch checked={editForm.match_config?.fallback_to_collection ?? true}
@@ -375,40 +414,25 @@ const CarouselSettingsPage = () => {
                           <Label className="text-sm">Fallback to collection if no category matches</Label>
                         </div>
                       )}
-
-                      {/* Exclude current */}
-                      {['category', 'collection', 'color', 'material', 'silhouette', 'heel_height', 'price_range'].includes(editForm.match_type || '') && (
+                      {['category', 'collection', 'color', 'material', 'silhouette', 'heel_height', 'price_range'].includes(editForm.match_type || '') && editForm.target_category === 'same' && (
                         <div className="flex items-center gap-2">
-                          <Switch checked={editForm.exclude_current !== false}
-                            onCheckedChange={v => setEditForm(f => ({ ...f, exclude_current: v }))} />
+                          <Switch checked={editForm.exclude_current !== false} onCheckedChange={v => setEditForm(f => ({ ...f, exclude_current: v }))} />
                           <Label className="text-sm">Exclude current product</Label>
                         </div>
                       )}
-
-                      {/* Heel height tolerance */}
                       {editForm.match_type === 'heel_height' && (
-                        <div className="space-y-2">
-                          <Label>Tolerance: ±{editForm.match_config?.tolerance || 20}mm</Label>
+                        <div className="space-y-2"><Label>Tolerance: ±{editForm.match_config?.tolerance || 20}mm</Label>
                           <Slider min={10} max={50} step={5} value={[editForm.match_config?.tolerance || 20]}
-                            onValueChange={([v]) => setEditForm(f => ({ ...f, match_config: { ...f.match_config, tolerance: v } }))} />
-                        </div>
+                            onValueChange={([v]) => setEditForm(f => ({ ...f, match_config: { ...f.match_config, tolerance: v } }))} /></div>
                       )}
-
-                      {/* Price range tolerance */}
                       {editForm.match_type === 'price_range' && (
-                        <div className="space-y-2">
-                          <Label>Tolerance: ±{editForm.match_config?.tolerance || 30}%</Label>
+                        <div className="space-y-2"><Label>Tolerance: ±{editForm.match_config?.tolerance || 30}%</Label>
                           <Slider min={10} max={50} step={5} value={[editForm.match_config?.tolerance || 30]}
-                            onValueChange={([v]) => setEditForm(f => ({ ...f, match_config: { ...f.match_config, tolerance: v } }))} />
-                        </div>
+                            onValueChange={([v]) => setEditForm(f => ({ ...f, match_config: { ...f.match_config, tolerance: v } }))} /></div>
                       )}
-
-                      {/* Time window */}
                       {['recently_viewed', 'customers_also_viewed', 'trending', 'new_arrivals'].includes(editForm.match_type || '') && (
-                        <div className="space-y-2">
-                          <Label>Time Window</Label>
-                          <Select value={editForm.match_config?.time_window || '7_days'}
-                            onValueChange={v => setEditForm(f => ({ ...f, match_config: { ...f.match_config, time_window: v } }))}>
+                        <div className="space-y-2"><Label>Time Window</Label>
+                          <Select value={editForm.match_config?.time_window || '7_days'} onValueChange={v => setEditForm(f => ({ ...f, match_config: { ...f.match_config, time_window: v } }))}>
                             <SelectTrigger><SelectValue /></SelectTrigger>
                             <SelectContent>
                               <SelectItem value="session">Current session</SelectItem>
@@ -416,54 +440,36 @@ const CarouselSettingsPage = () => {
                               <SelectItem value="7_days">Last 7 days</SelectItem>
                               <SelectItem value="30_days">Last 30 days</SelectItem>
                             </SelectContent>
-                          </Select>
-                        </div>
+                          </Select></div>
                       )}
-
-                      {/* AI weights */}
                       {editForm.match_type === 'ai_recommend' && (
-                        <div className="space-y-3">
-                          <Label className="text-sm font-medium">AI Scoring Weights</Label>
+                        <div className="space-y-3"><Label className="text-sm font-medium">AI Scoring Weights</Label>
                           {['category', 'color', 'price', 'style', 'popularity'].map(key => (
                             <div key={key} className="space-y-1">
-                              <div className="flex justify-between text-xs">
-                                <span className="capitalize">{key}</span>
-                                <span>{editForm.match_config?.weights?.[key] ?? (key === 'category' ? 30 : key === 'color' ? 20 : key === 'price' ? 20 : 15)}</span>
-                              </div>
+                              <div className="flex justify-between text-xs"><span className="capitalize">{key}</span><span>{editForm.match_config?.weights?.[key] ?? (key === 'category' ? 30 : key === 'color' ? 20 : key === 'price' ? 20 : 15)}</span></div>
                               <Slider min={0} max={100} step={5}
                                 value={[editForm.match_config?.weights?.[key] ?? (key === 'category' ? 30 : key === 'color' ? 20 : key === 'price' ? 20 : 15)]}
-                                onValueChange={([v]) => setEditForm(f => ({
-                                  ...f,
-                                  match_config: {
-                                    ...f.match_config,
-                                    weights: { ...(f.match_config?.weights || {}), [key]: v },
-                                  },
-                                }))} />
+                                onValueChange={([v]) => setEditForm(f => ({ ...f, match_config: { ...f.match_config, weights: { ...(f.match_config?.weights || {}), [key]: v } } }))} />
                             </div>
-                          ))}
-                        </div>
+                          ))}</div>
                       )}
-
-                      {/* Complete the look source */}
                       {editForm.match_type === 'complete_look' && (
-                        <div className="space-y-2">
-                          <Label>Pairing Source</Label>
-                          <Select value={editForm.match_config?.pairing_source || 'both'}
-                            onValueChange={v => setEditForm(f => ({ ...f, match_config: { ...f.match_config, pairing_source: v } }))}>
+                        <div className="space-y-2"><Label>Pairing Source</Label>
+                          <Select value={editForm.match_config?.pairing_source || 'both'} onValueChange={v => setEditForm(f => ({ ...f, match_config: { ...f.match_config, pairing_source: v } }))}>
                             <SelectTrigger><SelectValue /></SelectTrigger>
                             <SelectContent>
                               <SelectItem value="compositions">Atelier Compositions</SelectItem>
                               <SelectItem value="manual">Manual pairings</SelectItem>
                               <SelectItem value="both">Both</SelectItem>
                             </SelectContent>
-                          </Select>
-                        </div>
+                          </Select></div>
                       )}
                     </CardContent>
                   ) : (
                     <CardContent className="pt-0">
                       <div className="flex gap-4 text-sm text-muted-foreground flex-wrap">
                         <span>Match: <strong className="text-foreground">{matchLabel}</strong></span>
+                        {targetCat !== 'same' && <span>Target: <strong className="text-foreground">{targetLabel}</strong></span>}
                         <span>Cards: <strong className="text-foreground">{sizeLabel}</strong></span>
                         <span>Max: <strong className="text-foreground">{carousel.match_config.max_items || 12}</strong></span>
                         <span>Position: <strong className="text-foreground">{DISPLAY_POSITIONS.find(p => p.value === carousel.display_position)?.label || 'Below info'}</strong></span>
