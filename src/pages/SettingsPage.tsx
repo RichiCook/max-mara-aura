@@ -36,6 +36,25 @@ const SettingsPage = () => {
   const [shopifyDomain, setShopifyDomain] = useState('');
   const [shopifyToken, setShopifyToken] = useState('');
   const [shopifyEmbed, setShopifyEmbed] = useState(true);
+  const [logoHeight, setLogoHeight] = useState(32);
+  const [logoPosition, setLogoPosition] = useState<'left' | 'center'>('left');
+
+  // Load logo display settings
+  useEffect(() => {
+    const fetchLogoDisplay = async () => {
+      const { data } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('id', 'logo_display')
+        .single();
+      if (data?.value) {
+        const val = data.value as { height?: number; position?: string };
+        setLogoHeight(val.height ?? 32);
+        setLogoPosition((val.position as 'left' | 'center') ?? 'left');
+      }
+    };
+    fetchLogoDisplay();
+  }, []);
 
   // Sync state when settings load
   useEffect(() => {
@@ -334,6 +353,77 @@ const SettingsPage = () => {
                     </p>
                   </div>
                 </div>
+
+                {/* Logo Size */}
+                <div className="mt-4 space-y-2">
+                  <Label>Logo Size ({logoHeight}px)</Label>
+                  <input
+                    type="range"
+                    min={16}
+                    max={80}
+                    value={logoHeight}
+                    onChange={(e) => setLogoHeight(Number(e.target.value))}
+                    className="w-full accent-primary"
+                  />
+                  <div className="flex justify-between text-[10px] text-muted-foreground">
+                    <span>16px</span>
+                    <span>80px</span>
+                  </div>
+                </div>
+
+                {/* Logo Position */}
+                <div className="mt-2 space-y-2">
+                  <Label>Logo Position</Label>
+                  <div className="flex gap-2">
+                    <Button
+                      variant={logoPosition === 'left' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setLogoPosition('left')}
+                    >
+                      Left
+                    </Button>
+                    <Button
+                      variant={logoPosition === 'center' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setLogoPosition('center')}
+                    >
+                      Center
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Logo Preview */}
+                <div className="mt-3 p-3 border rounded-lg bg-muted/30">
+                  <p className="text-[10px] text-muted-foreground mb-2">Preview</p>
+                  <div className={`flex items-center ${logoPosition === 'center' ? 'justify-center' : 'justify-start'}`}>
+                    <img
+                      src={settings.logo_url || defaultLogo}
+                      alt="Logo preview"
+                      style={{ height: logoHeight }}
+                      className="object-contain"
+                    />
+                  </div>
+                </div>
+
+                {/* Save Logo Display */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                  onClick={async () => {
+                    await supabase
+                      .from('app_settings')
+                      .upsert({
+                        id: 'logo_display',
+                        value: { height: logoHeight, position: logoPosition },
+                        updated_at: new Date().toISOString(),
+                      });
+                    toast({ title: 'Logo display settings saved!' });
+                  }}
+                >
+                  <Save className="w-3 h-3 mr-1" />
+                  Save Logo Settings
+                </Button>
               </div>
 
               <Separator />
