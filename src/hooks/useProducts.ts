@@ -60,6 +60,7 @@ export const useProducts = () => {
     } else {
       const parsed: Product[] = (data || []).map(p => ({
         ...p,
+        price: normalizePrice(p.price),
         images: normalizeImages(p.images),
         wear_with: Array.isArray(p.wear_with) ? p.wear_with : [],
         you_may_also_like: Array.isArray(p.you_may_also_like) ? p.you_may_also_like : [],
