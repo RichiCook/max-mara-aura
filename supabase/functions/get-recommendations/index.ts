@@ -5,6 +5,37 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// ─── Category mapping: English slugs ↔ French DB patterns ───
+const CATEGORY_PATTERNS: Record<string, string[]> = {
+  shoes: ["souliers", "escarpins", "sneakers", "bottines", "bottes", "sandales", "mocassins", "ballerines", "espadrilles"],
+  bags: ["sacs", "pochettes", "cabas", "bandoulière", "portés main", "portés épaule"],
+  accessories: ["accessoires", "ceintures", "lunettes", "porte-clés", "bijoux", "bracelets", "portefeuilles"],
+  beauty: ["beauté", "teint", "lèvres", "yeux", "ongles", "parfums", "rouges à lèvres"],
+  small_leather_goods: ["portefeuilles", "petits accessoires"],
+  eyewear: ["lunettes"],
+};
+
+/** Check if a product category (French hierarchical) matches an English slug */
+function categoryMatchesSlug(productCategory: string, slug: string): boolean {
+  if (slug === "any") return true;
+  const catLower = productCategory.toLowerCase();
+  // Direct substring match (handles cases like "shoes" in English categories)
+  if (catLower.includes(slug.toLowerCase())) return true;
+  // French pattern match
+  const patterns = CATEGORY_PATTERNS[slug.toLowerCase()];
+  if (!patterns) return false;
+  return patterns.some(p => catLower.includes(p));
+}
+
+/** Build an ilike filter for a target category slug */
+function targetCategoryFilter(slug: string): string | null {
+  if (slug === "any") return null;
+  // Try French patterns first
+  const patterns = CATEGORY_PATTERNS[slug.toLowerCase()];
+  if (patterns && patterns.length > 0) return patterns[0]; // Use primary pattern
+  return slug; // Fallback to raw slug
+}
+
 const DYNAMIC_TITLES: Record<string, string> = {
   bags: "Bags to Match",
   shoes: "Shoes to Match",
