@@ -412,6 +412,9 @@ const ProductPage = () => {
       {/* Activations: below_product_info */}
       {renderActivationsForPosition('below_product_info')}
 
+      {/* Carousels: below_product_info */}
+      <ProductCarousels product={product} position="below_product_info" />
+
       {/* Aura Modals */}
       <AuraPassportModal
         open={passportOpen}
@@ -486,8 +489,8 @@ const ProductPage = () => {
       {/* Activations: before_similar */}
       {renderActivationsForPosition('before_similar')}
 
-      {/* Similar Products */}
-      <ProductCarousels product={product} />
+      {/* Carousels: bottom */}
+      <ProductCarousels product={product} position="bottom" />
 
       {/* Wear With */}
       {product.wear_with && product.wear_with.length > 0 && (
