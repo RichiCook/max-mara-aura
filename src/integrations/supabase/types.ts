@@ -252,6 +252,62 @@ export type Database = {
         }
         Relationships: []
       }
+      carousel_rules: {
+        Row: {
+          carousel_id: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          match_dimensions: string[]
+          max_results: number | null
+          priority: number
+          sort_by: string | null
+          target_attribute_overrides: Json | null
+          target_category: string
+          trigger_categories: string[]
+          trigger_filters: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          carousel_id: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          match_dimensions?: string[]
+          max_results?: number | null
+          priority?: number
+          sort_by?: string | null
+          target_attribute_overrides?: Json | null
+          target_category: string
+          trigger_categories?: string[]
+          trigger_filters?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          carousel_id?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          match_dimensions?: string[]
+          max_results?: number | null
+          priority?: number
+          sort_by?: string | null
+          target_attribute_overrides?: Json | null
+          target_category?: string
+          trigger_categories?: string[]
+          trigger_filters?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "carousel_rules_carousel_id_fkey"
+            columns: ["carousel_id"]
+            isOneToOne: false
+            referencedRelation: "product_carousels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       celebrity_content: {
         Row: {
           category: string | null
@@ -285,110 +341,6 @@ export type Database = {
           product_code?: string | null
           shop_url?: string | null
           updated_at?: string
-        }
-        Relationships: []
-      }
-      dependence_rule_audit_log: {
-        Row: {
-          action: string
-          diff: Json | null
-          id: string
-          notes: string | null
-          performed_at: string
-          performed_by: string | null
-          rule_id: string
-        }
-        Insert: {
-          action: string
-          diff?: Json | null
-          id?: string
-          notes?: string | null
-          performed_at?: string
-          performed_by?: string | null
-          rule_id: string
-        }
-        Update: {
-          action?: string
-          diff?: Json | null
-          id?: string
-          notes?: string | null
-          performed_at?: string
-          performed_by?: string | null
-          rule_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "dependence_rule_audit_log_rule_id_fkey"
-            columns: ["rule_id"]
-            isOneToOne: false
-            referencedRelation: "dependence_rules"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      dependence_rules: {
-        Row: {
-          approved_at: string | null
-          approved_by: string | null
-          created_at: string
-          created_by: string | null
-          description: string | null
-          id: string
-          is_active: boolean
-          match_dimensions: string[]
-          max_results: number
-          name: string
-          priority: number
-          sort_by: string
-          status: string
-          target_attribute_overrides: Json
-          target_category: string
-          trigger_categories: string[]
-          trigger_filters: Json
-          updated_at: string
-          updated_by: string | null
-        }
-        Insert: {
-          approved_at?: string | null
-          approved_by?: string | null
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          is_active?: boolean
-          match_dimensions?: string[]
-          max_results?: number
-          name: string
-          priority?: number
-          sort_by?: string
-          status?: string
-          target_attribute_overrides?: Json
-          target_category: string
-          trigger_categories: string[]
-          trigger_filters?: Json
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Update: {
-          approved_at?: string | null
-          approved_by?: string | null
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          is_active?: boolean
-          match_dimensions?: string[]
-          max_results?: number
-          name?: string
-          priority?: number
-          sort_by?: string
-          status?: string
-          target_attribute_overrides?: Json
-          target_category?: string
-          trigger_categories?: string[]
-          trigger_filters?: Json
-          updated_at?: string
-          updated_by?: string | null
         }
         Relationships: []
       }
@@ -624,10 +576,11 @@ export type Database = {
           display_order: number
           display_position: string
           exclude_current: boolean
+          fallback_behavior: string | null
+          fallback_product_ids: string[] | null
           id: string
           is_active: boolean
           layout: Json
-          linked_rule_ids: string[]
           match_config: Json
           match_type: string
           min_products: number
@@ -637,17 +590,17 @@ export type Database = {
           target_attribute_overrides: Json
           target_category: string
           updated_at: string
-          use_dependence_rules: boolean
         }
         Insert: {
           created_at?: string
           display_order?: number
           display_position?: string
           exclude_current?: boolean
+          fallback_behavior?: string | null
+          fallback_product_ids?: string[] | null
           id?: string
           is_active?: boolean
           layout?: Json
-          linked_rule_ids?: string[]
           match_config?: Json
           match_type?: string
           min_products?: number
@@ -657,17 +610,17 @@ export type Database = {
           target_attribute_overrides?: Json
           target_category?: string
           updated_at?: string
-          use_dependence_rules?: boolean
         }
         Update: {
           created_at?: string
           display_order?: number
           display_position?: string
           exclude_current?: boolean
+          fallback_behavior?: string | null
+          fallback_product_ids?: string[] | null
           id?: string
           is_active?: boolean
           layout?: Json
-          linked_rule_ids?: string[]
           match_config?: Json
           match_type?: string
           min_products?: number
@@ -677,7 +630,6 @@ export type Database = {
           target_attribute_overrides?: Json
           target_category?: string
           updated_at?: string
-          use_dependence_rules?: boolean
         }
         Relationships: []
       }
@@ -900,13 +852,6 @@ export type Database = {
             columns: ["carousel_id"]
             isOneToOne: false
             referencedRelation: "product_carousels"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "recommendation_clicks_rule_id_fkey"
-            columns: ["rule_id"]
-            isOneToOne: false
-            referencedRelation: "dependence_rules"
             referencedColumns: ["id"]
           },
           {
