@@ -302,12 +302,19 @@ const ProductPage = () => {
               </span>
             )}
           </Link>
-          <Button asChild variant="ghost" size="sm" className="text-xs">
-            <Link to={`/product/${slug}/edit`}>
-              <Settings className="w-4 h-4" />
-              <span className="hidden sm:inline ml-1.5">Edit</span>
-            </Link>
-          </Button>
+          <div className="flex items-center gap-1">
+            {ownerRegistered && (
+              <Button variant="ghost" size="sm" className="text-xs" onClick={handleResetOwnership} title="Reset ownership demo">
+                <span className="text-[10px]">🔄</span>
+              </Button>
+            )}
+            <Button asChild variant="ghost" size="sm" className="text-xs">
+              <Link to={`/product/${slug}/edit`}>
+                <Settings className="w-4 h-4" />
+                <span className="hidden sm:inline ml-1.5">Edit</span>
+              </Link>
+            </Button>
+          </div>
         </div>
       </header>
 
