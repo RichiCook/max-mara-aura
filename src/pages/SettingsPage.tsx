@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Upload, Palette, Type, Image, Save, Loader2, User, X, Tag, Wrench, ShoppingBag, ExternalLink, Trash2 } from 'lucide-react';
+import { ArrowLeft, Upload, Palette, Type, Image, Save, Loader2, User, X, Tag, Wrench, ShoppingBag, ExternalLink, Trash2, Rocket } from 'lucide-react';
+import { useDashboardV2 } from '@/hooks/useDashboardV2';
 import RepairServiceSettings from '@/components/repair/RepairServiceSettings';
 import CompositionSettingsSection from '@/components/settings/CompositionSettingsSection';
 import { AppHeader } from '@/components/AppHeader';
@@ -311,6 +312,8 @@ const SettingsPage = () => {
         </header>
 
         <div className="space-y-6">
+          {/* Dashboard v2.0 Toggle */}
+          <DashboardV2Toggle />
           {/* Branding */}
           <Card>
             <CardHeader>
