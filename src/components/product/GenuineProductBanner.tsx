@@ -13,10 +13,10 @@ const GenuineProductBanner = ({ productName, collection, onViewPassport }: Genui
       {/* Badges */}
       <div className="flex items-center gap-2 mb-2.5">
         <span className="font-sans text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-green-100 text-green-800 inline-flex items-center gap-1">
-          ✓ Genuine Product
+          Genuine Product
         </span>
         <span className="font-sans text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 inline-flex items-center gap-1">
-          ⬡ Aura Certified
+          Aura Certified
         </span>
       </div>
 

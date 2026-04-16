@@ -1,12 +1,9 @@
 interface AuraDigitalPassportCardProps {
-  onOpenClaim: () => void;
   onOpenPassport: () => void;
-  onOpenHistory?: () => void;
-  onOpenTransfer?: () => void;
   ownerRegistered?: boolean;
 }
 
-const AuraDigitalPassportCard = ({ onOpenClaim, onOpenPassport, onOpenHistory, onOpenTransfer, ownerRegistered }: AuraDigitalPassportCardProps) => {
+const AuraDigitalPassportCard = ({ onOpenPassport, ownerRegistered }: AuraDigitalPassportCardProps) => {
   return (
     <div
       className="animate-in"
@@ -29,63 +26,28 @@ const AuraDigitalPassportCard = ({ onOpenClaim, onOpenPassport, onOpenHistory, o
           <path d="M12 2L3 7v5c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z"/>
         </svg>
         <div className="flex-1" style={{ marginLeft: 10 }}>
-          <span style={{ fontFamily: "var(--font-sans)", fontSize: 14, fontWeight: 600, color: '#1a1a1a', display: 'block' }}>
+          <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 600, color: '#1a1a1a', display: 'block' }}>
             Digital Passport Available
           </span>
-          <span style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: '#C4A265', display: 'block', marginTop: 1 }}>
-            Aura Blockchain Consortium
+          <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: '#C4A265', display: 'block', marginTop: 1 }}>
+            <a href="https://auraconsortium.com/" target="_blank" rel="noopener noreferrer" style={{ color: '#C4A265', textDecoration: 'none' }}>
+              Aura Blockchain Consortium
+            </a>
           </span>
         </div>
         {ownerRegistered && (
           <span style={{
-            fontFamily: "var(--font-sans)", fontSize: 9, fontWeight: 600,
+            fontFamily: "'Inter', sans-serif", fontSize: 9, fontWeight: 600,
             padding: '2px 8px', borderRadius: 20, background: '#dcfce7', color: '#166534',
             marginRight: 8,
           }}>
-            ✓ Claimed
+            Claimed
           </span>
         )}
         <svg width="8" height="14" viewBox="0 0 8 14" fill="none" stroke="#C4A265" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
           <path d="M1 1l6 6-6 6" />
         </svg>
       </button>
-
-      {/* Quick action buttons */}
-      <div className="grid grid-cols-3 gap-2" style={{ marginTop: 14 }}>
-        <button
-          onClick={onOpenClaim}
-          style={{
-            fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 600,
-            background: '#faf8f5', color: '#1a1a1a', border: '1px solid #f0ece7',
-            borderRadius: 8, padding: '10px 4px', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-          }}
-        >
-          {ownerRegistered ? '✓ Claimed' : '🔐 Claim'}
-        </button>
-        <button
-          onClick={onOpenHistory || onOpenPassport}
-          style={{
-            fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 600,
-            background: '#faf8f5', color: '#1a1a1a', border: '1px solid #f0ece7',
-            borderRadius: 8, padding: '10px 4px', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-          }}
-        >
-          📋 History
-        </button>
-        <button
-          onClick={onOpenTransfer || onOpenPassport}
-          style={{
-            fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 600,
-            background: '#faf8f5', color: '#1a1a1a', border: '1px solid #f0ece7',
-            borderRadius: 8, padding: '10px 4px', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-          }}
-        >
-          ↗ Transfer
-        </button>
-      </div>
     </div>
   );
 };

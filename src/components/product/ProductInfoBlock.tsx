@@ -57,8 +57,7 @@ const ProductInfoBlock = ({ price, productCode, description, composition, source
         <div className="flex items-baseline gap-2">
           {price && (
             <>
-              <span className="font-sans text-[12px] font-medium text-muted-foreground">RRP:</span>
-              <span className="font-sans text-[26px] font-bold text-foreground">{price}</span>
+              <span className="font-sans text-[26px] font-bold text-foreground">{price.replace(/a partir de\s*/i, '')}</span>
             </>
           )}
         </div>
@@ -148,7 +147,7 @@ const ProductInfoBlock = ({ price, productCode, description, composition, source
 
       {/* Footer */}
       <p className="font-sans text-[11px] text-muted-foreground text-center mt-3">
-        Louboutin × Aura Blockchain · Powered by Aitems · Product Intelligence
+        Powered by Aitems · Product Intelligence
       </p>
 
       {/* Repair Sheet */}
