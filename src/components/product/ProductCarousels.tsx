@@ -99,7 +99,7 @@ const CarouselSection = ({ carousel, sourceProductId }: { carousel: CarouselWith
                   )}
                 </div>
               </div>
-            </Link>
+            </Wrapper>
           );
         })}
       </div>

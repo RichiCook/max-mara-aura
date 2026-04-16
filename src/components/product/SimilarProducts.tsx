@@ -112,13 +112,14 @@ const SimilarProducts = ({ productId, productCode, category, collection }: Simil
           const tag = getTag(p);
           const url = getProductUrl(p);
           const external = isExternal(p);
-          const linkProps = external
-            ? { to: url, target: '_blank' as const, rel: 'noopener noreferrer' }
+          const Wrapper = external ? 'a' : Link;
+          const wrapperProps = external
+            ? { href: url, target: '_blank', rel: 'noopener noreferrer' }
             : { to: url };
           return (
-            <Link
+            <Wrapper
               key={p.id}
-              {...linkProps}
+              {...(wrapperProps as any)}
               className="shrink-0 snap-start"
               style={{ minWidth: 148, maxWidth: 148, textDecoration: 'none' }}
             >
