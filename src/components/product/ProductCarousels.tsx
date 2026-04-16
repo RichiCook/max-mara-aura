@@ -33,9 +33,11 @@ const ProductCarousels = ({ product, position = 'below_product_info' }: ProductC
 
 const CarouselSection = ({ carousel, sourceProductId }: { carousel: CarouselWithProducts; sourceProductId: string }) => {
   const cardSize = CARD_SIZES[carousel.layout.card_size] || CARD_SIZES.small;
+  const displayTitle = carousel.dynamic_title || carousel.name;
+  const firstRuleId = carousel.matched_rule_ids?.[0] || null;
 
   const handleClick = (targetId: string) => {
-    trackRecommendationClick(sourceProductId, targetId, carousel.id);
+    trackRecommendationClick(sourceProductId, targetId, carousel.id, firstRuleId);
   };
 
   return (
@@ -46,7 +48,7 @@ const CarouselSection = ({ carousel, sourceProductId }: { carousel: CarouselWith
             <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
           </svg>
           <h2 className="font-serif text-xl font-semibold text-foreground m-0">
-            {carousel.name}
+            {displayTitle}
           </h2>
         </div>
         <span className="font-sans text-[11px] text-muted-foreground">
