@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useModalScrollLock } from '@/hooks/useModalScrollLock';
+import { useSwipeToDismiss } from '@/hooks/useSwipeToDismiss';
 
 interface ClaimOwnershipModalProps {
   open: boolean;
@@ -17,6 +18,8 @@ const ClaimOwnershipModal = ({ open, onClose, productName, productImage, onSucce
   const [digits, setDigits] = useState<string[]>(Array(9).fill(''));
   const [agreed, setAgreed] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const { dragY, handleTouchStart, handleTouchMove, handleTouchEnd, reset } = useSwipeToDismiss(onClose, scrollRef);
 
   useModalScrollLock(visible);
 
@@ -25,13 +28,15 @@ const ClaimOwnershipModal = ({ open, onClose, productName, productImage, onSucce
       setVisible(true);
       setDigits(Array(9).fill(''));
       setAgreed(false);
+      reset();
       requestAnimationFrame(() => requestAnimationFrame(() => setAnimating(true)));
     } else {
       setAnimating(false);
+      reset();
       const t = setTimeout(() => setVisible(false), 350);
       return () => clearTimeout(t);
     }
-  }, [open]);
+  }, [open, reset]);
 
   const handleDigitChange = useCallback((index: number, value: string) => {
     if (!/^\d?$/.test(value)) return;
@@ -61,6 +66,8 @@ const ClaimOwnershipModal = ({ open, onClose, productName, productImage, onSucce
   };
 
   if (!visible) return null;
+
+  const backdropOpacity = animating ? Math.max(0, 1 - dragY / 300) : 0;
 
   const renderDigitGroup = (start: number, end: number) => (
     <div className="flex items-center gap-1.5">
@@ -93,24 +100,29 @@ const ClaimOwnershipModal = ({ open, onClose, productName, productImage, onSucce
     <div
       onClick={onClose}
       style={{
-        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 10001,
-        opacity: animating ? 1 : 0, transition: 'opacity 0.35s ease',
+        position: 'fixed', inset: 0, background: `rgba(0,0,0,${0.6 * backdropOpacity})`, zIndex: 10001,
+        opacity: animating || dragY > 0 ? 1 : 0, transition: dragY > 0 ? 'none' : 'opacity 0.35s ease',
       }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
         style={{
           position: 'fixed', bottom: 0, left: 0, right: 0,
           maxHeight: '90dvh',
           background: '#fff', borderRadius: '20px 20px 0 0',
           boxShadow: '0 -8px 60px rgba(0,0,0,0.25)',
           overflow: 'hidden', display: 'flex', flexDirection: 'column',
-          transform: animating ? 'translateY(0)' : 'translateY(100%)',
-          transition: 'transform 0.35s cubic-bezier(0.32, 0.72, 0, 1)',
+          transform: animating ? `translateY(${dragY}px)` : 'translateY(100%)',
+          transition: dragY > 0 ? 'none' : 'transform 0.35s cubic-bezier(0.32, 0.72, 0, 1)',
         }}
       >
         {/* Drag handle */}
-        <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(0,0,0,0.12)', margin: '12px auto 0', flexShrink: 0 }} />
+        <div style={{ flexShrink: 0, padding: '12px 0 0', display: 'flex', justifyContent: 'center' }}>
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(0,0,0,0.12)' }} />
+        </div>
 
         {/* Header */}
         <div style={{ padding: '16px 20px 0', flexShrink: 0 }}>
@@ -125,8 +137,7 @@ const ClaimOwnershipModal = ({ open, onClose, productName, productImage, onSucce
         </div>
 
         {/* Scrollable content */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px 24px' }}>
-          {/* Product image */}
+        <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch', padding: '16px 20px 24px' }}>
           {productImage ? (
             <div style={{
               width: 120, height: 160, margin: '0 auto 20px',

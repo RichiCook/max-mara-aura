@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useModalScrollLock } from '@/hooks/useModalScrollLock';
+import { useSwipeToDismiss } from '@/hooks/useSwipeToDismiss';
 
 interface AuraLoginModalProps {
   open: boolean;
@@ -18,6 +19,8 @@ const AuraLoginModal = ({ open, onClose, onLoginSuccess }: AuraLoginModalProps) 
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState('');
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const { dragY, handleTouchStart, handleTouchMove, handleTouchEnd, reset } = useSwipeToDismiss(onClose, scrollRef);
 
   useModalScrollLock(visible);
 
@@ -25,13 +28,15 @@ const AuraLoginModal = ({ open, onClose, onLoginSuccess }: AuraLoginModalProps) 
     if (open) {
       setVisible(true);
       setEmail(''); setPassword(''); setName(''); setIsRegister(false); setShowPassword(false);
+      reset();
       requestAnimationFrame(() => requestAnimationFrame(() => setAnimating(true)));
     } else {
       setAnimating(false);
+      reset();
       const t = setTimeout(() => setVisible(false), 350);
       return () => clearTimeout(t);
     }
-  }, [open]);
+  }, [open, reset]);
 
   if (!visible) return null;
 
@@ -43,28 +48,35 @@ const AuraLoginModal = ({ open, onClose, onLoginSuccess }: AuraLoginModalProps) 
     onLoginSuccess();
   };
 
+  const backdropOpacity = animating ? Math.max(0, 1 - dragY / 300) : 0;
+
   return (
     <div
       onClick={onClose}
       style={{
-        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 10001,
-        opacity: animating ? 1 : 0, transition: 'opacity 0.35s ease',
+        position: 'fixed', inset: 0, background: `rgba(0,0,0,${0.6 * backdropOpacity})`, zIndex: 10001,
+        opacity: animating || dragY > 0 ? 1 : 0, transition: dragY > 0 ? 'none' : 'opacity 0.35s ease',
       }}
     >
       <div
         onClick={e => e.stopPropagation()}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
         style={{
           position: 'fixed', bottom: 0, left: 0, right: 0,
           maxHeight: '90dvh',
           background: '#fff', borderRadius: '20px 20px 0 0',
           boxShadow: '0 -8px 60px rgba(0,0,0,0.25)',
           overflow: 'hidden', display: 'flex', flexDirection: 'column',
-          transform: animating ? 'translateY(0)' : 'translateY(100%)',
-          transition: 'transform 0.35s cubic-bezier(0.32, 0.72, 0, 1)',
+          transform: animating ? `translateY(${dragY}px)` : 'translateY(100%)',
+          transition: dragY > 0 ? 'none' : 'transform 0.35s cubic-bezier(0.32, 0.72, 0, 1)',
         }}
       >
         {/* Drag handle */}
-        <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(0,0,0,0.12)', margin: '12px auto 0', flexShrink: 0 }} />
+        <div style={{ flexShrink: 0, padding: '12px 0 0', display: 'flex', justifyContent: 'center' }}>
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(0,0,0,0.12)' }} />
+        </div>
 
         {/* Header */}
         <div style={{ padding: '16px 20px 0', flexShrink: 0 }}>
@@ -82,7 +94,7 @@ const AuraLoginModal = ({ open, onClose, onLoginSuccess }: AuraLoginModalProps) 
         </div>
 
         {/* Content */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 20px 32px' }}>
+        <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch', padding: '20px 20px 32px' }}>
           <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, color: '#1a1a1a', marginBottom: 24, lineHeight: 1.4 }}>
             {isRegister ? 'Please provide your details to register' : 'Please provide your details to create an account'}
           </p>
@@ -167,7 +179,6 @@ const AuraLoginModal = ({ open, onClose, onLoginSuccess }: AuraLoginModalProps) 
 
           {isRegister && <div style={{ height: 20 }} />}
 
-          {/* Submit button */}
           <button
             onClick={handleSubmit}
             disabled={!canSubmit}
@@ -183,7 +194,6 @@ const AuraLoginModal = ({ open, onClose, onLoginSuccess }: AuraLoginModalProps) 
             {isRegister ? 'Register' : 'Login'}
           </button>
 
-          {/* Toggle */}
           <p style={{ textAlign: 'center', marginTop: 16 }}>
             <button
               onClick={() => setIsRegister(!isRegister)}

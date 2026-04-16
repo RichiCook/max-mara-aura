@@ -1,6 +1,7 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { usePlatformSettingsContext } from '@/contexts/PlatformSettingsContext';
 import { useModalScrollLock } from '@/hooks/useModalScrollLock';
+import { useSwipeToDismiss } from '@/hooks/useSwipeToDismiss';
 import defaultLogo from '@/assets/logo.png';
 import auraLogoGreen from '@/assets/aura-logo-green.png';
 
@@ -15,8 +16,6 @@ interface AuraPassportModalProps {
   onOpenRedeem: () => void;
   claimDate?: string | null;
 }
-
-const SWIPE_THRESHOLD = 80;
 
 const T = {
   bgDark: '#2C1F17',
@@ -37,46 +36,25 @@ const AuraPassportModal = ({
 }: AuraPassportModalProps) => {
   const [visible, setVisible] = useState(false);
   const [animating, setAnimating] = useState(false);
-  const [dragY, setDragY] = useState(0);
-  const dragStart = useRef<number | null>(null);
-  const sheetRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const { settings } = usePlatformSettingsContext();
   const logoUrl = settings.logo_url || defaultLogo;
+  const { dragY, handleTouchStart, handleTouchMove, handleTouchEnd, reset } = useSwipeToDismiss(onClose, scrollRef);
 
   useModalScrollLock(visible);
 
   useEffect(() => {
     if (open) {
       setVisible(true);
-      setDragY(0);
+      reset();
       requestAnimationFrame(() => requestAnimationFrame(() => setAnimating(true)));
     } else {
       setAnimating(false);
-      setDragY(0);
+      reset();
       const t = setTimeout(() => setVisible(false), 350);
       return () => clearTimeout(t);
     }
-  }, [open]);
-
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    const el = sheetRef.current;
-    if (!el) return;
-    if (el.scrollTop > 5) return;
-    dragStart.current = e.touches[0].clientY;
-  }, []);
-
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (dragStart.current === null) return;
-    const delta = e.touches[0].clientY - dragStart.current;
-    if (delta > 0) setDragY(delta);
-  }, []);
-
-  const handleTouchEnd = useCallback(() => {
-    if (dragStart.current === null) return;
-    if (dragY > SWIPE_THRESHOLD) onClose();
-    else setDragY(0);
-    dragStart.current = null;
-  }, [dragY, onClose]);
+  }, [open, reset]);
 
   if (!visible) return null;
 
@@ -115,21 +93,22 @@ const AuraPassportModal = ({
         style={{
           position: 'fixed', bottom: 0, left: 0, right: 0,
           maxHeight: '90dvh',
-          background: '#fff', borderRadius: '20px 20px 0 0',
+          background: T.bgDark,
+          borderRadius: '20px 20px 0 0',
           boxShadow: '0 -8px 60px rgba(0,0,0,0.25)',
           overflow: 'hidden', display: 'flex', flexDirection: 'column',
           transform: animating ? `translateY(${dragY}px)` : 'translateY(100%)',
           transition: dragY > 0 ? 'none' : 'transform 0.35s cubic-bezier(0.32, 0.72, 0, 1)',
         }}
       >
-        {/* Drag handle — outside scroll so always visible at top */}
-        <div style={{ background: T.bgDark, borderRadius: '20px 20px 0 0', flexShrink: 0 }}>
-          <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.25)', margin: '12px auto 0' }} />
+        {/* Drag handle */}
+        <div style={{ flexShrink: 0, padding: '12px 0 0', display: 'flex', justifyContent: 'center' }}>
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(245,241,234,0.25)' }} />
         </div>
 
-        {/* ═══ SINGLE SCROLL CONTAINER ═══ */}
+        {/* Single scroll container */}
         <div
-          ref={sheetRef}
+          ref={scrollRef}
           style={{
             flex: 1, overflowY: 'auto', overscrollBehavior: 'contain',
             WebkitOverflowScrolling: 'touch',
@@ -288,7 +267,7 @@ const AuraPassportModal = ({
           </div>
 
           {/* ═══ WHITE SECTION — Certification History ═══ */}
-          <div style={{ background: '#fff', padding: '24px 20px 80px' }}>
+          <div style={{ background: '#fff', padding: '24px 20px 32px' }}>
             <h3 style={{ fontFamily: T.fontSerif, fontSize: 18, fontWeight: 600, color: '#1a1a1a', margin: '0 0 16px' }}>
               Certification History
             </h3>
@@ -320,24 +299,21 @@ const AuraPassportModal = ({
             <p style={{ fontFamily: T.fontSans, fontSize: 10, color: '#aaa', marginTop: 16, lineHeight: 1.6 }}>
               Disclaimer: The Aura Blockchain Consortium provides the solution to issue this certificate. The content of this certificate is under the sole responsibility of the entity that has commercialised the product covered by the certificate.
             </p>
-          </div>
-        </div>
 
-        {/* Close button — sticky footer */}
-        <div style={{
-          padding: '12px 20px 24px', flexShrink: 0, background: '#fff',
-          borderTop: '0.5px solid rgba(0,0,0,0.06)',
-        }}>
-          <button
-            onClick={onClose}
-            style={{
-              width: '100%', fontFamily: T.fontSans, fontSize: 14, fontWeight: 500,
-              background: '#f5f5f5', color: '#666', border: 'none', borderRadius: 24,
-              padding: '14px 0', cursor: 'pointer',
-            }}
-          >
-            Close
-          </button>
+            {/* Close button — inline at end of content */}
+            <button
+              onClick={onClose}
+              style={{
+                width: '100%', maxWidth: 340,
+                margin: '32px auto 8px', display: 'block',
+                fontFamily: T.fontSans, fontSize: 14, fontWeight: 500,
+                background: '#F3F4F6', color: '#1A1A1A', border: 'none', borderRadius: 999,
+                padding: '14px', cursor: 'pointer',
+              }}
+            >
+              Close
+            </button>
+          </div>
         </div>
       </div>
     </div>
