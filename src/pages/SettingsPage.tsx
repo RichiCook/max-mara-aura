@@ -18,7 +18,42 @@ import { supabase } from '@/integrations/supabase/client';
 import { invalidateProductLinkCache } from '@/hooks/useProductLinkDestination';
 import defaultLogo from '@/assets/logo.png';
 
-const SettingsPage = () => {
+function DashboardV2Toggle() {
+  const { enabled, loading, toggle } = useDashboardV2();
+  const { toast } = useToast();
+
+  const handleToggle = async (val: boolean) => {
+    await toggle(val);
+    toast({ title: val ? 'Dashboard v2.0 enabled' : 'Dashboard v2.0 disabled' });
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Rocket className="w-5 h-5" />
+          Dashboard v2.0 <span className="text-xs font-normal text-muted-foreground">(Beta)</span>
+        </CardTitle>
+        <CardDescription>
+          Enable the new unified dashboard experience as your landing page.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <Label>Enable Dashboard v2.0</Label>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              When enabled, your home page becomes the new Dashboard with health score, KPIs, and recommendations.
+            </p>
+          </div>
+          <Switch checked={enabled} onCheckedChange={handleToggle} disabled={loading} />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+
   const { settings, loading, saving, updateSettings, uploadLogo, uploadFavicon } = usePlatformSettings();
   const { refetch: refetchContext } = usePlatformSettingsContext();
   const { toast } = useToast();
