@@ -122,12 +122,21 @@ const AuraPassportModal = ({
           transition: dragY > 0 ? 'none' : 'transform 0.35s cubic-bezier(0.32, 0.72, 0, 1)',
         }}
       >
-        {/* ═══ DARK SECTION ═══ */}
-        <div style={{ background: T.bgDark, flexShrink: 0, textAlign: 'center' }}>
-          {/* Drag handle */}
+        {/* Drag handle — outside scroll so always visible at top */}
+        <div style={{ background: T.bgDark, borderRadius: '20px 20px 0 0', flexShrink: 0 }}>
           <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.25)', margin: '12px auto 0' }} />
+        </div>
 
-          <div style={{ padding: '0 20px 40px' }}>
+        {/* ═══ SINGLE SCROLL CONTAINER ═══ */}
+        <div
+          ref={sheetRef}
+          style={{
+            flex: 1, overflowY: 'auto', overscrollBehavior: 'contain',
+            WebkitOverflowScrolling: 'touch',
+          }}
+        >
+          {/* ═══ DARK SECTION ═══ */}
+          <div style={{ background: T.bgDark, textAlign: 'center', padding: '0 20px 40px' }}>
             {/* Brand logo */}
             <div style={{ marginTop: 28 }}>
               <img
@@ -277,45 +286,48 @@ const AuraPassportModal = ({
               </div>
             )}
           </div>
-        </div>
 
-        {/* ═══ WHITE SECTION — Certification History ═══ */}
-        <div ref={sheetRef} style={{ flex: 1, overflowY: 'auto', padding: '24px 20px 0' }}>
-          <h3 style={{ fontFamily: T.fontSerif, fontSize: 18, fontWeight: 600, color: '#1a1a1a', margin: '0 0 16px' }}>
-            Certification History
-          </h3>
+          {/* ═══ WHITE SECTION — Certification History ═══ */}
+          <div style={{ background: '#fff', padding: '24px 20px 80px' }}>
+            <h3 style={{ fontFamily: T.fontSerif, fontSize: 18, fontWeight: 600, color: '#1a1a1a', margin: '0 0 16px' }}>
+              Certification History
+            </h3>
 
-          {productCode && (
-            <p style={{ fontFamily: T.fontSans, fontSize: 11, color: '#999', margin: '-8px 0 16px' }}>
-              SKU: {productCode}
-            </p>
-          )}
+            {productCode && (
+              <p style={{ fontFamily: T.fontSans, fontSize: 11, color: '#999', margin: '-8px 0 16px' }}>
+                SKU: {productCode}
+              </p>
+            )}
 
-          <div style={{ borderRadius: 8, border: '1px solid #f0ece7', overflow: 'hidden' }}>
-            <div className="grid grid-cols-3" style={{ background: '#faf8f5', padding: '10px 14px', borderBottom: '1px solid #f0ece7' }}>
-              <span style={{ fontFamily: T.fontSans, fontSize: 10, fontWeight: 600, color: '#999', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Date</span>
-              <span style={{ fontFamily: T.fontSans, fontSize: 10, fontWeight: 600, color: '#999', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Event</span>
-              <span style={{ fontFamily: T.fontSans, fontSize: 10, fontWeight: 600, color: '#999', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'right' }}>Status</span>
-            </div>
-            {historyRows.map((row, i) => (
-              <div key={i} className="grid grid-cols-3 items-center" style={{ padding: '12px 14px', borderBottom: i < historyRows.length - 1 ? '1px solid #f0ece7' : 'none' }}>
-                <span style={{ fontFamily: T.fontSans, fontSize: 11, color: '#888' }}>{row.date}</span>
-                <span style={{ fontFamily: T.fontSans, fontSize: 11, fontWeight: 500, color: '#1a1a1a' }}>{row.event}</span>
-                <div className="flex items-center justify-end gap-1.5">
-                  <span style={{ width: 5, height: 5, borderRadius: '50%', background: T.green, display: 'inline-block' }} />
-                  <span style={{ fontFamily: T.fontSans, fontSize: 11, color: T.green, fontWeight: 500 }}>{row.status}</span>
-                </div>
+            <div style={{ borderRadius: 8, border: '1px solid #f0ece7', overflow: 'hidden' }}>
+              <div className="grid grid-cols-3" style={{ background: '#faf8f5', padding: '10px 14px', borderBottom: '1px solid #f0ece7' }}>
+                <span style={{ fontFamily: T.fontSans, fontSize: 10, fontWeight: 600, color: '#999', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Date</span>
+                <span style={{ fontFamily: T.fontSans, fontSize: 10, fontWeight: 600, color: '#999', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Event</span>
+                <span style={{ fontFamily: T.fontSans, fontSize: 10, fontWeight: 600, color: '#999', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'right' }}>Status</span>
               </div>
-            ))}
-          </div>
+              {historyRows.map((row, i) => (
+                <div key={i} className="grid grid-cols-3 items-center" style={{ padding: '12px 14px', borderBottom: i < historyRows.length - 1 ? '1px solid #f0ece7' : 'none' }}>
+                  <span style={{ fontFamily: T.fontSans, fontSize: 11, color: '#888' }}>{row.date}</span>
+                  <span style={{ fontFamily: T.fontSans, fontSize: 11, fontWeight: 500, color: '#1a1a1a' }}>{row.event}</span>
+                  <div className="flex items-center justify-end gap-1.5">
+                    <span style={{ width: 5, height: 5, borderRadius: '50%', background: T.green, display: 'inline-block' }} />
+                    <span style={{ fontFamily: T.fontSans, fontSize: 11, color: T.green, fontWeight: 500 }}>{row.status}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
 
-          <p style={{ fontFamily: T.fontSans, fontSize: 10, color: '#aaa', marginTop: 16, lineHeight: 1.6 }}>
-            Disclaimer: The Aura Blockchain Consortium provides the solution to issue this certificate. The content of this certificate is under the sole responsibility of the entity that has commercialised the product covered by the certificate.
-          </p>
+            <p style={{ fontFamily: T.fontSans, fontSize: 10, color: '#aaa', marginTop: 16, lineHeight: 1.6 }}>
+              Disclaimer: The Aura Blockchain Consortium provides the solution to issue this certificate. The content of this certificate is under the sole responsibility of the entity that has commercialised the product covered by the certificate.
+            </p>
+          </div>
         </div>
 
         {/* Close button — sticky footer */}
-        <div style={{ padding: '12px 20px 24px', flexShrink: 0, background: '#fff' }}>
+        <div style={{
+          padding: '12px 20px 24px', flexShrink: 0, background: '#fff',
+          borderTop: '0.5px solid rgba(0,0,0,0.06)',
+        }}>
           <button
             onClick={onClose}
             style={{
