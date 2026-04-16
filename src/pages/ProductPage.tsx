@@ -24,6 +24,9 @@ import ProductCarousels from '@/components/product/ProductCarousels';
 import { NewsletterSection } from '@/components/product/HeritageNewsletter';
 import CertificationHistoryModal from '@/components/product/CertificationHistoryModal';
 import { CampaignMediaSection } from '@/components/product/CampaignMediaSection';
+import AuraLoginModal from '@/components/product/AuraLoginModal';
+import TransferOwnershipModal from '@/components/product/TransferOwnershipModal';
+import RedeemArtworkModal from '@/components/product/RedeemArtworkModal';
 
 const DEMO_PRODUCT: Product = {
   id: 'demo-louboutin',
@@ -59,10 +62,14 @@ const ProductPage = () => {
 
   // Aura state
   const [passportOpen, setPassportOpen] = useState(false);
+  const [loginOpen, setLoginOpen] = useState(false);
   const [claimOpen, setClaimOpen] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
-  const [ownerRegistered, setOwnerRegistered] = useState(false);
+  const [ownerRegistered, setOwnerRegistered] = useState(() => localStorage.getItem('aura_ownership_claimed') === 'true');
+  const [claimDate, setClaimDate] = useState<string | null>(() => localStorage.getItem('aura_claim_date'));
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [transferOpen, setTransferOpen] = useState(false);
+  const [redeemOpen, setRedeemOpen] = useState(false);
 
   const { trackEvent } = useScanTracking();
   const { settings } = usePlatformSettingsContext();
@@ -258,9 +265,27 @@ const ProductPage = () => {
     );
   };
 
+  const handleLoginSuccess = () => {
+    setLoginOpen(false);
+    setTimeout(() => setClaimOpen(true), 300);
+  };
+
   const handleClaimSuccess = () => {
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ', ' + now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
     setOwnerRegistered(true);
+    setClaimDate(dateStr);
+    localStorage.setItem('aura_ownership_claimed', 'true');
+    localStorage.setItem('aura_claim_date', dateStr);
     setSuccessOpen(true);
+  };
+
+  const handleResetOwnership = () => {
+    setOwnerRegistered(false);
+    setClaimDate(null);
+    localStorage.removeItem('aura_ownership_claimed');
+    localStorage.removeItem('aura_claim_date');
+    localStorage.removeItem('aura_owner_name');
   };
 
   return (
