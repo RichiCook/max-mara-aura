@@ -21,6 +21,12 @@ export interface Product {
   updated_at: string;
 }
 
+/** Strip "a partir de" / "à partir de" prefix from prices */
+const normalizePrice = (price: string | null): string | null => {
+  if (!price) return null;
+  return price.replace(/[aà]\s*partir\s*de\s*/i, '').trim() || null;
+};
+
 /** Normalize image arrays: split any newline-joined URLs into separate entries */
 export const normalizeImages = (images: unknown): string[] => {
   if (!Array.isArray(images)) return [];
