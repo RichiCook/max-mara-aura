@@ -148,7 +148,7 @@ const SimilarProducts = ({ productId, productCode, category, collection }: Simil
                   )}
                 </div>
               </div>
-            </Link>
+            </Wrapper>
           );
         })}
       </div>
