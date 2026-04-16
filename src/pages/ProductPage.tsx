@@ -416,9 +416,11 @@ const ProductPage = () => {
 
       {/* Aura Digital Passport Card */}
       <AuraDigitalPassportCard
-        onOpenClaim={() => setClaimOpen(true)}
+        onOpenClaim={() => ownerRegistered ? setPassportOpen(true) : setLoginOpen(true)}
         onOpenPassport={() => setPassportOpen(true)}
         onOpenHistory={() => setHistoryOpen(true)}
+        onOpenTransfer={() => setTransferOpen(true)}
+        ownerRegistered={ownerRegistered}
       />
 
       {/* Activations: above_product_info */}
@@ -447,18 +449,28 @@ const ProductPage = () => {
         productName={product.name}
         productCode={product.product_code}
         ownerRegistered={ownerRegistered}
-        onOpenClaim={() => setClaimOpen(true)}
+        onOpenClaim={() => setLoginOpen(true)}
+        onOpenTransfer={() => setTransferOpen(true)}
+        onOpenRedeem={() => setRedeemOpen(true)}
+        claimDate={claimDate}
+      />
+      <AuraLoginModal
+        open={loginOpen}
+        onClose={() => setLoginOpen(false)}
+        onLoginSuccess={handleLoginSuccess}
       />
       <ClaimOwnershipModal
         open={claimOpen}
         onClose={() => setClaimOpen(false)}
         productName={product.name}
+        productImage={images[0] || null}
         onSuccess={handleClaimSuccess}
       />
       <RegistrationSuccessModal
         open={successOpen}
         onClose={() => setSuccessOpen(false)}
         productName={product.name}
+        productImage={images[0] || null}
         onViewPassport={() => setPassportOpen(true)}
       />
       <CertificationHistoryModal
@@ -466,6 +478,15 @@ const ProductPage = () => {
         onClose={() => setHistoryOpen(false)}
         productName={product.name}
         ownerRegistered={ownerRegistered}
+        claimDate={claimDate}
+      />
+      <TransferOwnershipModal
+        open={transferOpen}
+        onClose={() => setTransferOpen(false)}
+      />
+      <RedeemArtworkModal
+        open={redeemOpen}
+        onClose={() => setRedeemOpen(false)}
       />
 
       <ShareToResaleModal open={shareModalOpen} onOpenChange={setShareModalOpen} product={product} />
