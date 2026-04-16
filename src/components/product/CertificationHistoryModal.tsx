@@ -5,14 +5,10 @@ interface CertificationHistoryModalProps {
   onClose: () => void;
   productName: string;
   ownerRegistered?: boolean;
+  claimDate?: string | null;
 }
 
-const HISTORY_ROWS = [
-  { date: '2024-11-15', event: 'Product Created', details: 'Registered on Aura Blockchain' },
-  { date: '2024-11-15', event: 'Certificate Issued', details: 'Digital passport generated' },
-];
-
-const CertificationHistoryModal = ({ open, onClose, productName, ownerRegistered }: CertificationHistoryModalProps) => {
+const CertificationHistoryModal = ({ open, onClose, productName, ownerRegistered, claimDate }: CertificationHistoryModalProps) => {
   const [visible, setVisible] = useState(false);
   const [animating, setAnimating] = useState(false);
 
@@ -29,14 +25,21 @@ const CertificationHistoryModal = ({ open, onClose, productName, ownerRegistered
 
   if (!visible) return null;
 
-  const rows = [
-    ...HISTORY_ROWS,
-    {
-      date: ownerRegistered ? new Date().toISOString().split('T')[0] : '—',
-      event: 'Ownership Claimed',
-      details: ownerRegistered ? 'Owner verified' : 'Pending',
-    },
-  ];
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  const timeStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  const fullTimestamp = `${dateStr}, ${timeStr}`;
+
+  const rows = ownerRegistered
+    ? [
+        { date: claimDate || fullTimestamp, event: 'Ownership Registration', status: 'Success' },
+        { date: fullTimestamp, event: 'Token Creation', status: 'Success' },
+        { date: fullTimestamp, event: 'Purchase', status: 'Success' },
+      ]
+    : [
+        { date: fullTimestamp, event: 'Token Creation', status: 'Success' },
+        { date: fullTimestamp, event: 'Purchase', status: 'Success' },
+      ];
 
   return (
     <div
@@ -58,41 +61,48 @@ const CertificationHistoryModal = ({ open, onClose, productName, ownerRegistered
           transition: 'transform 0.35s cubic-bezier(0.32, 0.72, 0, 1)',
         }}
       >
-        <div style={{ padding: '16px 20px 0', flexShrink: 0 }}>
+        <div style={{ padding: '20px 20px 0', flexShrink: 0 }}>
           <div className="flex items-center justify-between">
-            <div style={{ width: 40, height: 4, borderRadius: 2, background: '#e0e0e0' }} />
-            <button onClick={onClose} style={{ fontSize: 20, color: '#ccc', background: 'none', border: 'none', cursor: 'pointer' }}>×</button>
+            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 15, fontWeight: 600, color: '#1a1a1a' }}>
+              Certification History
+            </span>
+            <button onClick={onClose} style={{ fontSize: 18, color: '#999', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px' }}>
+              ⤢
+            </button>
           </div>
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px 24px' }}>
-          <h2 style={{ fontFamily: "var(--font-serif)", fontSize: 22, fontWeight: 600, color: '#1a1a1a', margin: '0 0 4px' }}>
-            Certification History
-          </h2>
-          <p style={{ fontFamily: "var(--font-sans)", fontSize: 13, color: '#999', marginBottom: 20 }}>
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: '#999', marginBottom: 20 }}>
             {productName}
           </p>
 
           <div style={{ borderRadius: 10, border: '1px solid #f0ece7', overflow: 'hidden' }}>
-            {/* Table header */}
             <div className="grid grid-cols-3" style={{ background: '#faf8f5', padding: '10px 14px', borderBottom: '1px solid #f0ece7' }}>
-              <span style={{ fontFamily: "var(--font-sans)", fontSize: 11, fontWeight: 600, color: '#999', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Date</span>
-              <span style={{ fontFamily: "var(--font-sans)", fontSize: 11, fontWeight: 600, color: '#999', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Event</span>
-              <span style={{ fontFamily: "var(--font-sans)", fontSize: 11, fontWeight: 600, color: '#999', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Details</span>
+              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, fontWeight: 600, color: '#999', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Date</span>
+              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, fontWeight: 600, color: '#999', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Event</span>
+              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, fontWeight: 600, color: '#999', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'right' }}>Status</span>
             </div>
             {rows.map((row, i) => (
               <div key={i} className="grid grid-cols-3 items-center" style={{ padding: '12px 14px', borderBottom: i < rows.length - 1 ? '1px solid #f0ece7' : 'none' }}>
-                <span style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: '#888' }}>{row.date}</span>
-                <span style={{ fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 500, color: '#1a1a1a' }}>{row.event}</span>
-                <span style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: row.details === 'Pending' ? '#C4A265' : '#2dd4bf' }}>{row.details}</span>
+                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: '#888' }}>{row.date}</span>
+                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, fontWeight: 500, color: '#1a1a1a' }}>{row.event}</span>
+                <div className="flex items-center justify-end gap-1.5">
+                  <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#2dd4bf', display: 'inline-block' }} />
+                  <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: '#2dd4bf', fontWeight: 500 }}>{row.status}</span>
+                </div>
               </div>
             ))}
           </div>
 
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 10, color: '#aaa', marginTop: 16, lineHeight: 1.6 }}>
+            Disclaimer: The Aura Blockchain Consortium provides the solution to issue this certificate. The content of this certificate is under the sole responsibility of the entity that has commercialised the product covered by the certificate.
+          </p>
+
           <button
             onClick={onClose}
             style={{
-              width: '100%', marginTop: 20, fontFamily: "var(--font-sans)", fontSize: 14, fontWeight: 500,
+              width: '100%', marginTop: 20, fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 500,
               background: '#f5f5f5', color: '#666', border: 'none', borderRadius: 10,
               padding: '14px 0', cursor: 'pointer',
             }}
