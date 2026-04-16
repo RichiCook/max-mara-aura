@@ -73,17 +73,17 @@ const CarouselSection = ({ carousel, sourceProductId }: { carousel: CarouselWith
           const img = getFlatLayImage(skuImages, p.category) || p.images[0];
           const url = getProductUrl(p);
           const external = isExternal(p);
-          const linkProps = external
-            ? { to: url, target: '_blank' as const, rel: 'noopener noreferrer' }
+          const Wrapper = external ? 'a' : Link;
+          const wrapperProps = external
+            ? { href: url, target: '_blank', rel: 'noopener noreferrer' }
             : { to: url };
           return (
-            <Link
+            <Wrapper
               key={p.id}
-              {...linkProps}
+              {...(wrapperProps as any)}
               className="shrink-0 snap-start"
               style={{ minWidth: cardSize.minWidth, maxWidth: cardSize.maxWidth, textDecoration: 'none' }}
               onClick={() => handleClick(p.id)}
-            >
             >
               <div className="rounded-lg overflow-hidden bg-card">
                 <div className={`${cardSize.aspectClass} bg-secondary flex items-center justify-center`}>
