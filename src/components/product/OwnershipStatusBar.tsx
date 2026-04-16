@@ -1,4 +1,4 @@
-import auraLogoWhite from '@/assets/aura-logo-white-clean.png';
+import auraLogoWhite from '@/assets/aura-logo-white.png';
 
 interface OwnershipStatusBarProps {
   onClick: () => void;
