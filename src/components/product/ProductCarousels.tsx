@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom';
-import { useProductCarousels, CarouselWithProducts } from '@/hooks/useProductCarousels';
+import { useProductCarousels, CarouselWithProducts, trackRecommendationClick } from '@/hooks/useProductCarousels';
 import { Product } from '@/hooks/useProducts';
 import { getFlatLayImage, filterImagesBySku } from '@/utils/imageUtils';
 
 interface ProductCarouselsProps {
   product: Product;
+  position?: string;
 }
 
 const CARD_SIZES = {
@@ -13,22 +14,29 @@ const CARD_SIZES = {
   large: { minWidth: 240, maxWidth: 240, aspectClass: 'aspect-[3/4]' },
 };
 
-const ProductCarousels = ({ product }: ProductCarouselsProps) => {
+const ProductCarousels = ({ product, position = 'below_product_info' }: ProductCarouselsProps) => {
   const { carouselsWithProducts, loading } = useProductCarousels(product);
 
   if (loading || carouselsWithProducts.length === 0) return null;
 
+  const filtered = carouselsWithProducts.filter(c => (c.display_position || 'below_product_info') === position);
+  if (filtered.length === 0) return null;
+
   return (
     <>
-      {carouselsWithProducts.map(carousel => (
-        <CarouselSection key={carousel.id} carousel={carousel} />
+      {filtered.map(carousel => (
+        <CarouselSection key={carousel.id} carousel={carousel} sourceProductId={product.id} />
       ))}
     </>
   );
 };
 
-const CarouselSection = ({ carousel }: { carousel: CarouselWithProducts }) => {
+const CarouselSection = ({ carousel, sourceProductId }: { carousel: CarouselWithProducts; sourceProductId: string }) => {
   const cardSize = CARD_SIZES[carousel.layout.card_size] || CARD_SIZES.small;
+
+  const handleClick = (targetId: string) => {
+    trackRecommendationClick(sourceProductId, targetId, carousel.id);
+  };
 
   return (
     <section className="py-8 border-t border-border">
@@ -42,7 +50,7 @@ const CarouselSection = ({ carousel }: { carousel: CarouselWithProducts }) => {
           </h2>
         </div>
         <span className="font-sans text-[11px] text-muted-foreground">
-          {carousel.match_type === 'manual' ? 'Curated' : `Based on ${carousel.match_type}`}
+          {carousel.match_reason || carousel.match_type}
         </span>
       </div>
 
@@ -59,24 +67,17 @@ const CarouselSection = ({ carousel }: { carousel: CarouselWithProducts }) => {
               to={`/product/${p.slug}`}
               className="shrink-0 snap-start"
               style={{ minWidth: cardSize.minWidth, maxWidth: cardSize.maxWidth, textDecoration: 'none' }}
+              onClick={() => handleClick(p.id)}
             >
               <div className="rounded-lg overflow-hidden bg-card">
                 <div className={`${cardSize.aspectClass} bg-secondary flex items-center justify-center`}>
                   {img && (
-                    <img
-                      src={img}
-                      alt={p.name}
-                      className="w-full h-full object-cover"
-                      referrerPolicy="no-referrer"
-                      loading="lazy"
-                    />
+                    <img src={img} alt={p.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" loading="lazy" />
                   )}
                 </div>
                 <div className="p-2 pb-2.5">
                   <p className="font-sans text-[11px] font-medium text-foreground m-0 truncate">{p.name}</p>
-                  {p.price && (
-                    <p className="font-sans text-[11px] text-muted-foreground m-0 mt-0.5">{p.price}</p>
-                  )}
+                  {p.price && <p className="font-sans text-[11px] text-muted-foreground m-0 mt-0.5">{p.price}</p>}
                   {carousel.layout.card_size === 'large' && p.description && (
                     <p className="font-sans text-[10px] text-muted-foreground m-0 mt-1 line-clamp-2">{p.description}</p>
                   )}
