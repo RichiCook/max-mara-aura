@@ -8,7 +8,7 @@ const OwnershipStatusBar = ({ onClick }: OwnershipStatusBarProps) => {
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center gap-3"
+      className="w-full flex items-center gap-3 fixed bottom-0 left-0 right-0 z-50"
       style={{
         background: '#E12B38',
         padding: '18px 20px',
