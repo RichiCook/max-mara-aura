@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { normalizeImages } from '@/hooks/useProducts';
 import { getFlatLayImage, filterImagesBySku } from '@/utils/imageUtils';
+import { useProductLinkDestination } from '@/hooks/useProductLinkDestination';
 
 interface SimilarProduct {
   id: string;
@@ -13,6 +14,7 @@ interface SimilarProduct {
   category: string | null;
   collection: string | null;
   product_code: string | null;
+  source_url: string | null;
 }
 
 interface SimilarProductsProps {
@@ -25,6 +27,7 @@ interface SimilarProductsProps {
 const SimilarProducts = ({ productId, productCode, category, collection }: SimilarProductsProps) => {
   const [products, setProducts] = useState<SimilarProduct[]>([]);
   const [enabled, setEnabled] = useState(true);
+  const { getProductUrl, isExternal } = useProductLinkDestination();
 
   useEffect(() => {
     supabase
@@ -44,7 +47,7 @@ const SimilarProducts = ({ productId, productCode, category, collection }: Simil
 
       let query = supabase
         .from('products')
-        .select('id, name, price, images, slug, category, collection, product_code')
+        .select('id, name, price, images, slug, category, collection, product_code, source_url')
         .neq('id', productId)
         .limit(12);
 
@@ -60,7 +63,7 @@ const SimilarProducts = ({ productId, productCode, category, collection }: Simil
       } else if (category && collection) {
         const { data: fallback } = await supabase
           .from('products')
-          .select('id, name, price, images, slug, category, collection, product_code')
+          .select('id, name, price, images, slug, category, collection, product_code, source_url')
           .neq('id', productId)
           .eq('collection', collection)
           .limit(12);
@@ -107,10 +110,16 @@ const SimilarProducts = ({ productId, productCode, category, collection }: Simil
         {products.map(p => {
           const img = getFlatLayImage(filterImagesBySku(p.images, p.product_code), p.category) || p.images[0];
           const tag = getTag(p);
+          const url = getProductUrl(p);
+          const external = isExternal(p);
+          const Wrapper = external ? 'a' : Link;
+          const wrapperProps = external
+            ? { href: url, target: '_blank', rel: 'noopener noreferrer' }
+            : { to: url };
           return (
-            <Link
+            <Wrapper
               key={p.id}
-              to={`/product/${p.slug}`}
+              {...(wrapperProps as any)}
               className="shrink-0 snap-start"
               style={{ minWidth: 148, maxWidth: 148, textDecoration: 'none' }}
             >
@@ -139,7 +148,7 @@ const SimilarProducts = ({ productId, productCode, category, collection }: Simil
                   )}
                 </div>
               </div>
-            </Link>
+            </Wrapper>
           );
         })}
       </div>
