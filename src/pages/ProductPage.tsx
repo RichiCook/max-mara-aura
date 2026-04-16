@@ -303,7 +303,7 @@ const ProductPage = () => {
             )}
           </Link>
           <div className="flex items-center gap-1">
-            {ownerRegistered && (
+            {import.meta.env.DEV && ownerRegistered && (
               <Button variant="ghost" size="sm" className="text-xs" onClick={handleResetOwnership} title="Reset ownership demo">
                 <span className="text-[10px]">🔄</span>
               </Button>

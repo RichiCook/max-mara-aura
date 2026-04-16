@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useModalScrollLock } from '@/hooks/useModalScrollLock';
 
 interface AuraLoginModalProps {
   open: boolean;
@@ -18,6 +19,8 @@ const AuraLoginModal = ({ open, onClose, onLoginSuccess }: AuraLoginModalProps) 
   const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState('');
 
+  useModalScrollLock(visible);
+
   useEffect(() => {
     if (open) {
       setVisible(true);
@@ -36,7 +39,6 @@ const AuraLoginModal = ({ open, onClose, onLoginSuccess }: AuraLoginModalProps) 
 
   const handleSubmit = () => {
     if (!canSubmit) return;
-    // Store user name for the claimed state display
     localStorage.setItem('aura_owner_name', isRegister ? name : email.split('@')[0]);
     onLoginSuccess();
   };
@@ -53,7 +55,7 @@ const AuraLoginModal = ({ open, onClose, onLoginSuccess }: AuraLoginModalProps) 
         onClick={e => e.stopPropagation()}
         style={{
           position: 'fixed', bottom: 0, left: 0, right: 0,
-          maxHeight: '90vh',
+          maxHeight: '90dvh',
           background: '#fff', borderRadius: '20px 20px 0 0',
           boxShadow: '0 -8px 60px rgba(0,0,0,0.25)',
           overflow: 'hidden', display: 'flex', flexDirection: 'column',
@@ -61,14 +63,17 @@ const AuraLoginModal = ({ open, onClose, onLoginSuccess }: AuraLoginModalProps) 
           transition: 'transform 0.35s cubic-bezier(0.32, 0.72, 0, 1)',
         }}
       >
+        {/* Drag handle */}
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(0,0,0,0.12)', margin: '12px auto 0', flexShrink: 0 }} />
+
         {/* Header */}
-        <div style={{ padding: '20px 20px 0', flexShrink: 0 }}>
+        <div style={{ padding: '16px 20px 0', flexShrink: 0 }}>
           <div className="flex items-center justify-between">
             <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 15, fontWeight: 600, color: '#1a1a1a' }}>
               {isRegister ? 'Register' : 'Create an account'}
             </span>
             <button onClick={onClose} style={{ fontSize: 18, color: '#999', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px' }}>
-              ⤢
+              ✕
             </button>
           </div>
           <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 10, fontWeight: 600, letterSpacing: '0.12em', color: BRAND_MUTED, textTransform: 'uppercase', marginTop: 4 }}>
