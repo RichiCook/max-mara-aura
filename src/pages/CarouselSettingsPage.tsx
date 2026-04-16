@@ -557,9 +557,9 @@ const CarouselSettingsPage = () => {
                         {/* ─── Setup Tab ─── */}
                         <TabsContent value="setup" className="space-y-4">
                           {isCrossCategory ? (
-                            <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 px-4 py-3 rounded-lg">
-                              <p className="text-sm font-medium text-amber-900 dark:text-amber-200">⚡ Cross-Category Mode</p>
-                              <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
+                            <div className="bg-accent/30 border border-accent px-4 py-3 rounded-lg">
+                              <p className="text-sm font-medium text-foreground">⚡ Cross-Category Mode</p>
+                              <p className="text-xs text-muted-foreground mt-1">
                                 Product recommendations are driven by the <strong>Rules tab</strong>. The settings below (Card Size, Max Items, Sort By) apply as defaults. Go to the Rules tab to configure which categories to cross-sell.
                               </p>
                             </div>
