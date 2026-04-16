@@ -241,6 +241,23 @@ const SettingsPage = () => {
     }
   };
 
+  const handleProductLinkDestToggle = async (useBrandWebsite: boolean) => {
+    const dest = useBrandWebsite ? 'brand_website' : 'platform';
+    setProductLinkDest(dest);
+    invalidateProductLinkCache();
+    try {
+      await supabase.from('app_settings').upsert({
+        id: 'product_link_destination',
+        value: { destination: dest } as any,
+        updated_at: new Date().toISOString(),
+      });
+      toast({ title: useBrandWebsite ? 'Product links → Brand website' : 'Product links → Platform pages' });
+    } catch {
+      toast({ title: 'Failed to update setting', variant: 'destructive' });
+      setProductLinkDest(useBrandWebsite ? 'platform' : 'brand_website');
+    }
+  };
+
   const handleShopifySave = async () => {
     try {
       await supabase.from('app_settings').upsert({
