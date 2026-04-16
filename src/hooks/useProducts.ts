@@ -137,6 +137,7 @@ export const useProducts = () => {
 
     return {
       ...data,
+      price: normalizePrice(data.price),
       images: normalizeImages(data.images),
       wear_with: Array.isArray(data.wear_with) ? data.wear_with : [],
       you_may_also_like: Array.isArray(data.you_may_also_like) ? data.you_may_also_like : [],
