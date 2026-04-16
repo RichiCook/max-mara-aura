@@ -518,34 +518,49 @@ export type Database = {
         Row: {
           created_at: string
           display_order: number
+          display_position: string
+          exclude_current: boolean
           id: string
           is_active: boolean
           layout: Json
           match_config: Json
           match_type: string
+          min_products: number
           name: string
+          show_on_categories: string[]
+          sort_by: string
           updated_at: string
         }
         Insert: {
           created_at?: string
           display_order?: number
+          display_position?: string
+          exclude_current?: boolean
           id?: string
           is_active?: boolean
           layout?: Json
           match_config?: Json
           match_type?: string
+          min_products?: number
           name: string
+          show_on_categories?: string[]
+          sort_by?: string
           updated_at?: string
         }
         Update: {
           created_at?: string
           display_order?: number
+          display_position?: string
+          exclude_current?: boolean
           id?: string
           is_active?: boolean
           layout?: Json
           match_config?: Json
           match_type?: string
+          min_products?: number
           name?: string
+          show_on_categories?: string[]
+          sort_by?: string
           updated_at?: string
         }
         Relationships: []
@@ -583,6 +598,41 @@ export type Database = {
         }
         Relationships: []
       }
+      product_views: {
+        Row: {
+          id: string
+          product_id: string
+          session_id: string
+          user_id: string | null
+          view_duration_seconds: number | null
+          viewed_at: string
+        }
+        Insert: {
+          id?: string
+          product_id: string
+          session_id: string
+          user_id?: string | null
+          view_duration_seconds?: number | null
+          viewed_at?: string
+        }
+        Update: {
+          id?: string
+          product_id?: string
+          session_id?: string
+          user_id?: string | null
+          view_duration_seconds?: number | null
+          viewed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_views_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           ai_attributes: Json | null
@@ -594,14 +644,17 @@ export type Database = {
           created_at: string
           description: string | null
           generated_look: Json | null
+          heel_height_mm: number | null
           id: string
           images: Json | null
           is_available: boolean
+          material: string | null
           name: string
           price: string | null
           product_code: string | null
           shopify_handle: string | null
           short_code: string | null
+          silhouette_family: string | null
           slug: string
           source_url: string | null
           updated_at: string
@@ -618,14 +671,17 @@ export type Database = {
           created_at?: string
           description?: string | null
           generated_look?: Json | null
+          heel_height_mm?: number | null
           id?: string
           images?: Json | null
           is_available?: boolean
+          material?: string | null
           name: string
           price?: string | null
           product_code?: string | null
           shopify_handle?: string | null
           short_code?: string | null
+          silhouette_family?: string | null
           slug: string
           source_url?: string | null
           updated_at?: string
@@ -642,14 +698,17 @@ export type Database = {
           created_at?: string
           description?: string | null
           generated_look?: Json | null
+          heel_height_mm?: number | null
           id?: string
           images?: Json | null
           is_available?: boolean
+          material?: string | null
           name?: string
           price?: string | null
           product_code?: string | null
           shopify_handle?: string | null
           short_code?: string | null
+          silhouette_family?: string | null
           slug?: string
           source_url?: string | null
           updated_at?: string
@@ -675,6 +734,55 @@ export type Database = {
           id?: string
         }
         Relationships: []
+      }
+      recommendation_clicks: {
+        Row: {
+          carousel_id: string
+          clicked_at: string
+          id: string
+          session_id: string | null
+          source_product_id: string
+          target_product_id: string
+        }
+        Insert: {
+          carousel_id: string
+          clicked_at?: string
+          id?: string
+          session_id?: string | null
+          source_product_id: string
+          target_product_id: string
+        }
+        Update: {
+          carousel_id?: string
+          clicked_at?: string
+          id?: string
+          session_id?: string | null
+          source_product_id?: string
+          target_product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recommendation_clicks_carousel_id_fkey"
+            columns: ["carousel_id"]
+            isOneToOne: false
+            referencedRelation: "product_carousels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recommendation_clicks_source_product_id_fkey"
+            columns: ["source_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recommendation_clicks_target_product_id_fkey"
+            columns: ["target_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       repair_requests: {
         Row: {
