@@ -125,11 +125,12 @@ export const ProductPreviewCard = ({ product }: ProductPreviewCardProps) => {
       }
       currentY += 8;
 
-      // Category
+      // Category (last segment only)
       if (product.category) {
+        const categoryLabel = product.category.split(' > ').pop() || product.category;
         ctx.fillStyle = '#9ca3af';
         ctx.font = '400 12px system-ui, -apple-system, sans-serif';
-        ctx.fillText(product.category, cardWidth / 2, currentY + 4);
+        ctx.fillText(categoryLabel, cardWidth / 2, currentY + 4);
         currentY += categoryHeight;
       }
 
@@ -200,7 +201,7 @@ export const ProductPreviewCard = ({ product }: ProductPreviewCardProps) => {
             {product.name}
           </h3>
           {product.category && (
-            <p className="text-xs text-gray-400 mt-2 text-center">{product.category}</p>
+            <p className="text-xs text-gray-400 mt-2 text-center">{product.category.split(' > ').pop()}</p>
           )}
           {collectionDisplay && (
             <p className="text-xs text-gray-500 font-medium text-center">
