@@ -19,6 +19,9 @@ export interface CarouselDefinition {
   min_products: number;
   sort_by: string;
   exclude_current: boolean;
+  target_category: string;
+  target_attribute_overrides: Record<string, any>;
+  fallback_behavior: string;
   created_at: string;
   updated_at: string;
 }
