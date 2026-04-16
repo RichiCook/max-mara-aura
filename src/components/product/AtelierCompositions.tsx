@@ -185,9 +185,42 @@ async function preloadCachedImages(compositions: Composition[]): Promise<Composi
 const AtelierCompositions = ({ currentProduct }: AtelierCompositionsProps) => {
   const [compositions, setCompositions] = useState<Composition[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [quickViewProduct, setQuickViewProduct] = useState<CompositionProduct | null>(null);
+  const [quickViewProduct, setQuickViewProduct] = useState<any>(null);
   const [initialLoading, setInitialLoading] = useState(true);
   const generatedRef = useRef(new Set<string>());
+
+  // Swipe-to-dismiss for composition sheet
+  const sheetScrollRef = useRef<HTMLDivElement>(null);
+  const [sheetDragY, setSheetDragY] = useState(0);
+  const [sheetDragging, setSheetDragging] = useState(false);
+  const sheetStartY = useRef(0);
+
+  const handleSheetTouchStart = useCallback((e: React.TouchEvent) => {
+    const el = sheetScrollRef.current;
+    if (el && el.scrollTop > 5) return;
+    sheetStartY.current = e.touches[0].clientY;
+    setSheetDragging(true);
+  }, []);
+
+  const handleSheetTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!sheetDragging) return;
+    const el = sheetScrollRef.current;
+    if (el && el.scrollTop > 5) { setSheetDragging(false); setSheetDragY(0); return; }
+    const dy = e.touches[0].clientY - sheetStartY.current;
+    if (dy > 0) setSheetDragY(dy);
+  }, [sheetDragging]);
+
+  const handleSheetTouchEnd = useCallback(() => {
+    if (!sheetDragging) return;
+    if (sheetDragY > 80) setExpandedId(null);
+    setSheetDragY(0);
+    setSheetDragging(false);
+  }, [sheetDragging, sheetDragY]);
+
+  // Reset drag state when sheet closes
+  useEffect(() => {
+    if (!expandedId) { setSheetDragY(0); setSheetDragging(false); }
+  }, [expandedId]);
 
   // Build compositions from DB on mount, including main product
   useEffect(() => {
