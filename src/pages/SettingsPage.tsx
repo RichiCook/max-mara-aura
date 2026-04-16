@@ -683,7 +683,36 @@ const SettingsPage = () => {
             </CardContent>
           </Card>
 
-          {/* Repair Service */}
+          {/* Product Link Destination */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ExternalLink className="w-5 h-5" />
+                Product Link Destination
+              </CardTitle>
+              <CardDescription>
+                Control where product links point across the platform — carousels, recommendations, and similar products. When enabled, links open the brand's website instead of the platform product page.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="productLinkDest">Link to brand website</Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {productLinkDest === 'brand_website' 
+                      ? 'Products link to the brand website (source URL)' 
+                      : 'Products link to platform product pages'}
+                  </p>
+                </div>
+                <Switch
+                  id="productLinkDest"
+                  checked={productLinkDest === 'brand_website'}
+                  onCheckedChange={handleProductLinkDestToggle}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
           <RepairServiceSettings />
 
           {/* Atelier Compositions */}

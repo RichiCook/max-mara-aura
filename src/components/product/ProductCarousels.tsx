@@ -42,6 +42,7 @@ const CarouselSection = ({ carousel, sourceProductId }: { carousel: CarouselWith
   const cardSize = CARD_SIZES[carousel.layout.card_size] || CARD_SIZES.small;
   const displayTitle = carousel.dynamic_title || carousel.name;
   const firstRuleId = carousel.matched_rule_ids?.[0] || null;
+  const { getProductUrl, isExternal } = useProductLinkDestination();
 
   const handleClick = (targetId: string) => {
     trackRecommendationClick(sourceProductId, targetId, carousel.id, firstRuleId);
@@ -70,13 +71,19 @@ const CarouselSection = ({ carousel, sourceProductId }: { carousel: CarouselWith
         {carousel.products.map(p => {
           const skuImages = filterImagesBySku(p.images, p.product_code);
           const img = getFlatLayImage(skuImages, p.category) || p.images[0];
+          const url = getProductUrl(p);
+          const external = isExternal(p);
+          const linkProps = external
+            ? { to: url, target: '_blank' as const, rel: 'noopener noreferrer' }
+            : { to: url };
           return (
             <Link
               key={p.id}
-              to={`/product/${p.slug}`}
+              {...linkProps}
               className="shrink-0 snap-start"
               style={{ minWidth: cardSize.minWidth, maxWidth: cardSize.maxWidth, textDecoration: 'none' }}
               onClick={() => handleClick(p.id)}
+            >
             >
               <div className="rounded-lg overflow-hidden bg-card">
                 <div className={`${cardSize.aspectClass} bg-secondary flex items-center justify-center`}>
