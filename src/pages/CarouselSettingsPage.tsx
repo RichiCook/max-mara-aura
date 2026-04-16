@@ -483,6 +483,102 @@ const CarouselSettingsPage = () => {
                             </div>
                           </div>
 
+                          {/* Target Category Picker */}
+                          <div className="space-y-2">
+                            <Label>Show products from category</Label>
+                            <Select value={editForm.target_category || 'same'} onValueChange={v => setEditForm(f => ({ ...f, target_category: v }))}>
+                              <SelectTrigger><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="same">Same as current product</SelectItem>
+                                {TARGET_CATEGORIES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                              </SelectContent>
+                            </Select>
+                            {editForm.target_category && editForm.target_category !== 'same' && (
+                              <p className="text-[10px] text-muted-foreground">Results will be filtered to {TARGET_CATEGORIES.find(t => t.value === editForm.target_category)?.label || editForm.target_category}, regardless of the viewed product's category.</p>
+                            )}
+                          </div>
+
+                          {/* Attribute Override (for attribute-based match types) */}
+                          {['color', 'material', 'silhouette', 'heel_height', 'price_range'].includes(editForm.match_type || '') && (
+                            <Collapsible>
+                              <CollapsibleTrigger className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground">
+                                <ChevronDown className="w-3 h-3" />Attribute override
+                              </CollapsibleTrigger>
+                              <CollapsibleContent className="mt-3 space-y-3 pl-1">
+                                <div className="flex items-center gap-2">
+                                  <Switch checked={editForm.target_attribute_overrides?.enabled || false}
+                                    onCheckedChange={v => setEditForm(f => ({ ...f, target_attribute_overrides: { ...f.target_attribute_overrides, enabled: v } }))} />
+                                  <Label className="text-xs">Override attribute from current product</Label>
+                                </div>
+                                {editForm.target_attribute_overrides?.enabled && (
+                                  <div className="space-y-3 bg-muted/30 rounded-md p-3">
+                                    {editForm.match_type === 'color' && (
+                                      <div className="space-y-1">
+                                        <Label className="text-xs">Always show color</Label>
+                                        <Input className="h-8 text-xs" placeholder="e.g. Red, Black, Nude" value={editForm.target_attribute_overrides?.color || ''}
+                                          onChange={e => setEditForm(f => ({ ...f, target_attribute_overrides: { ...f.target_attribute_overrides, color: e.target.value } }))} />
+                                      </div>
+                                    )}
+                                    {editForm.match_type === 'material' && (
+                                      <div className="space-y-1">
+                                        <Label className="text-xs">Always show material</Label>
+                                        <Select value={editForm.target_attribute_overrides?.material || ''} onValueChange={v => setEditForm(f => ({ ...f, target_attribute_overrides: { ...f.target_attribute_overrides, material: v } }))}>
+                                          <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select material" /></SelectTrigger>
+                                          <SelectContent>
+                                            {['Patent calf', 'Suede', 'Nappa leather', 'Silk taffeta', 'Satin', 'Glitter', 'Velvet', 'Canvas', 'Mesh'].map(m => (
+                                              <SelectItem key={m} value={m}>{m}</SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                    )}
+                                    {editForm.match_type === 'silhouette' && (
+                                      <div className="space-y-1">
+                                        <Label className="text-xs">Always show silhouette</Label>
+                                        <Select value={editForm.target_attribute_overrides?.silhouette_family || ''} onValueChange={v => setEditForm(f => ({ ...f, target_attribute_overrides: { ...f.target_attribute_overrides, silhouette_family: v } }))}>
+                                          <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select silhouette" /></SelectTrigger>
+                                          <SelectContent>
+                                            {['Kate', 'So Kate', 'Miss Z', 'Cassia', 'Fanny', 'Jane', 'Hot Chick', 'Iriza', 'Vieira'].map(s => (
+                                              <SelectItem key={s} value={s}>{s}</SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                    )}
+                                    {editForm.match_type === 'heel_height' && (
+                                      <div className="grid grid-cols-2 gap-3">
+                                        <div className="space-y-1">
+                                          <Label className="text-xs">Target heel height (mm)</Label>
+                                          <Input type="number" className="h-8 text-xs" placeholder="e.g. 100" value={editForm.target_attribute_overrides?.heel_height_mm || ''}
+                                            onChange={e => setEditForm(f => ({ ...f, target_attribute_overrides: { ...f.target_attribute_overrides, heel_height_mm: parseInt(e.target.value) || undefined } }))} />
+                                        </div>
+                                        <div className="space-y-1">
+                                          <Label className="text-xs">Tolerance: ±{editForm.target_attribute_overrides?.tolerance || 20}mm</Label>
+                                          <Slider min={10} max={50} step={5} value={[editForm.target_attribute_overrides?.tolerance || 20]}
+                                            onValueChange={([v]) => setEditForm(f => ({ ...f, target_attribute_overrides: { ...f.target_attribute_overrides, tolerance: v } }))} />
+                                        </div>
+                                      </div>
+                                    )}
+                                    {editForm.match_type === 'price_range' && (
+                                      <div className="grid grid-cols-2 gap-3">
+                                        <div className="space-y-1">
+                                          <Label className="text-xs">Min price</Label>
+                                          <Input type="number" className="h-8 text-xs" placeholder="e.g. 500" value={editForm.target_attribute_overrides?.price_min || ''}
+                                            onChange={e => setEditForm(f => ({ ...f, target_attribute_overrides: { ...f.target_attribute_overrides, price_min: parseFloat(e.target.value) || undefined } }))} />
+                                        </div>
+                                        <div className="space-y-1">
+                                          <Label className="text-xs">Max price</Label>
+                                          <Input type="number" className="h-8 text-xs" placeholder="e.g. 1500" value={editForm.target_attribute_overrides?.price_max || ''}
+                                            onChange={e => setEditForm(f => ({ ...f, target_attribute_overrides: { ...f.target_attribute_overrides, price_max: parseFloat(e.target.value) || undefined } }))} />
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </CollapsibleContent>
+                            </Collapsible>
+                          )}
+
                           {/* Match-type specific fields */}
                           {editForm.match_type === 'category' && (
                             <div className="flex items-center gap-2">
