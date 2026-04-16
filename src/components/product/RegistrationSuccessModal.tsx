@@ -4,10 +4,13 @@ interface RegistrationSuccessModalProps {
   open: boolean;
   onClose: () => void;
   productName: string;
+  productImage?: string | null;
   onViewPassport: () => void;
 }
 
-const RegistrationSuccessModal = ({ open, onClose, productName, onViewPassport }: RegistrationSuccessModalProps) => {
+const BRAND_BROWN = '#8B5E3C';
+
+const RegistrationSuccessModal = ({ open, onClose, productName, productImage, onViewPassport }: RegistrationSuccessModalProps) => {
   const [visible, setVisible] = useState(false);
   const [animating, setAnimating] = useState(false);
 
@@ -44,36 +47,54 @@ const RegistrationSuccessModal = ({ open, onClose, productName, onViewPassport }
           transition: 'transform 0.35s cubic-bezier(0.32, 0.72, 0, 1)',
         }}
       >
-        <div style={{ flex: 1, overflowY: 'auto', padding: '32px 24px' }}>
-          {/* Handle */}
-          <div style={{ width: 40, height: 4, borderRadius: 2, background: '#e0e0e0', margin: '0 auto 28px' }} />
+        {/* Header */}
+        <div style={{ padding: '20px 20px 0', flexShrink: 0 }}>
+          <div className="flex items-center justify-between">
+            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 15, fontWeight: 600, color: '#1a1a1a' }}>
+              Registration Complete
+            </span>
+            <button onClick={onClose} style={{ fontSize: 18, color: '#999', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px' }}>
+              ⤢
+            </button>
+          </div>
+        </div>
 
+        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px 32px' }}>
           <p style={{
             fontFamily: "'Inter', sans-serif", fontSize: 10, fontWeight: 700,
-            letterSpacing: '0.14em', color: '#E12B38', textTransform: 'uppercase' as const,
+            letterSpacing: '0.14em', color: BRAND_BROWN, textTransform: 'uppercase',
             textAlign: 'center', marginBottom: 12,
           }}>
-            Certification History
+            CERTIFICATION HISTORY
           </p>
 
           <h2 style={{
             fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 600,
-            color: '#1a1a1a', textAlign: 'center', lineHeight: 1.35, marginBottom: 20,
+            fontStyle: 'italic', color: '#1a1a1a', textAlign: 'center', lineHeight: 1.35, marginBottom: 24,
           }}>
-            Congratulations, your ownership has been registered.
+            Congratulations, your ownership of this garment has been registered.
           </h2>
 
-          {/* Product placeholder */}
-          <div style={{
-            width: 100, height: 100, margin: '0 auto 20px',
-            background: '#f5f0eb', borderRadius: 12,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#C4A265" strokeWidth="1.5">
-              <path d="M9 12l2 2 4-4" strokeLinecap="round" strokeLinejoin="round"/>
-              <circle cx="12" cy="12" r="10" strokeLinecap="round"/>
-            </svg>
-          </div>
+          {/* Product image */}
+          {productImage ? (
+            <div style={{
+              width: 120, height: 160, margin: '0 auto 20px',
+              borderRadius: 12, overflow: 'hidden', background: '#f5f0eb',
+            }}>
+              <img src={productImage} alt={productName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} referrerPolicy="no-referrer" />
+            </div>
+          ) : (
+            <div style={{
+              width: 100, height: 100, margin: '0 auto 20px',
+              background: '#f5f0eb', borderRadius: 12,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#C4A265" strokeWidth="1.5">
+                <path d="M9 12l2 2 4-4" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx="12" cy="12" r="10" strokeLinecap="round"/>
+              </svg>
+            </div>
+          )}
 
           <p style={{
             fontFamily: "'Inter', sans-serif", fontSize: 13, color: '#888',
@@ -87,7 +108,7 @@ const RegistrationSuccessModal = ({ open, onClose, productName, onViewPassport }
             onClick={() => { onClose(); setTimeout(onViewPassport, 200); }}
             style={{
               width: '100%', fontFamily: "'Inter', sans-serif", fontSize: 15, fontWeight: 600,
-              background: '#E12B38', color: '#fff', border: 'none', borderRadius: 10,
+              background: BRAND_BROWN, color: '#fff', border: 'none', borderRadius: 10,
               padding: '15px 0', cursor: 'pointer', marginBottom: 10,
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
             }}

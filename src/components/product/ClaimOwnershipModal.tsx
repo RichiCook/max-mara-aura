@@ -4,10 +4,13 @@ interface ClaimOwnershipModalProps {
   open: boolean;
   onClose: () => void;
   productName: string;
+  productImage?: string | null;
   onSuccess: () => void;
 }
 
-const ClaimOwnershipModal = ({ open, onClose, productName, onSuccess }: ClaimOwnershipModalProps) => {
+const BRAND_BROWN = '#8B5E3C';
+
+const ClaimOwnershipModal = ({ open, onClose, productName, productImage, onSuccess }: ClaimOwnershipModalProps) => {
   const [visible, setVisible] = useState(false);
   const [animating, setAnimating] = useState(false);
   const [digits, setDigits] = useState<string[]>(Array(9).fill(''));
@@ -56,6 +59,33 @@ const ClaimOwnershipModal = ({ open, onClose, productName, onSuccess }: ClaimOwn
 
   if (!visible) return null;
 
+  const renderDigitGroup = (start: number, end: number) => (
+    <div className="flex items-center gap-1.5">
+      {Array.from({ length: end - start }, (_, i) => start + i).map(i => (
+        <div key={i} className="flex flex-col items-center" style={{ width: 28 }}>
+          <input
+            ref={el => { inputRefs.current[i] = el; }}
+            type="text"
+            inputMode="numeric"
+            maxLength={1}
+            value={digits[i]}
+            onChange={e => handleDigitChange(i, e.target.value)}
+            onKeyDown={e => handleKeyDown(i, e)}
+            onFocus={e => e.target.select()}
+            style={{
+              width: 28, height: 36, textAlign: 'center',
+              fontFamily: "'Inter', sans-serif", fontSize: 18, fontWeight: 600,
+              color: '#1a1a1a', background: 'transparent',
+              border: 'none', borderBottom: `2px solid ${digits[i] ? BRAND_BROWN : '#ddd'}`,
+              outline: 'none', caretColor: BRAND_BROWN,
+              transition: 'border-color 0.2s',
+            }}
+          />
+        </div>
+      ))}
+    </div>
+  );
+
   return (
     <div
       onClick={onClose}
@@ -76,120 +106,100 @@ const ClaimOwnershipModal = ({ open, onClose, productName, onSuccess }: ClaimOwn
           transition: 'transform 0.35s cubic-bezier(0.32, 0.72, 0, 1)',
         }}
       >
-        {/* Handle + close */}
-        <div style={{ padding: '16px 20px 0', flexShrink: 0 }}>
+        {/* Header */}
+        <div style={{ padding: '20px 20px 0', flexShrink: 0 }}>
           <div className="flex items-center justify-between">
-            <div style={{ width: 40, height: 4, borderRadius: 2, background: '#e0e0e0' }} />
-            <button onClick={onClose} style={{ fontSize: 20, color: '#ccc', background: 'none', border: 'none', cursor: 'pointer' }}>×</button>
+            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 15, fontWeight: 600, color: '#1a1a1a' }}>
+              Register my product
+            </span>
+            <button onClick={onClose} style={{ fontSize: 18, color: '#999', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px' }}>
+              ⤢
+            </button>
           </div>
         </div>
 
         {/* Scrollable content */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px 24px' }}>
-          <h2 className="font-serif text-[22px] font-semibold text-foreground text-center m-0 mb-1">
-            Register my product
-          </h2>
+          {/* Product image */}
+          {productImage ? (
+            <div style={{
+              width: 120, height: 160, margin: '0 auto 20px',
+              borderRadius: 12, overflow: 'hidden', background: '#f5f0eb',
+            }}>
+              <img src={productImage} alt={productName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} referrerPolicy="no-referrer" />
+            </div>
+          ) : (
+            <div className="flex items-center justify-center mx-auto mb-5" style={{
+              width: 100, height: 120, background: '#f5f0eb', borderRadius: 12,
+            }}>
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#C4A265" strokeWidth="1.5">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+          )}
+
           <p className="font-sans text-[13px] text-muted-foreground text-center mb-5">
             {productName}
           </p>
 
-          {/* Product image placeholder */}
-          <div className="flex items-center justify-center mx-auto mb-6" style={{
-            width: 100, height: 100, background: '#f5f0eb', borderRadius: 12,
-          }}>
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#C4A265" strokeWidth="1.5">
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </div>
-
-          <h3 className="font-sans text-[15px] font-semibold text-foreground text-center m-0 mb-1">
+          <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 600, color: '#1a1a1a', textAlign: 'center', margin: '0 0 4px' }}>
             Enter your purchase PIN code:
           </h3>
-          <p className="font-sans text-[12px] text-muted-foreground text-center mb-5">
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: '#999', textAlign: 'center', marginBottom: 24 }}>
             Found on your receipt or product card
           </p>
 
-          {/* 9 digit inputs: 3 groups of 3, responsive sizing */}
-          <div className="flex items-center justify-center gap-1 mb-6 px-2">
-            {[0, 1, 2].map(i => (
-              <input
-                key={i}
-                ref={el => { inputRefs.current[i] = el; }}
-                type="text"
-                inputMode="numeric"
-                maxLength={1}
-                value={digits[i]}
-                onChange={e => handleDigitChange(i, e.target.value)}
-                onKeyDown={e => handleKeyDown(i, e)}
-                onFocus={e => e.target.select()}
-                className="w-8 h-10 text-center font-sans text-base font-semibold rounded-md border-[1.5px] border-border outline-none text-foreground bg-secondary focus:ring-2 focus:ring-primary"
-              />
-            ))}
-            <span className="font-sans text-muted-foreground text-base mx-0.5">–</span>
-            {[3, 4, 5].map(i => (
-              <input
-                key={i}
-                ref={el => { inputRefs.current[i] = el; }}
-                type="text"
-                inputMode="numeric"
-                maxLength={1}
-                value={digits[i]}
-                onChange={e => handleDigitChange(i, e.target.value)}
-                onKeyDown={e => handleKeyDown(i, e)}
-                onFocus={e => e.target.select()}
-                className="w-8 h-10 text-center font-sans text-base font-semibold rounded-md border-[1.5px] border-border outline-none text-foreground bg-secondary focus:ring-2 focus:ring-primary"
-              />
-            ))}
-            <span className="font-sans text-muted-foreground text-base mx-0.5">–</span>
-            {[6, 7, 8].map(i => (
-              <input
-                key={i}
-                ref={el => { inputRefs.current[i] = el; }}
-                type="text"
-                inputMode="numeric"
-                maxLength={1}
-                value={digits[i]}
-                onChange={e => handleDigitChange(i, e.target.value)}
-                onKeyDown={e => handleKeyDown(i, e)}
-                onFocus={e => e.target.select()}
-                className="w-8 h-10 text-center font-sans text-base font-semibold rounded-md border-[1.5px] border-border outline-none text-foreground bg-secondary focus:ring-2 focus:ring-primary"
-              />
-            ))}
+          {/* 9 digit inputs: 3-3-3 with dashes, underline style */}
+          <div className="flex items-center justify-center gap-2 mb-6">
+            {renderDigitGroup(0, 3)}
+            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 18, color: '#ccc', marginTop: -4 }}>–</span>
+            {renderDigitGroup(3, 6)}
+            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 18, color: '#ccc', marginTop: -4 }}>–</span>
+            {renderDigitGroup(6, 9)}
           </div>
 
-          {/* Checkbox */}
-          <label className="flex items-start gap-3 mb-5 cursor-pointer">
+          {/* Checkbox — unchecked by default */}
+          <label className="flex items-start gap-3 mb-6 cursor-pointer">
             <input
               type="checkbox"
               checked={agreed}
               onChange={e => setAgreed(e.target.checked)}
               className="mt-0.5"
-              style={{ accentColor: '#E12B38', width: 16, height: 16 }}
+              style={{ accentColor: BRAND_BROWN, width: 16, height: 16 }}
             />
-            <span className="font-sans text-[12px] text-muted-foreground leading-relaxed">
+            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: '#888', lineHeight: 1.5 }}>
               I confirm that I have read and agree with the Terms and Conditions and that I am aware that once the pin code is activated, no returns or changes are allowed.
             </span>
           </label>
 
-          {/* Submit */}
+          {/* Submit — outline when inactive, brown filled when active */}
           <button
             onClick={handleSubmit}
             disabled={!canSubmit}
-            className="w-full font-sans text-[15px] font-semibold border-none rounded-[10px] py-4 transition-colors"
             style={{
-              background: canSubmit ? '#E12B38' : '#e8e8e8',
-              color: canSubmit ? '#fff' : '#bbb',
+              width: '100%', fontFamily: "'Inter', sans-serif", fontSize: 15, fontWeight: 600,
+              background: canSubmit ? BRAND_BROWN : 'transparent',
+              color: canSubmit ? '#fff' : '#999',
+              border: canSubmit ? 'none' : '1.5px solid #e0e0e0',
+              borderRadius: 10, padding: '15px 0',
               cursor: canSubmit ? 'pointer' : 'default',
+              transition: 'all 0.2s ease',
             }}
           >
             Register Ownership
           </button>
 
-          <p className="font-sans text-[12px] text-accent text-center mt-3.5 cursor-pointer">
-            Need help?
+          <p style={{ textAlign: 'center', marginTop: 16 }}>
+            <button style={{
+              fontFamily: "'Inter', sans-serif", fontSize: 13, color: BRAND_BROWN,
+              background: 'none', border: 'none', cursor: 'pointer',
+              textDecoration: 'underline', textUnderlineOffset: 3,
+            }}>
+              Need help?
+            </button>
           </p>
 
-          <p className="font-sans text-[11px] text-muted-foreground text-center mt-4 leading-relaxed">
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: '#999', textAlign: 'center', marginTop: 16, lineHeight: 1.6 }}>
             We advise that once the above pin code is activated, the ownership of this product will be certified as a part of its traceability journey. As a result, Christian Louboutin will then no longer be able to accept returns or exchanges for this item.
           </p>
         </div>
