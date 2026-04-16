@@ -17,7 +17,7 @@ const OwnershipStatusBar = ({ onClick }: OwnershipStatusBarProps) => {
         color: '#fff',
       }}
     >
-      <img src={auraLogoWhite} alt="Aura Blockchain" className="w-6 h-6 shrink-0 object-contain" />
+      <img src={auraLogoWhite} alt="Aura Blockchain" className="w-9 h-9 shrink-0 object-contain" />
       <div className="flex-1 text-left min-w-0">
         <span className="font-sans text-[18px] font-semibold block">
           View ownership status
