@@ -7,23 +7,25 @@ export interface CarouselDefinition {
   id: string;
   name: string;
   match_type: string;
-  match_config: {
-    fallback_to_collection?: boolean;
-    max_items?: number;
-    match_fields?: string[];
-  };
+  match_config: Record<string, any>;
   layout: {
     card_size: 'small' | 'medium' | 'large';
     columns: number;
   };
   display_order: number;
   is_active: boolean;
+  display_position: string;
+  show_on_categories: string[];
+  min_products: number;
+  sort_by: string;
+  exclude_current: boolean;
   created_at: string;
   updated_at: string;
 }
 
 export interface CarouselWithProducts extends CarouselDefinition {
   products: Product[];
+  match_reason?: string;
 }
 
 /** Admin CRUD hook for carousel definitions */
@@ -43,8 +45,13 @@ export const useCarouselDefinitions = () => {
     } else {
       setCarousels((data || []).map(c => ({
         ...c,
-        match_config: (c.match_config || {}) as CarouselDefinition['match_config'],
+        match_config: (c.match_config || {}) as Record<string, any>,
         layout: (c.layout || { card_size: 'small', columns: 4 }) as CarouselDefinition['layout'],
+        show_on_categories: (c as any).show_on_categories || ['all'],
+        display_position: (c as any).display_position || 'below_product_info',
+        min_products: (c as any).min_products ?? 3,
+        sort_by: (c as any).sort_by || 'newest',
+        exclude_current: (c as any).exclude_current !== false,
       })));
     }
     setLoading(false);
@@ -62,6 +69,11 @@ export const useCarouselDefinitions = () => {
         layout: carousel.layout || { card_size: 'small', columns: 4 },
         display_order: carousel.display_order ?? carousels.length,
         is_active: carousel.is_active ?? true,
+        display_position: carousel.display_position || 'below_product_info',
+        show_on_categories: carousel.show_on_categories || ['all'],
+        min_products: carousel.min_products ?? 3,
+        sort_by: carousel.sort_by || 'newest',
+        exclude_current: carousel.exclude_current !== false,
       } as any);
     if (error) return { success: false, error: error.message };
     await fetchCarousels();
@@ -88,10 +100,22 @@ export const useCarouselDefinitions = () => {
     return { success: true };
   };
 
-  return { carousels, loading, refetch: fetchCarousels, createCarousel, updateCarousel, deleteCarousel };
+  const installEssentials = async () => {
+    const essentials = [
+      { name: 'Similar Products', match_type: 'category', match_config: { fallback_to_collection: true, max_items: 12 }, display_order: 0 },
+      { name: 'Complete the Look', match_type: 'complete_look', match_config: { max_items: 8 }, display_order: 1 },
+      { name: 'You May Also Like', match_type: 'ai_recommend', match_config: { max_items: 12, weights: { category: 30, color: 20, price: 20, style: 15, popularity: 15 } }, display_order: 2 },
+      { name: 'Recently Viewed', match_type: 'recently_viewed', match_config: { max_items: 10, time_window: '7_days' }, display_order: 3 },
+    ];
+    for (const e of essentials) {
+      await createCarousel({ ...e, layout: { card_size: 'small', columns: 4 } });
+    }
+  };
+
+  return { carousels, loading, refetch: fetchCarousels, createCarousel, updateCarousel, deleteCarousel, installEssentials };
 };
 
-/** Resolve products for all active carousels on a product page */
+/** Resolve products for all active carousels on a product page via edge function */
 export const useProductCarousels = (product: Product | null) => {
   const [carouselsWithProducts, setCarouselsWithProducts] = useState<CarouselWithProducts[]>([]);
   const [loading, setLoading] = useState(true);
@@ -102,7 +126,6 @@ export const useProductCarousels = (product: Product | null) => {
     const resolve = async () => {
       setLoading(true);
 
-      // Fetch active carousels
       const { data: carousels } = await supabase
         .from('product_carousels')
         .select('*')
@@ -115,78 +138,54 @@ export const useProductCarousels = (product: Product | null) => {
         return;
       }
 
-      // Fetch manual items for this product (source_product_id = product.id OR null for global)
-      const { data: manualItems } = await supabase
-        .from('product_carousel_items')
-        .select('*')
-        .or(`source_product_id.eq.${product.id},source_product_id.is.null`)
-        .order('display_order', { ascending: true });
+      // Filter by show_on_categories
+      const productCategory = product.category || '';
+      const filtered = carousels.filter(c => {
+        const cats = (c as any).show_on_categories || ['all'];
+        return cats.includes('all') || cats.some((cat: string) => productCategory.toLowerCase().includes(cat.toLowerCase()));
+      });
 
+      const sessionId = sessionStorage.getItem('scan_session_id') || '';
       const results: CarouselWithProducts[] = [];
 
-      for (const carousel of carousels) {
-        const config = (carousel.match_config || {}) as CarouselDefinition['match_config'];
-        const layout = (carousel.layout || { card_size: 'small', columns: 4 }) as CarouselDefinition['layout'];
-        const maxItems = config.max_items || 12;
-        let products: Product[] = [];
+      // Resolve via edge function
+      for (const carousel of filtered) {
+        try {
+          const { data, error } = await supabase.functions.invoke('get-recommendations', {
+            body: {
+              product_id: product.id,
+              carousel_id: carousel.id,
+              user_session_id: sessionId,
+              limit: (carousel.match_config as any)?.max_items || 12,
+            },
+          });
 
-        // Check for manual items for this carousel
-        const carouselManualItems = (manualItems || []).filter(i => i.carousel_id === carousel.id);
+          if (error || !data?.products) continue;
 
-        if (carousel.match_type === 'manual') {
-          // Only manual picks
-          if (carouselManualItems.length > 0) {
-            const targetIds = carouselManualItems.map(i => i.target_product_id);
-            const { data } = await supabase
-              .from('products')
-              .select('*')
-              .in('id', targetIds)
-              .neq('id', product.id)
-              .limit(maxItems);
-            if (data) {
-              products = data.map(p => ({
-                ...p,
-                images: normalizeImages(p.images),
-                wear_with: Array.isArray(p.wear_with) ? p.wear_with : [],
-                you_may_also_like: Array.isArray(p.you_may_also_like) ? p.you_may_also_like : [],
-              }));
-              // Preserve manual order
-              const orderMap = new Map(carouselManualItems.map((item, idx) => [item.target_product_id, idx]));
-              products.sort((a, b) => (orderMap.get(a.id) ?? 999) - (orderMap.get(b.id) ?? 999));
-            }
-          }
-        } else {
-          // Rule-based matching
-          products = await resolveRuleBasedProducts(product, carousel.match_type, config, maxItems);
+          const minProducts = (carousel as any).min_products ?? 3;
+          if (data.products.length < minProducts) continue;
 
-          // Merge in manual items (prepended)
-          if (carouselManualItems.length > 0) {
-            const targetIds = carouselManualItems.map(i => i.target_product_id);
-            const { data: manualProducts } = await supabase
-              .from('products')
-              .select('*')
-              .in('id', targetIds)
-              .neq('id', product.id);
-            if (manualProducts) {
-              const manual = manualProducts.map(p => ({
-                ...p,
-                images: normalizeImages(p.images),
-                wear_with: Array.isArray(p.wear_with) ? p.wear_with : [],
-                you_may_also_like: Array.isArray(p.you_may_also_like) ? p.you_may_also_like : [],
-              }));
-              const manualIds = new Set(manual.map(p => p.id));
-              products = [...manual, ...products.filter(p => !manualIds.has(p.id))].slice(0, maxItems);
-            }
-          }
-        }
+          const products = data.products.map((p: any) => ({
+            ...p,
+            images: normalizeImages(p.images),
+            wear_with: Array.isArray(p.wear_with) ? p.wear_with : [],
+            you_may_also_like: Array.isArray(p.you_may_also_like) ? p.you_may_also_like : [],
+          }));
 
-        if (products.length > 0) {
           results.push({
             ...carousel,
-            match_config: config,
-            layout,
+            match_config: (carousel.match_config || {}) as Record<string, any>,
+            layout: (carousel.layout || { card_size: 'small', columns: 4 }) as CarouselDefinition['layout'],
+            show_on_categories: (carousel as any).show_on_categories || ['all'],
+            display_position: (carousel as any).display_position || 'below_product_info',
+            min_products: (carousel as any).min_products ?? 3,
+            sort_by: (carousel as any).sort_by || 'newest',
+            exclude_current: (carousel as any).exclude_current !== false,
             products,
+            match_reason: data.match_reason,
           });
+        } catch (err) {
+          console.error(`Carousel ${carousel.name} failed:`, err);
         }
       }
 
@@ -195,58 +194,22 @@ export const useProductCarousels = (product: Product | null) => {
     };
 
     resolve();
-  }, [product?.id, product?.category, product?.collection, (product as any)?.color]);
+  }, [product?.id]);
 
   return { carouselsWithProducts, loading };
 };
 
-async function resolveRuleBasedProducts(
-  product: Product,
-  matchType: string,
-  config: CarouselDefinition['match_config'],
-  maxItems: number
-): Promise<Product[]> {
-  let query = supabase
-    .from('products')
-    .select('*')
-    .neq('id', product.id)
-    .limit(maxItems);
-
-  if (matchType === 'category' && product.category) {
-    query = query.eq('category', product.category);
-  } else if (matchType === 'collection' && (product as any).collection) {
-    query = query.eq('collection', (product as any).collection);
-  } else if (matchType === 'color' && (product as any).color) {
-    query = query.eq('color', (product as any).color);
-  } else {
-    return [];
-  }
-
-  const { data } = await query;
-  let products = (data || []).map(p => ({
-    ...p,
-    images: normalizeImages(p.images),
-    wear_with: Array.isArray(p.wear_with) ? p.wear_with : [],
-    you_may_also_like: Array.isArray(p.you_may_also_like) ? p.you_may_also_like : [],
-  }));
-
-  // Fallback to collection if category returned nothing
-  if (products.length === 0 && matchType === 'category' && config.fallback_to_collection && (product as any).collection) {
-    const { data: fallback } = await supabase
-      .from('products')
-      .select('*')
-      .neq('id', product.id)
-      .eq('collection', (product as any).collection)
-      .limit(maxItems);
-    if (fallback) {
-      products = fallback.map(p => ({
-        ...p,
-        images: normalizeImages(p.images),
-        wear_with: Array.isArray(p.wear_with) ? p.wear_with : [],
-        you_may_also_like: Array.isArray(p.you_may_also_like) ? p.you_may_also_like : [],
-      }));
-    }
-  }
-
-  return products;
-}
+/** Track a recommendation click */
+export const trackRecommendationClick = async (
+  sourceProductId: string,
+  targetProductId: string,
+  carouselId: string
+) => {
+  const sessionId = sessionStorage.getItem('scan_session_id') || '';
+  await supabase.from('recommendation_clicks').insert({
+    source_product_id: sourceProductId,
+    target_product_id: targetProductId,
+    carousel_id: carouselId,
+    session_id: sessionId,
+  } as any);
+};
