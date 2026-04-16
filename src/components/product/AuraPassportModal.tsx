@@ -148,8 +148,8 @@ const AuraPassportModal = ({
             <div style={{ width: 40, height: 1, background: T.gold, margin: '16px auto' }} />
 
             {/* Certification label */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: T.green, display: 'inline-block', flexShrink: 0 }} />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+              <img src={auraLogoGreen} alt="Aura" style={{ width: 16, height: 16, objectFit: 'contain', flexShrink: 0 }} />
               <span style={{
                 fontFamily: T.fontSans, fontSize: 10, fontWeight: 600,
                 letterSpacing: '0.15em', color: T.textSecondary, textTransform: 'uppercase',
@@ -178,9 +178,7 @@ const AuraPassportModal = ({
                   }}
                 >
                   Claim ownership
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={T.green} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                  </svg>
+                  <img src={auraLogoGreen} alt="Aura" style={{ width: 16, height: 16, objectFit: 'contain' }} />
                 </button>
 
                 <div style={{ marginTop: 24 }}>
