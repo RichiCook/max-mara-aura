@@ -8,13 +8,19 @@ const OwnershipStatusBar = ({ onClick }: OwnershipStatusBarProps) => {
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center gap-3 fixed bottom-0 left-0 right-0 z-50"
+      className="w-full flex items-center gap-3 left-0 right-0 z-50"
       style={{
         background: '#E12B38',
         padding: '18px 20px',
+        paddingBottom: 'calc(18px + env(safe-area-inset-bottom, 0px))',
         border: 'none',
         cursor: 'pointer',
         color: '#fff',
+        position: 'fixed',
+        bottom: 0,
+        // Use dynamic viewport unit fallback for iOS Safari URL bar changes
+        transform: 'translateZ(0)',
+        willChange: 'transform',
       }}
     >
       <img src={auraLogoWhite} alt="Aura Blockchain" className="w-9 h-9 shrink-0 object-contain" />
