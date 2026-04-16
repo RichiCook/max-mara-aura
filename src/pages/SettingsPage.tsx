@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Upload, Palette, Type, Image, Save, Loader2, User, X, Tag, Wrench, ShoppingBag, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Upload, Palette, Type, Image, Save, Loader2, User, X, Tag, Wrench, ShoppingBag, ExternalLink, Trash2 } from 'lucide-react';
 import RepairServiceSettings from '@/components/repair/RepairServiceSettings';
 import CompositionSettingsSection from '@/components/settings/CompositionSettingsSection';
 import { AppHeader } from '@/components/AppHeader';
@@ -751,6 +751,40 @@ const SettingsPage = () => {
               </div>
               <Button variant="outline" size="sm" onClick={handleShopifySave}>
                 <Save className="w-4 h-4 mr-2" /> Save Shopify Settings
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Cache Management */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Trash2 className="w-5 h-5" />
+                Cache Management
+              </CardTitle>
+              <CardDescription>
+                Clear locally cached data such as image classification results and browser storage
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  try {
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    if ('caches' in window) {
+                      caches.keys().then(names => names.forEach(name => caches.delete(name)));
+                    }
+                    toast({ title: 'Cache cleared', description: 'All local caches have been cleared. The page will reload.' });
+                    setTimeout(() => window.location.reload(), 1200);
+                  } catch {
+                    toast({ title: 'Error', description: 'Failed to clear cache', variant: 'destructive' });
+                  }
+                }}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Clear All Cache
               </Button>
             </CardContent>
           </Card>
