@@ -685,7 +685,7 @@ const CarouselSettingsPage = () => {
                   ) : (
                     <CardContent className="pt-0">
                       <div className="flex gap-4 text-sm text-muted-foreground flex-wrap">
-                        <span>Match: <strong className="text-foreground">{matchLabel}</strong></span>
+                        <span>Match: <strong className="text-foreground">{matchLabel}{carousel.target_category && carousel.target_category !== 'same' ? ` → ${TARGET_CATEGORIES.find(t => t.value === carousel.target_category)?.label || carousel.target_category}` : ''}</strong></span>
                         <span>Cards: <strong className="text-foreground">{sizeLabel}</strong></span>
                         <span>Max: <strong className="text-foreground">{carousel.match_config.max_items || 12}</strong></span>
                         <span>Position: <strong className="text-foreground">{DISPLAY_POSITIONS.find(p => p.value === carousel.display_position)?.label || 'Below info'}</strong></span>
