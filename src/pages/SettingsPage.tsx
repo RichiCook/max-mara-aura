@@ -53,7 +53,7 @@ function DashboardV2Toggle() {
   );
 }
 
-
+const SettingsPage = () => {
   const { settings, loading, saving, updateSettings, uploadLogo, uploadFavicon } = usePlatformSettings();
   const { refetch: refetchContext } = usePlatformSettingsContext();
   const { toast } = useToast();
