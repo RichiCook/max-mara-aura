@@ -32,6 +32,7 @@ const SettingsPage = () => {
   const [secondaryColor, setSecondaryColor] = useState('#f5f5f5');
   const [accentColor, setAccentColor] = useState('#3b82f6');
   const [resaleSharingEnabled, setResaleSharingEnabled] = useState(false);
+  const [productLinkDest, setProductLinkDest] = useState<'platform' | 'brand_website'>('platform');
   const [shopifyEnabled, setShopifyEnabled] = useState(false);
   const [shopifyDomain, setShopifyDomain] = useState('');
   const [shopifyToken, setShopifyToken] = useState('');

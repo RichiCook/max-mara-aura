@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useProductCarousels, CarouselWithProducts, trackRecommendationClick } from '@/hooks/useProductCarousels';
 import { Product } from '@/hooks/useProducts';
 import { getFlatLayImage, filterImagesBySku } from '@/utils/imageUtils';
+import { useProductLinkDestination } from '@/hooks/useProductLinkDestination';
 
 interface ProductCarouselsProps {
   product: Product;
