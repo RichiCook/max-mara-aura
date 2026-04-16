@@ -188,6 +188,9 @@ export const useProductCarousels = (product: Product | null) => {
             min_products: (carousel as any).min_products ?? 3,
             sort_by: (carousel as any).sort_by || 'newest',
             exclude_current: (carousel as any).exclude_current !== false,
+            target_category: carousel.target_category || 'same',
+            target_attribute_overrides: (carousel.target_attribute_overrides || {}) as Record<string, any>,
+            fallback_behavior: carousel.fallback_behavior || 'use_match_type',
             products,
             match_reason: data.match_reason,
           });
