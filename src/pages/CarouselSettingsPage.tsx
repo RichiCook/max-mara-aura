@@ -32,6 +32,7 @@ const MATCH_TYPES = [
   { value: 'ai_recommend', label: 'You May Also Like (AI)', group: 'Personalized' },
   { value: 'trending', label: 'Trending Now', group: 'Dynamic' },
   { value: 'new_arrivals', label: 'New Arrivals', group: 'Dynamic' },
+  { value: 'cross_category', label: 'Cross-Category Rules', group: 'Smart' },
 ];
 
 const CARD_SIZES = [
@@ -99,6 +100,72 @@ const TITLE_DEFAULTS: Record<string, string> = {
   silhouette: 'Same Silhouette', heel_height: 'Similar Heel Height', price_range: 'Similar Price',
   recently_viewed: 'Recently Viewed', customers_also_viewed: 'Customers Also Viewed',
   ai_recommend: 'You May Also Like', trending: 'Trending Now', new_arrivals: 'New Arrivals',
+  cross_category: 'Cross-Category',
+};
+
+interface CategoryMapping {
+  source: string;
+  target: string;
+  match_by: string[];
+}
+
+const DEFAULT_CATEGORY_MAPPINGS: CategoryMapping[] = [
+  { source: 'shoes', target: 'bags', match_by: ['color', 'collection'] },
+  { source: 'bags', target: 'small_leather_goods', match_by: ['color', 'collection'] },
+];
+
+const CategoryMappingEditor = ({ mappings, onChange }: { mappings: CategoryMapping[]; onChange: (m: CategoryMapping[]) => void }) => {
+  const addMapping = () => onChange([...mappings, { source: 'shoes', target: 'bags', match_by: ['color'] }]);
+  const removeMapping = (i: number) => onChange(mappings.filter((_, idx) => idx !== i));
+  const updateMapping = (i: number, updates: Partial<CategoryMapping>) => onChange(mappings.map((m, idx) => idx === i ? { ...m, ...updates } : m));
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <Label className="text-sm font-medium">Category Mappings</Label>
+        <Button variant="outline" size="sm" className="h-7 text-xs" onClick={addMapping}><Plus className="w-3 h-3 mr-1" />Add Rule</Button>
+      </div>
+      <p className="text-[10px] text-muted-foreground">When a customer views a product from the source category, show products from the target category matched by the selected dimensions.</p>
+      {mappings.length === 0 && (
+        <div className="text-center py-4 border border-dashed rounded-md">
+          <p className="text-xs text-muted-foreground">No mappings yet. Add one to define cross-category behavior.</p>
+        </div>
+      )}
+      {mappings.map((mapping, i) => (
+        <div key={i} className="flex items-start gap-2 bg-muted/30 rounded-md p-3">
+          <div className="flex-1 space-y-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[10px] text-muted-foreground font-medium uppercase">When viewing</span>
+              <Select value={mapping.source} onValueChange={v => updateMapping(i, { source: v })}>
+                <SelectTrigger className="h-7 text-xs w-[130px]"><SelectValue /></SelectTrigger>
+                <SelectContent>{TRIGGER_CATEGORIES.filter(t => t.value !== 'any').map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
+              </Select>
+              <span className="text-[10px] text-muted-foreground font-medium">→ show</span>
+              <Select value={mapping.target} onValueChange={v => updateMapping(i, { target: v })}>
+                <SelectTrigger className="h-7 text-xs w-[150px]"><SelectValue /></SelectTrigger>
+                <SelectContent>{TARGET_CATEGORIES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-1 flex-wrap">
+              <span className="text-[10px] text-muted-foreground mr-1">Match by:</span>
+              {MATCH_DIMENSIONS.map(md => {
+                const sel = mapping.match_by.includes(md.value);
+                return (
+                  <Badge key={md.value} variant={sel ? 'default' : 'outline'} className="cursor-pointer text-[10px]"
+                    onClick={() => updateMapping(i, { match_by: sel ? mapping.match_by.filter(d => d !== md.value) : [...mapping.match_by, md.value] })}>
+                    {md.label}
+                  </Badge>
+                );
+              })}
+            </div>
+          </div>
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive flex-shrink-0" onClick={() => removeMapping(i)}>
+            <Trash2 className="w-3 h-3" />
+          </Button>
+        </div>
+      ))}
+    </div>
+  );
 };
 
 // ─── Rule Editor Component ───
@@ -630,6 +697,12 @@ const CarouselSettingsPage = () => {
                                   <SelectItem value="30_days">Last 30 days</SelectItem>
                                 </SelectContent>
                               </Select></div>
+                          )}
+                          {editForm.match_type === 'cross_category' && (
+                            <CategoryMappingEditor
+                              mappings={(editForm.match_config?.category_mappings as CategoryMapping[]) || DEFAULT_CATEGORY_MAPPINGS}
+                              onChange={mappings => setEditForm(f => ({ ...f, match_config: { ...f.match_config, category_mappings: mappings } }))}
+                            />
                           )}
                         </TabsContent>
 
