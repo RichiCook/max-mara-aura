@@ -397,12 +397,15 @@ Deno.serve(async (req) => {
 async function resolveCarouselRules(
   supabase: any, product: any, rules: any[], maxItems: number
 ) {
-  const productCatLower = (product.category || "").toLowerCase();
+  const productCat = product.category || "";
+
+  console.log(`[recommendations] Product: ${product.id}, category: "${productCat}", rules: ${rules.length}`);
 
   const matchingRules = rules.filter((rule: any) => {
     const triggerCats = rule.trigger_categories || [];
     if (!triggerCats.includes("any")) {
-      const matches = triggerCats.some((tc: string) => productCatLower.includes(tc.toLowerCase()));
+      const matches = triggerCats.some((tc: string) => categoryMatchesSlug(productCat, tc));
+      console.log(`[recommendations] Rule ${rule.id}: triggers=${JSON.stringify(triggerCats)}, matches=${matches}`);
       if (!matches) return false;
     }
 
@@ -414,6 +417,8 @@ async function resolveCarouselRules(
     if (filters.occasion && product.occasion && !product.occasion.includes(filters.occasion)) return false;
     return true;
   });
+
+  console.log(`[recommendations] Matching rules: ${matchingRules.length}`);
 
   if (matchingRules.length === 0) return { products: [], matchReason: "No rules match this product", dynamicTitle: null, matchedRuleIds: [] };
 
