@@ -152,7 +152,7 @@ const AuraPassportModal = ({ open, onClose, productName, productCode, ownerRegis
                   padding: '12px 0', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                 }}
               >
-                📱 Add certificate to your wallet
+                Add certificate to your wallet
               </button>
               <button
                 onClick={() => { onClose(); setTimeout(onOpenRedeem, 200); }}
@@ -174,13 +174,18 @@ const AuraPassportModal = ({ open, onClose, productName, productCode, ownerRegis
               >
                 Transfer ownership
               </button>
-              <button style={{
-                fontFamily: "'Inter', sans-serif", fontSize: 12, fontWeight: 500,
-                background: 'none', color: '#2dd4bf', border: 'none', padding: '6px 0', cursor: 'pointer',
-                textDecoration: 'underline', textUnderlineOffset: 3,
-              }}>
+              <a
+                href="https://auraconsortium.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  fontFamily: "'Inter', sans-serif", fontSize: 12, fontWeight: 500,
+                  background: 'none', color: '#2dd4bf', border: 'none', padding: '6px 0', cursor: 'pointer',
+                  textDecoration: 'underline', textUnderlineOffset: 3, textAlign: 'center',
+                }}
+              >
                 About Aura Blockchain Consortium
-              </button>
+              </a>
             </div>
           ) : null}
         </div>
@@ -209,17 +214,17 @@ const AuraPassportModal = ({ open, onClose, productName, productCode, ownerRegis
                   style={{
                     fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 600,
                     background: '#E12B38', color: '#fff', border: 'none', borderRadius: 10,
-                    padding: '14px 0', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                    padding: '14px 0', cursor: 'pointer',
                   }}
                 >
-                  Claim ownership <span style={{ fontSize: 16 }}>⬡</span>
+                  Claim ownership
                 </button>
                 <button style={{
                   fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 500,
                   background: '#fff', color: '#1a1a1a', border: '1.5px solid #e0e0e0', borderRadius: 10,
-                  padding: '14px 0', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  padding: '14px 0', cursor: 'pointer',
                 }}>
-                  Add certificate to your wallet <span style={{ fontSize: 16 }}>📱</span>
+                  Add certificate to your wallet
                 </button>
                 <button
                   onClick={() => { onClose(); setTimeout(onOpenRedeem, 200); }}
@@ -241,13 +246,18 @@ const AuraPassportModal = ({ open, onClose, productName, productCode, ownerRegis
                 >
                   Transfer ownership
                 </button>
-                <button style={{
-                  fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 500,
-                  background: 'none', color: '#C4A265', border: 'none', padding: '8px 0', cursor: 'pointer',
-                  textDecoration: 'underline', textUnderlineOffset: 3,
-                }}>
+                <a
+                  href="https://auraconsortium.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 500,
+                    background: 'none', color: '#C4A265', border: 'none', padding: '8px 0', cursor: 'pointer',
+                    textDecoration: 'underline', textUnderlineOffset: 3, textAlign: 'center',
+                  }}
+                >
                   About Aura Blockchain Consortium
-                </button>
+                </a>
               </div>
             </>
           )}
