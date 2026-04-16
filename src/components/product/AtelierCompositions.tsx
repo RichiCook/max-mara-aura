@@ -5,10 +5,9 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Sparkles, RefreshCw, X, ExternalLink, ShoppingBag, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Sparkles, RefreshCw, X, ChevronRight, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import ProductPreviewSheet from './ProductPreviewSheet';
 import { normalizeImages } from '@/hooks/useProducts';
 import { toast } from 'sonner';
 
@@ -186,9 +185,42 @@ async function preloadCachedImages(compositions: Composition[]): Promise<Composi
 const AtelierCompositions = ({ currentProduct }: AtelierCompositionsProps) => {
   const [compositions, setCompositions] = useState<Composition[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [quickViewProduct, setQuickViewProduct] = useState<CompositionProduct | null>(null);
+  const [quickViewProduct, setQuickViewProduct] = useState<any>(null);
   const [initialLoading, setInitialLoading] = useState(true);
   const generatedRef = useRef(new Set<string>());
+
+  // Swipe-to-dismiss for composition sheet
+  const sheetScrollRef = useRef<HTMLDivElement>(null);
+  const [sheetDragY, setSheetDragY] = useState(0);
+  const [sheetDragging, setSheetDragging] = useState(false);
+  const sheetStartY = useRef(0);
+
+  const handleSheetTouchStart = useCallback((e: React.TouchEvent) => {
+    const el = sheetScrollRef.current;
+    if (el && el.scrollTop > 5) return;
+    sheetStartY.current = e.touches[0].clientY;
+    setSheetDragging(true);
+  }, []);
+
+  const handleSheetTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!sheetDragging) return;
+    const el = sheetScrollRef.current;
+    if (el && el.scrollTop > 5) { setSheetDragging(false); setSheetDragY(0); return; }
+    const dy = e.touches[0].clientY - sheetStartY.current;
+    if (dy > 0) setSheetDragY(dy);
+  }, [sheetDragging]);
+
+  const handleSheetTouchEnd = useCallback(() => {
+    if (!sheetDragging) return;
+    if (sheetDragY > 80) setExpandedId(null);
+    setSheetDragY(0);
+    setSheetDragging(false);
+  }, [sheetDragging, sheetDragY]);
+
+  // Reset drag state when sheet closes
+  useEffect(() => {
+    if (!expandedId) { setSheetDragY(0); setSheetDragging(false); }
+  }, [expandedId]);
 
   // Build compositions from DB on mount, including main product
   useEffect(() => {
@@ -391,96 +423,186 @@ const AtelierCompositions = ({ currentProduct }: AtelierCompositionsProps) => {
         </div>
       </div>
 
-      {/* Expanded modal */}
+      {/* Composition detail bottom-sheet */}
       {expanded && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
-          onClick={() => setExpandedId(null)}
+          className="fixed inset-0 z-50"
+          style={{ pointerEvents: expanded ? 'auto' : 'none' }}
         >
+          {/* Backdrop */}
           <div
-            className="relative w-full max-w-lg bg-white rounded-2xl overflow-hidden shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={() => setExpandedId(null)}
-              className="absolute top-3 right-3 z-20 p-1.5 rounded-full bg-white/80 backdrop-blur hover:bg-white transition"
-            >
-              <X className="w-4 h-4 text-[#1a1a1a]" />
-            </button>
+            onClick={() => setExpandedId(null)}
+            style={{
+              position: 'fixed', inset: 0,
+              background: 'rgba(0,0,0,0.45)',
+              backdropFilter: 'blur(4px)',
+              WebkitBackdropFilter: 'blur(4px)',
+            }}
+          />
 
-            {expanded.generatedImage && (
-              <div className="relative aspect-square w-full bg-[#faf6f0]">
+          {/* Sheet */}
+          <div
+            ref={sheetScrollRef}
+            onTouchStart={handleSheetTouchStart}
+            onTouchMove={handleSheetTouchMove}
+            onTouchEnd={handleSheetTouchEnd}
+            style={{
+              position: 'fixed', bottom: 0, left: '50%',
+              transform: `translate(-50%, ${sheetDragY}px)`,
+              width: 'min(440px, 100%)', zIndex: 51,
+              background: '#FAF8F5',
+              borderRadius: '16px 16px 0 0',
+              boxShadow: '0 -8px 40px rgba(0,0,0,0.15)',
+              maxHeight: '90dvh',
+              overflowY: 'auto',
+              WebkitOverflowScrolling: 'touch',
+              transition: sheetDragging ? 'none' : 'transform 350ms cubic-bezier(.16,1,.3,1)',
+            }}
+          >
+            {/* Drag handle */}
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 6px', position: 'sticky', top: 0, zIndex: 10, background: '#FAF8F5', borderRadius: '16px 16px 0 0' }}>
+              <div style={{ width: 36, height: 4, borderRadius: 2, background: '#D4CFC5' }} />
+            </div>
+
+            {/* Composition image */}
+            <div style={{ position: 'relative', width: '100%', aspectRatio: '1/1', background: '#FFFFFF' }}>
+              {expanded.generatedImage ? (
                 <img
                   src={expanded.generatedImage}
                   alt={expanded.name}
-                  className="absolute inset-0 w-full h-full object-contain"
+                  style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                 />
-              </div>
-            )}
+              ) : (
+                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#C9A96E' }} />
+                </div>
+              )}
+              <button
+                onClick={() => setExpandedId(null)}
+                style={{
+                  position: 'absolute', top: 12, right: 12, zIndex: 10,
+                  width: 32, height: 32, borderRadius: '50%',
+                  background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(8px)',
+                  border: 'none', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+              >
+                <X style={{ width: 16, height: 16, color: '#1A1A1A' }} />
+              </button>
+            </div>
 
-            <div className="px-5 py-4">
-              <h3 className="text-lg font-medium" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
+            {/* Composition metadata */}
+            <div style={{ padding: '20px 20px 0' }}>
+              {/* AI Composed eyebrow */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+                <Sparkles style={{ width: 12, height: 12, color: '#C9A96E', fill: '#C9A96E' }} />
+                <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase' as const, color: '#C9A96E' }}>
+                  AI Composed
+                </span>
+              </div>
+
+              {/* Title */}
+              <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 27, fontWeight: 400, color: '#1A1A1A', letterSpacing: '-0.01em', lineHeight: 1.1, margin: 0 }}>
                 {expanded.name}
               </h3>
-              <p className="text-xs text-muted-foreground italic mb-3">{expanded.styleTag}</p>
-              <div className="flex flex-wrap gap-1.5">
+              <p style={{ fontFamily: "'Cormorant Garamond', serif", fontStyle: 'italic', fontSize: 14, color: '#8A8178', margin: '4px 0 24px' }}>
+                {expanded.styleTag}
+              </p>
+
+              {/* Section label */}
+              <p style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.14em', textTransform: 'uppercase' as const, color: '#8A8178', margin: '0 0 12px' }}>
+                {expanded.products.length} product{expanded.products.length !== 1 ? 's' : ''} in this composition
+              </p>
+
+              {/* Product rows */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingBottom: 32 }}>
                 {expanded.products.map((p, i) => (
                   <button
                     key={i}
-                    onClick={() => setQuickViewProduct(p)}
-                    className="text-[11px] px-2.5 py-1 rounded-full border border-[#e8e0d8] bg-[#faf6f0] hover:bg-[#f0e8dc] transition text-[#1a1a1a]"
+                    onClick={() => {
+                      if (p.slug) {
+                        // Fetch full product for ProductPreviewSheet
+                        supabase.from('products')
+                          .select('id, product_code, name, price, images, slug, color, category, source_url, description, shopify_handle')
+                          .eq('slug', p.slug)
+                          .single()
+                          .then(({ data }) => {
+                            if (data) {
+                              setQuickViewProduct({
+                                id: data.id,
+                                product_code: data.product_code || '',
+                                name: data.name,
+                                price: data.price,
+                                images: normalizeImages(data.images),
+                                slug: data.slug,
+                                color: data.color,
+                                category: data.category,
+                                source_url: data.source_url,
+                              });
+                            }
+                          });
+                      }
+                    }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 14,
+                      padding: 12, background: '#FFFFFF',
+                      border: '0.5px solid rgba(201,169,110,0.12)',
+                      borderRadius: 10, cursor: 'pointer', width: '100%', textAlign: 'left' as const,
+                      transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)';
+                      (e.currentTarget as HTMLElement).style.boxShadow = '0 4px 16px rgba(44,31,23,0.08)';
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.currentTarget as HTMLElement).style.transform = '';
+                      (e.currentTarget as HTMLElement).style.boxShadow = '';
+                    }}
                   >
-                    {p.name} · {p.price}
+                    {/* Thumbnail */}
+                    <div style={{
+                      width: 72, height: 72, flexShrink: 0,
+                      background: '#F5F1EA', borderRadius: 6,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      padding: 6, overflow: 'hidden',
+                    }}>
+                      {p.image ? (
+                        <img src={p.image} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} referrerPolicy="no-referrer" />
+                      ) : (
+                        <span style={{ fontSize: 10, color: '#8A8178' }}>No image</span>
+                      )}
+                    </div>
+
+                    {/* Details */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <h4 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 17, fontWeight: 500, color: '#1A1A1A', lineHeight: 1.2, margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
+                        {p.name}
+                      </h4>
+                      <p style={{ fontSize: 11, color: '#8A8178', margin: '0 0 6px' }}>
+                        Christian Louboutin
+                      </p>
+                      {p.price && (
+                        <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 15, fontWeight: 500, color: '#1A1A1A' }}>
+                          {p.price}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Chevron */}
+                    <ChevronRight style={{ width: 18, height: 18, color: '#C9A96E', flexShrink: 0 }} />
                   </button>
                 ))}
               </div>
-              <p className="text-[10px] text-[#C4A265] flex items-center gap-1 mt-3">
-                <Sparkles className="w-3 h-3" /> AI Composed · Tap products to explore
-              </p>
             </div>
           </div>
         </div>
       )}
 
-      {/* Quick-view drawer */}
-      <Sheet open={!!quickViewProduct} onOpenChange={(open) => { if (!open) setQuickViewProduct(null); }}>
-        <SheetContent side="bottom" className="rounded-t-2xl max-h-[70vh]">
-          {quickViewProduct && (
-            <>
-              <SheetHeader className="text-left pb-3">
-                <SheetTitle style={{ fontFamily: "'Cormorant Garamond', serif" }}>
-                  {quickViewProduct.name}
-                </SheetTitle>
-              </SheetHeader>
-
-              <div className="aspect-square rounded-lg mb-4 flex items-center justify-center bg-white">
-                {quickViewProduct.image ? (
-                  <img src={quickViewProduct.image} alt={quickViewProduct.name} className="w-full h-full object-contain rounded-lg" />
-                ) : (
-                  <span className="text-muted-foreground text-sm">No image</span>
-                )}
-              </div>
-
-              <p className="text-lg font-semibold text-[#1a1a1a] mb-1">{quickViewProduct.price}</p>
-              <p className="text-xs text-muted-foreground mb-5">Christian Louboutin</p>
-
-              <div className="flex gap-3">
-                <Button
-                  variant="outline"
-                  className="flex-1 gap-2"
-                  onClick={() => quickViewProduct.slug && (window.location.href = `/product/${quickViewProduct.slug}`)}
-                  disabled={!quickViewProduct.slug}
-                >
-                  <ExternalLink className="w-4 h-4" /> View Product
-                </Button>
-                <Button className="flex-1 gap-2 bg-[#E12B38] hover:bg-[#c72330] text-white">
-                  <ShoppingBag className="w-4 h-4" /> Add to Bag
-                </Button>
-              </div>
-            </>
-          )}
-        </SheetContent>
-      </Sheet>
+      {/* Product quick-view using shared ProductPreviewSheet */}
+      <ProductPreviewSheet
+        product={quickViewProduct}
+        onClose={() => setQuickViewProduct(null)}
+      />
     </section>
   );
 };
