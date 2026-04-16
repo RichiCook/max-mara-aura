@@ -17,10 +17,16 @@ const CARD_SIZES = {
 const ProductCarousels = ({ product, position = 'below_product_info' }: ProductCarouselsProps) => {
   const { carouselsWithProducts, loading } = useProductCarousels(product);
 
-  if (loading || carouselsWithProducts.length === 0) return null;
-
   const filtered = carouselsWithProducts.filter(c => (c.display_position || 'below_product_info') === position);
-  if (filtered.length === 0) return null;
+
+  if (import.meta.env.DEV && position === 'below_product_info') {
+    console.log(`[Carousels] position=${position}, total=${carouselsWithProducts.length}, filtered=${filtered.length}, loading=${loading}`);
+    carouselsWithProducts.forEach(c => {
+      console.log(`  → ${c.name}: ${c.products.length} products, position=${c.display_position}, match=${c.match_reason}`);
+    });
+  }
+
+  if (loading || filtered.length === 0) return null;
 
   return (
     <>

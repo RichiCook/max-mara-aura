@@ -5,6 +5,37 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// ─── Category mapping: English slugs ↔ French DB patterns ───
+const CATEGORY_PATTERNS: Record<string, string[]> = {
+  shoes: ["souliers", "escarpins", "sneakers", "bottines", "bottes", "sandales", "mocassins", "ballerines", "espadrilles"],
+  bags: ["sacs", "pochettes", "cabas", "bandoulière", "portés main", "portés épaule"],
+  accessories: ["accessoires", "ceintures", "lunettes", "porte-clés", "bijoux", "bracelets", "portefeuilles"],
+  beauty: ["beauté", "teint", "lèvres", "yeux", "ongles", "parfums", "rouges à lèvres"],
+  small_leather_goods: ["portefeuilles", "petits accessoires"],
+  eyewear: ["lunettes"],
+};
+
+/** Check if a product category (French hierarchical) matches an English slug */
+function categoryMatchesSlug(productCategory: string, slug: string): boolean {
+  if (slug === "any") return true;
+  const catLower = productCategory.toLowerCase();
+  // Direct substring match (handles cases like "shoes" in English categories)
+  if (catLower.includes(slug.toLowerCase())) return true;
+  // French pattern match
+  const patterns = CATEGORY_PATTERNS[slug.toLowerCase()];
+  if (!patterns) return false;
+  return patterns.some(p => catLower.includes(p));
+}
+
+/** Build an ilike filter for a target category slug */
+function targetCategoryFilter(slug: string): string | null {
+  if (slug === "any") return null;
+  // Try French patterns first
+  const patterns = CATEGORY_PATTERNS[slug.toLowerCase()];
+  if (patterns && patterns.length > 0) return patterns[0]; // Use primary pattern
+  return slug; // Fallback to raw slug
+}
+
 const DYNAMIC_TITLES: Record<string, string> = {
   bags: "Bags to Match",
   shoes: "Shoes to Match",
@@ -101,6 +132,7 @@ Deno.serve(async (req) => {
     const attrOverrides = (carousel.target_attribute_overrides || {}) as Record<string, any>;
     const matchType = carousel.match_type;
     const effectiveCategory = targetCategory !== "same" ? targetCategory : null;
+    const effectiveCategoryPattern = effectiveCategory ? targetCategoryFilter(effectiveCategory) : null;
 
     const getAttr = (field: string) => {
       if (attrOverrides?.enabled && attrOverrides[field]) return attrOverrides[field];
@@ -110,7 +142,7 @@ Deno.serve(async (req) => {
     const buildQuery = () => {
       let q = supabase.from("products").select("*");
       if (excludeCurrent) q = q.neq("id", product_id);
-      if (effectiveCategory) q = q.ilike("category", `%${effectiveCategory}%`);
+      if (effectiveCategoryPattern) q = q.ilike("category", `%${effectiveCategoryPattern}%`);
       return q;
     };
 
@@ -258,10 +290,9 @@ Deno.serve(async (req) => {
       case "cross_category": {
         // For cross_category match type without rules, use category_mappings config as legacy fallback
         const mappings = config.category_mappings || [];
-        const productCatLower = (product.category || "").toLowerCase();
         const matched = mappings.filter((m: any) => {
           if (m.source === "any") return true;
-          return productCatLower.includes(m.source.toLowerCase());
+          return categoryMatchesSlug(product.category || "", m.source);
         });
         if (matched.length > 0) {
           const allProds: any[] = [];
@@ -271,7 +302,10 @@ Deno.serve(async (req) => {
             if (allProds.length >= maxItems) break;
             const remaining = maxItems - allProds.length;
             let q = supabase.from("products").select("*").neq("id", product_id).limit(remaining);
-            if (mapping.target !== "any") q = q.ilike("category", `%${mapping.target}%`);
+            if (mapping.target !== "any") {
+              const pattern = targetCategoryFilter(mapping.target);
+              if (pattern) q = q.ilike("category", `%${pattern}%`);
+            }
             const dims = mapping.match_by || [];
             if (dims.includes("color") && product.color) q = q.eq("color", product.color);
             if (dims.includes("collection") && product.collection) q = q.eq("collection", product.collection);
@@ -366,12 +400,15 @@ Deno.serve(async (req) => {
 async function resolveCarouselRules(
   supabase: any, product: any, rules: any[], maxItems: number
 ) {
-  const productCatLower = (product.category || "").toLowerCase();
+  const productCat = product.category || "";
+
+  console.log(`[recommendations] Product: ${product.id}, category: "${productCat}", rules: ${rules.length}`);
 
   const matchingRules = rules.filter((rule: any) => {
     const triggerCats = rule.trigger_categories || [];
     if (!triggerCats.includes("any")) {
-      const matches = triggerCats.some((tc: string) => productCatLower.includes(tc.toLowerCase()));
+      const matches = triggerCats.some((tc: string) => categoryMatchesSlug(productCat, tc));
+      console.log(`[recommendations] Rule ${rule.id}: triggers=${JSON.stringify(triggerCats)}, matches=${matches}`);
       if (!matches) return false;
     }
 
@@ -383,6 +420,8 @@ async function resolveCarouselRules(
     if (filters.occasion && product.occasion && !product.occasion.includes(filters.occasion)) return false;
     return true;
   });
+
+  console.log(`[recommendations] Matching rules: ${matchingRules.length}`);
 
   if (matchingRules.length === 0) return { products: [], matchReason: "No rules match this product", dynamicTitle: null, matchedRuleIds: [] };
 
@@ -401,7 +440,8 @@ async function resolveCarouselRules(
       .limit(remaining);
 
     if (rule.target_category !== "any") {
-      q = q.ilike("category", `%${rule.target_category}%`);
+      const pattern = targetCategoryFilter(rule.target_category);
+      if (pattern) q = q.ilike("category", `%${pattern}%`);
     }
 
     const dims = rule.match_dimensions || [];
