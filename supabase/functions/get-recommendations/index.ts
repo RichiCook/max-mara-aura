@@ -437,7 +437,8 @@ async function resolveCarouselRules(
       .limit(remaining);
 
     if (rule.target_category !== "any") {
-      q = q.ilike("category", `%${rule.target_category}%`);
+      const pattern = targetCategoryFilter(rule.target_category);
+      if (pattern) q = q.ilike("category", `%${pattern}%`);
     }
 
     const dims = rule.match_dimensions || [];
