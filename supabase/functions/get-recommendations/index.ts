@@ -223,6 +223,43 @@ Deno.serve(async (req) => {
         matchReason = "New Arrivals";
         break;
       }
+      case "cross_category": {
+        const mappings = config.category_mappings || [];
+        const productCatLower = (product.category || "").toLowerCase();
+        const matched = mappings.filter((m: any) => {
+          if (m.source === "any") return true;
+          return productCatLower.includes(m.source.toLowerCase());
+        });
+        if (matched.length > 0) {
+          const allProds: any[] = [];
+          const seenIds = new Set<string>();
+          const reasons: string[] = [];
+          for (const mapping of matched) {
+            if (allProds.length >= maxItems) break;
+            const remaining = maxItems - allProds.length;
+            let q = supabase.from("products").select("*").neq("id", product_id).limit(remaining);
+            if (mapping.target !== "any") q = q.ilike("category", `%${mapping.target}%`);
+            const dims = mapping.match_by || [];
+            if (dims.includes("color") && product.color) q = q.eq("color", product.color);
+            if (dims.includes("collection") && product.collection) q = q.eq("collection", product.collection);
+            if (dims.includes("material") && product.material) q = q.eq("material", product.material);
+            if (dims.includes("gender") && product.gender) q = q.eq("gender", product.gender);
+            if (dims.includes("price_tier") && product.price_tier) q = q.eq("price_tier", product.price_tier);
+            if (dims.includes("silhouette_family") && product.silhouette_family) q = q.eq("silhouette_family", product.silhouette_family);
+            q = applySorting(q);
+            const { data } = await q;
+            if (data) {
+              for (const p of data) {
+                if (!seenIds.has(p.id)) { seenIds.add(p.id); allProds.push(p); }
+              }
+              if (data.length > 0) reasons.push(`${mapping.source} → ${mapping.target}`);
+            }
+          }
+          products = allProds.slice(0, maxItems);
+          matchReason = reasons.length ? `Cross: ${reasons.join(" + ")}` : "Cross-Category";
+        }
+        break;
+      }
       case "customers_also_viewed": {
         const { data: sessions } = await supabase.from("scan_events").select("session_id")
           .eq("product_code", product.product_code || "").eq("event_type", "page_view").limit(100);
