@@ -51,31 +51,45 @@ const ProductInfoBlock = ({ price, productCode, description, composition, source
   }, []);
 
   return (
-    <div className="px-4">
+    <div className="px-5 md:px-0">
       {/* Price row */}
-      <div className="flex items-baseline justify-between pt-4">
+      <div className="flex items-baseline justify-between">
         <div className="flex items-baseline gap-2">
           {price && (
-            <>
-              <span className="font-sans text-[26px] font-bold text-foreground">{price.replace(/a partir de\s*/i, '')}</span>
-            </>
+            <span
+              className="font-serif text-foreground"
+              style={{ fontSize: 28, fontWeight: 400 }}
+            >
+              {price.replace(/a partir de\s*/i, '')}
+            </span>
           )}
         </div>
         {productCode && (
-          <span className="font-sans text-[11px] text-muted-foreground">{productCode}</span>
+          <span
+            className="font-sans uppercase"
+            style={{ fontSize: 10, letterSpacing: '0.12em', color: '#B0A89E' }}
+          >
+            REF {productCode}
+          </span>
         )}
       </div>
 
+      {/* Divider before description */}
+      <div className="my-5" style={{ height: 0.5, background: '#E5E1DA' }} />
+
       {/* Description */}
       {description && (
-        <p className="font-sans text-[14px] leading-7 text-muted-foreground pt-3.5">
+        <p
+          className="font-serif max-w-[60ch]"
+          style={{ fontSize: 15, lineHeight: 1.7, color: '#4A4540' }}
+        >
           {description}
         </p>
       )}
 
       {/* Composition */}
       {compParts.length > 0 && (
-        <div className="pt-4">
+        <div className="pt-5">
           <div className="flex items-center justify-between">
             <span className="font-sans text-[11px] font-semibold text-muted-foreground tracking-wider uppercase">
               Composition
@@ -107,7 +121,7 @@ const ProductInfoBlock = ({ price, productCode, description, composition, source
       {/* Repair Button */}
       {repairSettings && (
         <>
-          <div className="my-6" style={{ height: 1, background: 'linear-gradient(90deg, transparent, hsl(var(--border)) 20%, hsl(var(--border)) 80%, transparent)' }} />
+          <div className="my-6" style={{ height: 0.5, background: '#E5E1DA' }} />
           <button
             onClick={() => setRepairOpen(true)}
             className="flex items-center w-full p-4 rounded-lg border border-border bg-card cursor-pointer gap-3"
@@ -127,7 +141,7 @@ const ProductInfoBlock = ({ price, productCode, description, composition, source
       )}
 
       {/* Divider */}
-      <div className="my-6" style={{ height: 1, background: 'linear-gradient(90deg, transparent, hsl(var(--border)) 20%, hsl(var(--border)) 80%, transparent)' }} />
+      <div className="my-6" style={{ height: 0.5, background: '#E5E1DA' }} />
 
       {/* CTA */}
       {sourceUrl && (
