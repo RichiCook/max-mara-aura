@@ -132,6 +132,7 @@ Deno.serve(async (req) => {
     const attrOverrides = (carousel.target_attribute_overrides || {}) as Record<string, any>;
     const matchType = carousel.match_type;
     const effectiveCategory = targetCategory !== "same" ? targetCategory : null;
+    const effectiveCategoryPattern = effectiveCategory ? targetCategoryFilter(effectiveCategory) : null;
 
     const getAttr = (field: string) => {
       if (attrOverrides?.enabled && attrOverrides[field]) return attrOverrides[field];
@@ -141,7 +142,7 @@ Deno.serve(async (req) => {
     const buildQuery = () => {
       let q = supabase.from("products").select("*");
       if (excludeCurrent) q = q.neq("id", product_id);
-      if (effectiveCategory) q = q.ilike("category", `%${effectiveCategory}%`);
+      if (effectiveCategoryPattern) q = q.ilike("category", `%${effectiveCategoryPattern}%`);
       return q;
     };
 
