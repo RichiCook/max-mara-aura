@@ -698,6 +698,12 @@ const CarouselSettingsPage = () => {
                                 </SelectContent>
                               </Select></div>
                           )}
+                          {editForm.match_type === 'cross_category' && (
+                            <CategoryMappingEditor
+                              mappings={(editForm.match_config?.category_mappings as CategoryMapping[]) || DEFAULT_CATEGORY_MAPPINGS}
+                              onChange={mappings => setEditForm(f => ({ ...f, match_config: { ...f.match_config, category_mappings: mappings } }))}
+                            />
+                          )}
                         </TabsContent>
 
                         {/* ─── Rules Tab ─── */}
