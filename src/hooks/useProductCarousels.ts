@@ -29,6 +29,8 @@ export interface CarouselDefinition {
 export interface CarouselWithProducts extends CarouselDefinition {
   products: Product[];
   match_reason?: string;
+  dynamic_title?: string | null;
+  matched_rule_ids?: string[];
 }
 
 /** Admin CRUD hook for carousel definitions */
@@ -193,6 +195,8 @@ export const useProductCarousels = (product: Product | null) => {
             fallback_behavior: carousel.fallback_behavior || 'use_match_type',
             products,
             match_reason: data.match_reason,
+            dynamic_title: data.dynamic_title || null,
+            matched_rule_ids: data.matched_rule_ids || [],
           });
         } catch (err) {
           console.error(`Carousel ${carousel.name} failed:`, err);
@@ -213,7 +217,8 @@ export const useProductCarousels = (product: Product | null) => {
 export const trackRecommendationClick = async (
   sourceProductId: string,
   targetProductId: string,
-  carouselId: string
+  carouselId: string,
+  ruleId?: string | null
 ) => {
   const sessionId = sessionStorage.getItem('scan_session_id') || '';
   await supabase.from('recommendation_clicks').insert({
@@ -221,5 +226,6 @@ export const trackRecommendationClick = async (
     target_product_id: targetProductId,
     carousel_id: carouselId,
     session_id: sessionId,
+    rule_id: ruleId || null,
   } as any);
 };

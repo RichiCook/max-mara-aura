@@ -5,6 +5,32 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const DYNAMIC_TITLES: Record<string, string> = {
+  bags: "Bags to Match",
+  shoes: "Shoes to Match",
+  accessories: "Complete Your Look",
+  small_leather_goods: "Small Leather Goods",
+  eyewear: "Eyewear to Match",
+  beauty: "Beauty Picks",
+};
+
+function generateDynamicTitle(rule: any): string {
+  const overrides = rule.target_attribute_overrides || {};
+  if (overrides.title_template) {
+    const targetLabel = rule.target_category.charAt(0).toUpperCase() + rule.target_category.slice(1);
+    const matchLabel = (rule.match_dimensions || [])[0] || "style";
+    return overrides.title_template
+      .replace("{target_category}", targetLabel)
+      .replace("{match_type}", matchLabel);
+  }
+  const dims = rule.match_dimensions || [];
+  const target = rule.target_category || "any";
+  if (dims.includes("collection")) return "From the Same Collection";
+  if (dims.includes("color")) return DYNAMIC_TITLES[target] || `${target.charAt(0).toUpperCase() + target.slice(1)} to Match`;
+  if (dims.includes("material")) return `Same Material ${target.charAt(0).toUpperCase() + target.slice(1)}`;
+  return DYNAMIC_TITLES[target] || "You Might Also Like";
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -44,22 +70,28 @@ Deno.serve(async (req) => {
     if (rules && rules.length > 0) {
       const result = await resolveCarouselRules(supabase, product, rules, maxItems);
       if (result.products.length > 0) {
-        return jsonResp({ products: result.products, match_reason: result.matchReason, algorithm_version: "3.0" });
+        return jsonResp({
+          products: result.products,
+          match_reason: result.matchReason,
+          dynamic_title: result.dynamicTitle,
+          matched_rule_ids: result.matchedRuleIds,
+          algorithm_version: "3.1",
+        });
       }
     }
 
     // ─── Step 2: Fallback behavior ───
     if (rules && rules.length > 0 && fallbackBehavior === "hide") {
-      return jsonResp({ products: [], match_reason: "No rules matched — hidden", algorithm_version: "3.0" });
+      return jsonResp({ products: [], match_reason: "No rules matched — hidden", algorithm_version: "3.1" });
     }
 
     if (rules && rules.length > 0 && fallbackBehavior === "featured_products") {
       const featuredIds = carousel.fallback_product_ids || [];
       if (featuredIds.length > 0) {
         const { data } = await supabase.from("products").select("*").in("id", featuredIds);
-        return jsonResp({ products: data || [], match_reason: "Featured products fallback", algorithm_version: "3.0" });
+        return jsonResp({ products: data || [], match_reason: "Featured products fallback", algorithm_version: "3.1" });
       }
-      return jsonResp({ products: [], match_reason: "No featured products", algorithm_version: "3.0" });
+      return jsonResp({ products: [], match_reason: "No featured products", algorithm_version: "3.1" });
     }
 
     // ─── Step 3: Match type fallback (original logic) ───
@@ -224,6 +256,7 @@ Deno.serve(async (req) => {
         break;
       }
       case "cross_category": {
+        // For cross_category match type without rules, use category_mappings config as legacy fallback
         const mappings = config.category_mappings || [];
         const productCatLower = (product.category || "").toLowerCase();
         const matched = mappings.filter((m: any) => {
@@ -322,7 +355,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    return jsonResp({ products, match_reason: matchReason, algorithm_version: "3.0" });
+    return jsonResp({ products, match_reason: matchReason, algorithm_version: "3.1" });
   } catch (err) {
     console.error("Recommendation error:", err);
     return jsonResp({ error: "Internal server error" }, 500);
@@ -351,11 +384,13 @@ async function resolveCarouselRules(
     return true;
   });
 
-  if (matchingRules.length === 0) return { products: [], matchReason: "No rules match this product" };
+  if (matchingRules.length === 0) return { products: [], matchReason: "No rules match this product", dynamicTitle: null, matchedRuleIds: [] };
 
   const allProducts: any[] = [];
   const seenIds = new Set<string>();
   const reasons: string[] = [];
+  const matchedRuleIds: string[] = [];
+  let dynamicTitle: string | null = null;
 
   for (const rule of matchingRules) {
     if (allProducts.length >= maxItems) break;
@@ -372,7 +407,8 @@ async function resolveCarouselRules(
     const dims = rule.match_dimensions || [];
     const overrides = rule.target_attribute_overrides || {};
 
-    if (dims.includes("color")) q = q.eq("color", overrides.color || product.color);
+    // Match dimension logic — including price_range
+    if (dims.includes("color") && product.color) q = q.eq("color", overrides.color || product.color);
     if (dims.includes("collection") && product.collection) q = q.eq("collection", overrides.collection || product.collection);
     if (dims.includes("material") && product.material) q = q.eq("material", overrides.material || product.material);
     if (dims.includes("gender") && product.gender) q = q.eq("gender", overrides.gender || product.gender);
@@ -384,20 +420,39 @@ async function resolveCarouselRules(
     switch (sortBy) {
       case "price_asc": q = q.order("price", { ascending: true }); break;
       case "price_desc": q = q.order("price", { ascending: false }); break;
+      case "random": q = q.order("created_at", { ascending: false }); break;
+      case "newest": q = q.order("created_at", { ascending: false }); break;
       default: q = q.order("created_at", { ascending: false });
     }
 
     const { data } = await q;
-    if (data) {
-      for (const p of data) {
+
+    // Handle price_range matching client-side
+    let filtered = data || [];
+    if (dims.includes("price_range") && product.price) {
+      const priceNum = parseFloat(String(product.price).replace(/[^0-9.,]/g, "").replace(",", "."));
+      if (!isNaN(priceNum)) {
+        filtered = filtered.filter((p: any) => {
+          const pp = parseFloat(String(p.price || "").replace(/[^0-9.,]/g, "").replace(",", "."));
+          return !isNaN(pp) && pp >= priceNum * 0.7 && pp <= priceNum * 1.3;
+        });
+      }
+    }
+
+    if (filtered.length > 0) {
+      for (const p of filtered) {
         if (!seenIds.has(p.id)) {
           seenIds.add(p.id);
           allProducts.push(p);
         }
       }
-      if (data.length > 0) {
-        const triggerLabel = rule.trigger_categories.includes("any") ? "Any" : rule.trigger_categories.join("/");
-        reasons.push(`${triggerLabel} → ${rule.target_category}`);
+      const triggerLabel = rule.trigger_categories.includes("any") ? "Any" : rule.trigger_categories.join("/");
+      reasons.push(`${triggerLabel} → ${rule.target_category}`);
+      matchedRuleIds.push(rule.id);
+
+      // Use the first matching rule's title
+      if (!dynamicTitle) {
+        dynamicTitle = generateDynamicTitle(rule);
       }
     }
   }
@@ -405,6 +460,8 @@ async function resolveCarouselRules(
   return {
     products: allProducts.slice(0, maxItems),
     matchReason: reasons.length ? `Rules: ${reasons.join(" + ")}` : "Carousel rules",
+    dynamicTitle,
+    matchedRuleIds,
   };
 }
 

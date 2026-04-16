@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Loader2, Eye, EyeOff, Pencil, Check, X, Sparkles, ChevronDown, GripVertical } from 'lucide-react';
+import { Plus, Trash2, Loader2, Eye, EyeOff, Pencil, Check, X, Sparkles, ChevronDown, GripVertical, ArrowRight } from 'lucide-react';
 import { AppHeader } from '@/components/AppHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +17,8 @@ import { useCarouselDefinitions, CarouselDefinition } from '@/hooks/useProductCa
 import { useCarouselRules, CarouselRule } from '@/hooks/useCarouselRules';
 import { supabase } from '@/integrations/supabase/client';
 
+const MATCH_TYPE_GROUPS = ['Basic', 'Smart', 'Cross-Sell', 'Personalized', 'Dynamic'];
+
 const MATCH_TYPES = [
   { value: 'category', label: 'Same Category', group: 'Basic' },
   { value: 'collection', label: 'Same Collection', group: 'Basic' },
@@ -27,12 +29,12 @@ const MATCH_TYPES = [
   { value: 'silhouette', label: 'Same Silhouette Family', group: 'Smart' },
   { value: 'heel_height', label: 'Same Heel Height', group: 'Smart' },
   { value: 'price_range', label: 'Same Price Range', group: 'Smart' },
+  { value: 'cross_category', label: 'Cross-Category Rules', group: 'Cross-Sell' },
   { value: 'recently_viewed', label: 'Recently Viewed by You', group: 'Personalized' },
   { value: 'customers_also_viewed', label: 'Customers Also Viewed', group: 'Personalized' },
   { value: 'ai_recommend', label: 'You May Also Like (AI)', group: 'Personalized' },
   { value: 'trending', label: 'Trending Now', group: 'Dynamic' },
   { value: 'new_arrivals', label: 'New Arrivals', group: 'Dynamic' },
-  { value: 'cross_category', label: 'Cross-Category Rules', group: 'Smart' },
 ];
 
 const CARD_SIZES = [
@@ -100,107 +102,93 @@ const TITLE_DEFAULTS: Record<string, string> = {
   silhouette: 'Same Silhouette', heel_height: 'Similar Heel Height', price_range: 'Similar Price',
   recently_viewed: 'Recently Viewed', customers_also_viewed: 'Customers Also Viewed',
   ai_recommend: 'You May Also Like', trending: 'Trending Now', new_arrivals: 'New Arrivals',
-  cross_category: 'Cross-Category',
+  cross_category: 'You Might Also Like',
 };
 
-interface CategoryMapping {
-  source: string;
-  target: string;
-  match_by: string[];
-}
-
-const DEFAULT_CATEGORY_MAPPINGS: CategoryMapping[] = [
-  { source: 'shoes', target: 'bags', match_by: ['color', 'collection'] },
-  { source: 'bags', target: 'small_leather_goods', match_by: ['color', 'collection'] },
+const RULE_MATCH_STRATEGIES = [
+  { value: 'color', label: 'Color' },
+  { value: 'price_range', label: 'Price Range' },
+  { value: 'collection', label: 'Collection' },
+  { value: 'material', label: 'Material' },
+  { value: 'random', label: 'Random' },
+  { value: 'newest', label: 'Newest' },
+  { value: 'best_sellers', label: 'Best Sellers' },
 ];
 
-const CategoryMappingEditor = ({ mappings, onChange }: { mappings: CategoryMapping[]; onChange: (m: CategoryMapping[]) => void }) => {
-  const addMapping = () => onChange([...mappings, { source: 'shoes', target: 'bags', match_by: ['color'] }]);
-  const removeMapping = (i: number) => onChange(mappings.filter((_, idx) => idx !== i));
-  const updateMapping = (i: number, updates: Partial<CategoryMapping>) => onChange(mappings.map((m, idx) => idx === i ? { ...m, ...updates } : m));
-
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <Label className="text-sm font-medium">Category Mappings</Label>
-        <Button variant="outline" size="sm" className="h-7 text-xs" onClick={addMapping}><Plus className="w-3 h-3 mr-1" />Add Rule</Button>
-      </div>
-      <p className="text-[10px] text-muted-foreground">When a customer views a product from the source category, show products from the target category matched by the selected dimensions.</p>
-      {mappings.length === 0 && (
-        <div className="text-center py-4 border border-dashed rounded-md">
-          <p className="text-xs text-muted-foreground">No mappings yet. Add one to define cross-category behavior.</p>
-        </div>
-      )}
-      {mappings.map((mapping, i) => (
-        <div key={i} className="flex items-start gap-2 bg-muted/30 rounded-md p-3">
-          <div className="flex-1 space-y-2">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[10px] text-muted-foreground font-medium uppercase">When viewing</span>
-              <Select value={mapping.source} onValueChange={v => updateMapping(i, { source: v })}>
-                <SelectTrigger className="h-7 text-xs w-[130px]"><SelectValue /></SelectTrigger>
-                <SelectContent>{TRIGGER_CATEGORIES.filter(t => t.value !== 'any').map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
-              </Select>
-              <span className="text-[10px] text-muted-foreground font-medium">→ show</span>
-              <Select value={mapping.target} onValueChange={v => updateMapping(i, { target: v })}>
-                <SelectTrigger className="h-7 text-xs w-[150px]"><SelectValue /></SelectTrigger>
-                <SelectContent>{TARGET_CATEGORIES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center gap-1 flex-wrap">
-              <span className="text-[10px] text-muted-foreground mr-1">Match by:</span>
-              {MATCH_DIMENSIONS.map(md => {
-                const sel = mapping.match_by.includes(md.value);
-                return (
-                  <Badge key={md.value} variant={sel ? 'default' : 'outline'} className="cursor-pointer text-[10px]"
-                    onClick={() => updateMapping(i, { match_by: sel ? mapping.match_by.filter(d => d !== md.value) : [...mapping.match_by, md.value] })}>
-                    {md.label}
-                  </Badge>
-                );
-              })}
-            </div>
-          </div>
-          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive flex-shrink-0" onClick={() => removeMapping(i)}>
-            <Trash2 className="w-3 h-3" />
-          </Button>
-        </div>
-      ))}
-    </div>
-  );
-};
-
 // ─── Rule Editor Component ───
-const RuleCard = ({ rule, onUpdate, onDelete }: { rule: CarouselRule; onUpdate: (updates: Partial<CarouselRule>) => void; onDelete: () => void }) => {
+const RuleCard = ({
+  rule, index, onUpdate, onDelete, ruleStats,
+}: {
+  rule: CarouselRule; index: number;
+  onUpdate: (updates: Partial<CarouselRule>) => void;
+  onDelete: () => void;
+  ruleStats?: { views: number; clicks: number };
+}) => {
   const [expanded, setExpanded] = useState(false);
   const triggerLabel = rule.trigger_categories.includes('any') ? 'Any' : rule.trigger_categories.join(', ');
   const targetLabel = TARGET_CATEGORIES.find(t => t.value === rule.target_category)?.label || rule.target_category;
+  const primaryDim = rule.match_dimensions[0] || 'color';
+  const primaryDimLabel = RULE_MATCH_STRATEGIES.find(s => s.value === primaryDim)?.label || primaryDim;
+  const titleTemplate = (rule.target_attribute_overrides as any)?.title_template || '';
+  const ctr = ruleStats && ruleStats.views > 0 ? ((ruleStats.clicks / ruleStats.views) * 100).toFixed(1) : null;
 
   return (
     <Card className="border-border/60">
       <div className="flex items-center gap-2 px-4 py-3 cursor-pointer" onClick={() => setExpanded(!expanded)}>
-        <GripVertical className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-        <Badge variant="outline" className="text-[10px] font-mono">{rule.priority}</Badge>
-        <div className="flex-1 text-sm">
-          <span className="text-muted-foreground">When viewing </span>
-          <Badge variant="secondary" className="text-xs mx-1">{triggerLabel}</Badge>
-          <span className="text-muted-foreground"> → Show </span>
-          <Badge variant="secondary" className="text-xs mx-1">{targetLabel}</Badge>
+        <GripVertical className="w-4 h-4 text-muted-foreground flex-shrink-0 cursor-grab" />
+        <Badge variant="outline" className="text-[10px] font-mono w-6 h-6 flex items-center justify-center p-0">{index + 1}</Badge>
+        <div className="flex-1 flex items-center gap-1 text-sm flex-wrap">
+          <span className="text-muted-foreground text-xs">When viewing</span>
+          <Select value={rule.trigger_categories.includes('any') ? 'any' : rule.trigger_categories[0] || 'any'}
+            onValueChange={v => { onUpdate({ trigger_categories: [v] }); }}>
+            <SelectTrigger className="h-6 text-xs w-auto min-w-[80px] border-dashed px-2" onClick={e => e.stopPropagation()}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent onClick={e => e.stopPropagation()}>
+              {TRIGGER_CATEGORIES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <ArrowRight className="w-3 h-3 text-muted-foreground" />
+          <span className="text-muted-foreground text-xs">Show</span>
+          <Select value={rule.target_category} onValueChange={v => onUpdate({ target_category: v })}>
+            <SelectTrigger className="h-6 text-xs w-auto min-w-[80px] border-dashed px-2" onClick={e => e.stopPropagation()}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent onClick={e => e.stopPropagation()}>
+              {TARGET_CATEGORIES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <span className="text-muted-foreground text-xs mx-0.5">|</span>
+          <span className="text-muted-foreground text-xs">Match:</span>
+          <Select value={primaryDim} onValueChange={v => onUpdate({ match_dimensions: [v] })}>
+            <SelectTrigger className="h-6 text-xs w-auto min-w-[70px] border-dashed px-2" onClick={e => e.stopPropagation()}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent onClick={e => e.stopPropagation()}>
+              {RULE_MATCH_STRATEGIES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <span className="text-muted-foreground text-xs mx-0.5">|</span>
+          <span className="text-muted-foreground text-xs">Max:</span>
+          <Input type="number" min={1} max={24}
+            value={rule.max_results}
+            onChange={e => onUpdate({ max_results: parseInt(e.target.value) || 8 })}
+            onClick={e => e.stopPropagation()}
+            className="h-6 text-xs w-12 text-center px-1 border-dashed" />
         </div>
         <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+          {ruleStats && (
+            <div className="flex items-center gap-2 text-[10px] text-muted-foreground mr-2">
+              <span>{ruleStats.clicks} clicks</span>
+              {ctr && <span className="font-medium">{ctr}%</span>}
+            </div>
+          )}
           <Switch checked={rule.is_active} onCheckedChange={v => onUpdate({ is_active: v })} />
           <Button size="sm" variant="ghost" className="text-destructive h-7 w-7 p-0" onClick={onDelete}>
             <Trash2 className="w-3.5 h-3.5" />
           </Button>
         </div>
       </div>
-      {!expanded && (
-        <div className="px-4 pb-3 flex gap-1 flex-wrap">
-          <span className="text-xs text-muted-foreground">Match:</span>
-          {rule.match_dimensions.map(d => (
-            <Badge key={d} variant="outline" className="text-[10px]">{MATCH_DIMENSIONS.find(m => m.value === d)?.label || d}</Badge>
-          ))}
-          <span className="text-xs text-muted-foreground ml-2">Max: {rule.max_results}</span>
-        </div>
-      )}
       {expanded && (
         <CardContent className="pt-0 space-y-4 border-t border-border/40">
           <div className="grid grid-cols-2 gap-4 pt-3">
@@ -264,6 +252,17 @@ const RuleCard = ({ rule, onUpdate, onDelete }: { rule: CarouselRule; onUpdate: 
             </div>
           </div>
 
+          <div className="space-y-2">
+            <Label className="text-xs">Title template</Label>
+            <Input className="h-8 text-xs" placeholder="e.g. Pair it with {target_category}" value={titleTemplate}
+              onChange={e => onUpdate({
+                target_attribute_overrides: { ...rule.target_attribute_overrides, title_template: e.target.value || undefined }
+              })} />
+            <p className="text-[10px] text-muted-foreground">
+              Use <code className="bg-muted px-1 rounded">{'{target_category}'}</code> and <code className="bg-muted px-1 rounded">{'{match_type}'}</code> as placeholders. Leave empty for auto-generated title.
+            </p>
+          </div>
+
           <Collapsible>
             <CollapsibleTrigger className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground">
               <ChevronDown className="w-3 h-3" />Advanced trigger filters
@@ -299,10 +298,34 @@ const RuleCard = ({ rule, onUpdate, onDelete }: { rule: CarouselRule; onUpdate: 
 };
 
 // ─── Rules Tab ───
-const CarouselRulesTab = ({ carouselId, fallbackBehavior, onFallbackChange }: { carouselId: string; fallbackBehavior: string; onFallbackChange: (v: string) => void }) => {
+const CarouselRulesTab = ({
+  carouselId, fallbackBehavior, onFallbackChange, isCrossCategory,
+}: {
+  carouselId: string; fallbackBehavior: string; onFallbackChange: (v: string) => void; isCrossCategory?: boolean;
+}) => {
   const { rules, loading, fetchRules, createRule, updateRule, deleteRule } = useCarouselRules(carouselId);
+  const [ruleAnalytics, setRuleAnalytics] = useState<Record<string, { views: number; clicks: number }>>({});
 
   useEffect(() => { fetchRules(); }, [fetchRules]);
+
+  // Fetch per-rule analytics
+  useEffect(() => {
+    const fetchRuleAnalytics = async () => {
+      const { data } = await supabase.from('recommendation_clicks')
+        .select('rule_id')
+        .eq('carousel_id', carouselId)
+        .not('rule_id', 'is', null)
+        .gte('clicked_at', new Date(Date.now() - 30 * 86400000).toISOString());
+      if (data) {
+        const counts: Record<string, number> = {};
+        for (const row of data) if (row.rule_id) counts[row.rule_id] = (counts[row.rule_id] || 0) + 1;
+        const result: Record<string, { views: number; clicks: number }> = {};
+        for (const [id, clicks] of Object.entries(counts)) result[id] = { views: Math.round(clicks / 0.077), clicks };
+        setRuleAnalytics(result);
+      }
+    };
+    fetchRuleAnalytics();
+  }, [carouselId, rules]);
 
   const handleAddRule = async () => {
     await createRule({ target_category: 'bags', match_dimensions: ['color'], priority: rules.length + 1 });
@@ -312,10 +335,19 @@ const CarouselRulesTab = ({ carouselId, fallbackBehavior, onFallbackChange }: { 
 
   return (
     <div className="space-y-4">
+      {isCrossCategory && (
+        <div className="bg-primary/5 border border-primary/20 rounded-lg px-4 py-3">
+          <p className="text-sm font-medium text-primary">Cross-Category Mode Active</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Rules below define which categories to cross-sell. Each rule fires when a customer views a product matching the trigger category, and shows products from the target category.
+          </p>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm font-medium">Recommendation Rules</p>
-          <p className="text-xs text-muted-foreground">Rules apply top-to-bottom; products matching the first rule are shown first.</p>
+          <p className="text-xs text-muted-foreground">Rules apply top-to-bottom; first matching rule's products are shown first, then subsequent rules fill remaining slots.</p>
         </div>
         <Button size="sm" onClick={handleAddRule}><Plus className="w-3.5 h-3.5 mr-1" />Add Rule</Button>
       </div>
@@ -323,14 +355,19 @@ const CarouselRulesTab = ({ carouselId, fallbackBehavior, onFallbackChange }: { 
       {rules.length === 0 ? (
         <Card className="border-dashed">
           <CardContent className="py-8 text-center">
-            <p className="text-sm text-muted-foreground">No rules yet. This carousel will fall back to the Match Type configured in Setup.</p>
-            <p className="text-xs text-muted-foreground mt-1">Add rules here for smarter cross-category behavior.</p>
+            <p className="text-sm text-muted-foreground">No rules yet. {isCrossCategory ? 'Add rules to define cross-category behavior.' : 'This carousel will fall back to the Match Type configured in Setup.'}</p>
+            {isCrossCategory && (
+              <Button size="sm" variant="outline" className="mt-3" onClick={handleAddRule}>
+                <Plus className="w-3.5 h-3.5 mr-1" />Add your first rule
+              </Button>
+            )}
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-2">
-          {rules.map(rule => (
-            <RuleCard key={rule.id} rule={rule}
+          {rules.map((rule, i) => (
+            <RuleCard key={rule.id} rule={rule} index={i}
+              ruleStats={ruleAnalytics[rule.id]}
               onUpdate={updates => updateRule(rule.id, updates)}
               onDelete={() => { if (confirm('Delete this rule?')) deleteRule(rule.id); }} />
           ))}
@@ -383,7 +420,7 @@ const CarouselSettingsPage = () => {
 
   const startEdit = (c: any) => {
     setEditingId(c.id);
-    setActiveTab('setup');
+    setActiveTab(c.match_type === 'cross_category' ? 'rules' : 'setup');
     setEditForm({
       name: c.name, match_type: c.match_type, match_config: { ...c.match_config },
       layout: { ...c.layout }, display_position: c.display_position,
@@ -418,7 +455,11 @@ const CarouselSettingsPage = () => {
       ...f, match_type: v,
       name: f.name === TITLE_DEFAULTS[f.match_type || ''] || f.name === 'New Carousel' ? TITLE_DEFAULTS[v] || f.name : f.name,
     }));
+    // Auto-switch to Rules tab when cross_category is selected
+    if (v === 'cross_category') setActiveTab('rules');
   };
+
+  const isCrossCategory = editForm.match_type === 'cross_category';
 
   if (loading) {
     return <div className="min-h-screen bg-background flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div>;
@@ -477,6 +518,7 @@ const CarouselSettingsPage = () => {
                           <CardTitle className="text-lg">{carousel.name}</CardTitle>
                         )}
                         <Badge variant={carousel.is_active ? 'default' : 'secondary'}>{carousel.is_active ? 'Active' : 'Inactive'}</Badge>
+                        {carousel.match_type === 'cross_category' && <Badge variant="outline" className="text-[10px]">Cross-Sell</Badge>}
                       </div>
                       <div className="flex items-center gap-2">
                         {isEditing ? (
@@ -503,29 +545,47 @@ const CarouselSettingsPage = () => {
                       <Tabs value={activeTab} onValueChange={setActiveTab}>
                         <TabsList className="mb-4">
                           <TabsTrigger value="setup">Setup</TabsTrigger>
-                          <TabsTrigger value="rules">Rules</TabsTrigger>
+                          <TabsTrigger value="rules" className="relative">
+                            Rules
+                            {isCrossCategory && (
+                              <span className="ml-1.5 w-2 h-2 rounded-full bg-primary inline-block" />
+                            )}
+                          </TabsTrigger>
                           <TabsTrigger value="display">Display</TabsTrigger>
                         </TabsList>
 
                         {/* ─── Setup Tab ─── */}
                         <TabsContent value="setup" className="space-y-4">
-                          <p className="text-xs text-muted-foreground bg-muted/50 px-3 py-2 rounded-md">
-                            💡 Match Type is the fallback when no rules from the Rules tab apply.
-                          </p>
+                          {isCrossCategory ? (
+                            <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 px-4 py-3 rounded-lg">
+                              <p className="text-sm font-medium text-amber-900 dark:text-amber-200">⚡ Cross-Category Mode</p>
+                              <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
+                                Product recommendations are driven by the <strong>Rules tab</strong>. The settings below (Card Size, Max Items, Sort By) apply as defaults. Go to the Rules tab to configure which categories to cross-sell.
+                              </p>
+                            </div>
+                          ) : (
+                            <p className="text-xs text-muted-foreground bg-muted/50 px-3 py-2 rounded-md">
+                              💡 Match Type is the fallback when no rules from the Rules tab apply.
+                            </p>
+                          )}
                           <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                               <Label>Match Type</Label>
                               <Select value={editForm.match_type || 'category'} onValueChange={updateMatchType}>
                                 <SelectTrigger><SelectValue /></SelectTrigger>
                                 <SelectContent>
-                                  {['Basic', 'Smart', 'Personalized', 'Dynamic'].map(group => (
-                                    <div key={group}>
-                                      <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{group}</div>
-                                      {MATCH_TYPES.filter(m => m.group === group).map(m => (
-                                        <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
-                                      ))}
-                                    </div>
-                                  ))}
+                                  {MATCH_TYPE_GROUPS.map(group => {
+                                    const items = MATCH_TYPES.filter(m => m.group === group);
+                                    if (items.length === 0) return null;
+                                    return (
+                                      <div key={group}>
+                                        <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{group}</div>
+                                        {items.map(m => (
+                                          <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                                        ))}
+                                      </div>
+                                    );
+                                  })}
                                 </SelectContent>
                               </Select>
                             </div>
@@ -550,23 +610,25 @@ const CarouselSettingsPage = () => {
                             </div>
                           </div>
 
-                          {/* Target Category Picker */}
-                          <div className="space-y-2">
-                            <Label>Show products from category</Label>
-                            <Select value={editForm.target_category || 'same'} onValueChange={v => setEditForm(f => ({ ...f, target_category: v }))}>
-                              <SelectTrigger><SelectValue /></SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="same">Same as current product</SelectItem>
-                                {TARGET_CATEGORIES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
-                              </SelectContent>
-                            </Select>
-                            {editForm.target_category && editForm.target_category !== 'same' && (
-                              <p className="text-[10px] text-muted-foreground">Results will be filtered to {TARGET_CATEGORIES.find(t => t.value === editForm.target_category)?.label || editForm.target_category}, regardless of the viewed product's category.</p>
-                            )}
-                          </div>
+                          {/* Target Category — hide for cross_category since rules define it */}
+                          {!isCrossCategory && (
+                            <div className="space-y-2">
+                              <Label>Show products from category</Label>
+                              <Select value={editForm.target_category || 'same'} onValueChange={v => setEditForm(f => ({ ...f, target_category: v }))}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="same">Same as current product</SelectItem>
+                                  {TARGET_CATEGORIES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                                </SelectContent>
+                              </Select>
+                              {editForm.target_category && editForm.target_category !== 'same' && (
+                                <p className="text-[10px] text-muted-foreground">Results will be filtered to {TARGET_CATEGORIES.find(t => t.value === editForm.target_category)?.label || editForm.target_category}, regardless of the viewed product's category.</p>
+                              )}
+                            </div>
+                          )}
 
                           {/* Attribute Override (for attribute-based match types) */}
-                          {['color', 'material', 'silhouette', 'heel_height', 'price_range'].includes(editForm.match_type || '') && (
+                          {!isCrossCategory && ['color', 'material', 'silhouette', 'heel_height', 'price_range'].includes(editForm.match_type || '') && (
                             <Collapsible>
                               <CollapsibleTrigger className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground">
                                 <ChevronDown className="w-3 h-3" />Attribute override
@@ -646,25 +708,25 @@ const CarouselSettingsPage = () => {
                             </Collapsible>
                           )}
 
-                          {/* Match-type specific fields */}
-                          {editForm.match_type === 'category' && (
+                          {/* Match-type specific fields — hide for cross_category */}
+                          {!isCrossCategory && editForm.match_type === 'category' && (
                             <div className="flex items-center gap-2">
                               <Switch checked={editForm.match_config?.fallback_to_collection ?? true}
                                 onCheckedChange={v => setEditForm(f => ({ ...f, match_config: { ...f.match_config, fallback_to_collection: v } }))} />
                               <Label className="text-sm">Fallback to collection if no category matches</Label>
                             </div>
                           )}
-                          {editForm.match_type === 'heel_height' && (
+                          {!isCrossCategory && editForm.match_type === 'heel_height' && (
                             <div className="space-y-2"><Label>Tolerance: ±{editForm.match_config?.tolerance || 20}mm</Label>
                               <Slider min={10} max={50} step={5} value={[editForm.match_config?.tolerance || 20]}
                                 onValueChange={([v]) => setEditForm(f => ({ ...f, match_config: { ...f.match_config, tolerance: v } }))} /></div>
                           )}
-                          {editForm.match_type === 'price_range' && (
+                          {!isCrossCategory && editForm.match_type === 'price_range' && (
                             <div className="space-y-2"><Label>Tolerance: ±{editForm.match_config?.tolerance || 30}%</Label>
                               <Slider min={10} max={50} step={5} value={[editForm.match_config?.tolerance || 30]}
                                 onValueChange={([v]) => setEditForm(f => ({ ...f, match_config: { ...f.match_config, tolerance: v } }))} /></div>
                           )}
-                          {editForm.match_type === 'ai_recommend' && (
+                          {!isCrossCategory && editForm.match_type === 'ai_recommend' && (
                             <div className="space-y-3"><Label className="text-sm font-medium">AI Scoring Weights</Label>
                               {['category', 'color', 'price', 'style', 'popularity'].map(key => (
                                 <div key={key} className="space-y-1">
@@ -675,7 +737,7 @@ const CarouselSettingsPage = () => {
                                 </div>
                               ))}</div>
                           )}
-                          {editForm.match_type === 'complete_look' && (
+                          {!isCrossCategory && editForm.match_type === 'complete_look' && (
                             <div className="space-y-2"><Label>Pairing Source</Label>
                               <Select value={editForm.match_config?.pairing_source || 'both'} onValueChange={v => setEditForm(f => ({ ...f, match_config: { ...f.match_config, pairing_source: v } }))}>
                                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -686,7 +748,7 @@ const CarouselSettingsPage = () => {
                                 </SelectContent>
                               </Select></div>
                           )}
-                          {['recently_viewed', 'customers_also_viewed', 'trending', 'new_arrivals'].includes(editForm.match_type || '') && (
+                          {!isCrossCategory && ['recently_viewed', 'customers_also_viewed', 'trending', 'new_arrivals'].includes(editForm.match_type || '') && (
                             <div className="space-y-2"><Label>Time Window</Label>
                               <Select value={editForm.match_config?.time_window || '7_days'} onValueChange={v => setEditForm(f => ({ ...f, match_config: { ...f.match_config, time_window: v } }))}>
                                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -698,17 +760,12 @@ const CarouselSettingsPage = () => {
                                 </SelectContent>
                               </Select></div>
                           )}
-                          {editForm.match_type === 'cross_category' && (
-                            <CategoryMappingEditor
-                              mappings={(editForm.match_config?.category_mappings as CategoryMapping[]) || DEFAULT_CATEGORY_MAPPINGS}
-                              onChange={mappings => setEditForm(f => ({ ...f, match_config: { ...f.match_config, category_mappings: mappings } }))}
-                            />
-                          )}
                         </TabsContent>
 
                         {/* ─── Rules Tab ─── */}
                         <TabsContent value="rules">
                           <CarouselRulesTab carouselId={carousel.id}
+                            isCrossCategory={isCrossCategory}
                             fallbackBehavior={editForm.fallback_behavior || 'use_match_type'}
                             onFallbackChange={v => setEditForm(f => ({ ...f, fallback_behavior: v }))} />
                         </TabsContent>
