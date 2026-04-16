@@ -30,7 +30,7 @@ const parseComposition = (comp: string): { name: string; pct: number }[] => {
   return parts.sort((a, b) => b.pct - a.pct);
 };
 
-const ProductInfoBlock = ({ price, productCode, description, composition, sourceUrl, productName, productId }: ProductInfoBlockProps) => {
+const ProductInfoBlock = ({ productCode, composition, sourceUrl, productName, productId }: ProductInfoBlockProps) => {
   const palette = PALETTES['warm-naturals'];
   const compParts = composition ? parseComposition(composition) : [];
   const [repairSettings, setRepairSettings] = useState<RepairSettings | null>(null);
@@ -50,43 +50,11 @@ const ProductInfoBlock = ({ price, productCode, description, composition, source
       });
   }, []);
 
+  const hasContent = compParts.length > 0 || repairSettings || sourceUrl;
+  if (!hasContent) return null;
+
   return (
-    <div className="px-5 md:px-0">
-      {/* Price row */}
-      <div className="flex items-baseline justify-between">
-        <div className="flex items-baseline gap-2">
-          {price && (
-            <span
-              className="font-serif text-foreground"
-              style={{ fontSize: 28, fontWeight: 400 }}
-            >
-              {price.replace(/a partir de\s*/i, '')}
-            </span>
-          )}
-        </div>
-        {productCode && (
-          <span
-            className="font-sans uppercase"
-            style={{ fontSize: 10, letterSpacing: '0.12em', color: '#B0A89E' }}
-          >
-            REF {productCode}
-          </span>
-        )}
-      </div>
-
-      {/* Divider before description */}
-      <div className="my-5" style={{ height: 0.5, background: '#E5E1DA' }} />
-
-      {/* Description */}
-      {description && (
-        <p
-          className="font-serif max-w-[60ch]"
-          style={{ fontSize: 15, lineHeight: 1.7, color: '#4A4540' }}
-        >
-          {description}
-        </p>
-      )}
-
+    <div className="px-5 max-w-6xl mx-auto">
       {/* Composition */}
       {compParts.length > 0 && (
         <div className="pt-5">
