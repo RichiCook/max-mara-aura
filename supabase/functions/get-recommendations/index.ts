@@ -289,10 +289,9 @@ Deno.serve(async (req) => {
       case "cross_category": {
         // For cross_category match type without rules, use category_mappings config as legacy fallback
         const mappings = config.category_mappings || [];
-        const productCatLower = (product.category || "").toLowerCase();
         const matched = mappings.filter((m: any) => {
           if (m.source === "any") return true;
-          return productCatLower.includes(m.source.toLowerCase());
+          return categoryMatchesSlug(product.category || "", m.source);
         });
         if (matched.length > 0) {
           const allProds: any[] = [];
@@ -302,7 +301,10 @@ Deno.serve(async (req) => {
             if (allProds.length >= maxItems) break;
             const remaining = maxItems - allProds.length;
             let q = supabase.from("products").select("*").neq("id", product_id).limit(remaining);
-            if (mapping.target !== "any") q = q.ilike("category", `%${mapping.target}%`);
+            if (mapping.target !== "any") {
+              const pattern = targetCategoryFilter(mapping.target);
+              if (pattern) q = q.ilike("category", `%${pattern}%`);
+            }
             const dims = mapping.match_by || [];
             if (dims.includes("color") && product.color) q = q.eq("color", product.color);
             if (dims.includes("collection") && product.collection) q = q.eq("collection", product.collection);
