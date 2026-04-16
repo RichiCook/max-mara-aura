@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Upload, Palette, Type, Image, Save, Loader2, User, X, Tag, Wrench, ShoppingBag } from 'lucide-react';
+import { ArrowLeft, Upload, Palette, Type, Image, Save, Loader2, User, X, Tag, Wrench, ShoppingBag, ExternalLink } from 'lucide-react';
 import RepairServiceSettings from '@/components/repair/RepairServiceSettings';
 import CompositionSettingsSection from '@/components/settings/CompositionSettingsSection';
 import { AppHeader } from '@/components/AppHeader';
@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { usePlatformSettings } from '@/hooks/usePlatformSettings';
 import { usePlatformSettingsContext } from '@/contexts/PlatformSettingsContext';
 import { supabase } from '@/integrations/supabase/client';
+import { invalidateProductLinkCache } from '@/hooks/useProductLinkDestination';
 import defaultLogo from '@/assets/logo.png';
 
 const SettingsPage = () => {
@@ -82,6 +83,17 @@ const SettingsPage = () => {
       }
     };
     fetchResaleSetting();
+  }, []);
+
+  // Load product link destination
+  useEffect(() => {
+    supabase.from('app_settings').select('value').eq('id', 'product_link_destination').single()
+      .then(({ data }) => {
+        if (data?.value) {
+          const val = (data.value as { destination?: string }).destination;
+          if (val === 'brand_website' || val === 'platform') setProductLinkDest(val);
+        }
+      });
   }, []);
 
   // Load Shopify config
