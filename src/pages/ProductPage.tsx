@@ -289,7 +289,7 @@ const ProductPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background transition-colors duration-700 overflow-x-hidden" style={paletteStyle}>
+    <div className="min-h-screen transition-colors duration-700 overflow-x-hidden" style={{ ...paletteStyle, background: '#FAF8F5' }}>
       {/* Header */}
       <header className="border-b border-border sticky top-0 z-50 transition-colors duration-700" style={resolvedPalette.length > 0 ? { backgroundColor: resolvedPalette[0] + '10', borderColor: resolvedPalette[0] + '25', backdropFilter: 'blur(12px)' } : { backdropFilter: 'blur(12px)', backgroundColor: '#fff' }}>
         <div className="max-w-6xl mx-auto px-4 py-2.5 sm:py-3 flex items-center justify-between">
@@ -320,9 +320,9 @@ const ProductPage = () => {
 
       {/* Hero Section */}
       <section className="sm:container sm:max-w-6xl sm:mx-auto sm:px-4 sm:py-10">
-        <div className="grid md:grid-cols-2 gap-0 sm:gap-10">
+        <div className="grid md:grid-cols-2 gap-0 md:gap-16">
           {/* Image Gallery */}
-          <div className="relative">
+          <div className="relative md:sticky md:top-20 md:self-start">
             {images.length > 0 ? (
               <>
                 {/* Mobile gallery */}
@@ -408,32 +408,60 @@ const ProductPage = () => {
               </div>
             )}
           </div>
+
+          {/* Right column: hero content (on desktop) */}
+          <div className="md:py-0">
+            {/* Gallery → hero divider (mobile only) */}
+            <div className="md:hidden my-0" style={{ height: 0.5, background: '#E5E1DA' }} />
+
+            {/* Genuine Product Banner (eyebrow + title + origin) */}
+            <GenuineProductBanner
+              productName={product.name}
+              collection={(product as any).collection}
+              onViewPassport={() => setPassportOpen(true)}
+            />
+
+            {/* Price + Ref row */}
+            <div className="px-5 md:px-0 flex items-baseline justify-between mt-5">
+              {product.price && (
+                <span className="font-serif text-foreground" style={{ fontSize: 28, fontWeight: 400 }}>
+                  {product.price.replace(/a partir de\s*/i, '')}
+                </span>
+              )}
+              {product.product_code && (
+                <span className="font-sans uppercase" style={{ fontSize: 10, letterSpacing: '0.12em', color: '#B0A89E' }}>
+                  REF {product.product_code}
+                </span>
+              )}
+            </div>
+
+            {/* Aura Digital Passport Card */}
+            <AuraDigitalPassportCard
+              onOpenPassport={() => setPassportOpen(true)}
+              ownerRegistered={ownerRegistered}
+            />
+
+            {/* Description */}
+            {product.description && (
+              <div className="px-5 md:px-0">
+                <div className="mb-5" style={{ height: 0.5, background: '#E5E1DA' }} />
+                <p className="font-serif max-w-[60ch]" style={{ fontSize: 15, lineHeight: 1.7, color: '#4A4540' }}>
+                  {product.description}
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </section>
 
       {/* Ownership Status Bar */}
       <OwnershipStatusBar onClick={() => setPassportOpen(true)} />
 
-      {/* Genuine Product Banner + Badges */}
-      <GenuineProductBanner
-        productName={product.name}
-        collection={(product as any).collection}
-        onViewPassport={() => setPassportOpen(true)}
-      />
-
-      {/* Aura Digital Passport Card */}
-      <AuraDigitalPassportCard
-        onOpenPassport={() => setPassportOpen(true)}
-        ownerRegistered={ownerRegistered}
-      />
-
       {/* Activations: above_product_info */}
       {renderActivationsForPosition('above_product_info')}
 
       <ProductInfoBlock
-        price={product.price}
         productCode={product.product_code}
-        description={product.description}
         composition={product.composition}
         sourceUrl={product.source_url}
         productName={product.name}
