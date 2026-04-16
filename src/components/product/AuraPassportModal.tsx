@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { usePlatformSettingsContext } from '@/contexts/PlatformSettingsContext';
 import { useModalScrollLock } from '@/hooks/useModalScrollLock';
 import defaultLogo from '@/assets/logo.png';
+import auraLogoGreen from '@/assets/aura-logo-green.png';
 
 interface AuraPassportModalProps {
   open: boolean;
