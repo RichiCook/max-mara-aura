@@ -24,6 +24,9 @@ import ProductCarousels from '@/components/product/ProductCarousels';
 import { NewsletterSection } from '@/components/product/HeritageNewsletter';
 import CertificationHistoryModal from '@/components/product/CertificationHistoryModal';
 import { CampaignMediaSection } from '@/components/product/CampaignMediaSection';
+import AuraLoginModal from '@/components/product/AuraLoginModal';
+import TransferOwnershipModal from '@/components/product/TransferOwnershipModal';
+import RedeemArtworkModal from '@/components/product/RedeemArtworkModal';
 
 const DEMO_PRODUCT: Product = {
   id: 'demo-louboutin',
@@ -59,10 +62,14 @@ const ProductPage = () => {
 
   // Aura state
   const [passportOpen, setPassportOpen] = useState(false);
+  const [loginOpen, setLoginOpen] = useState(false);
   const [claimOpen, setClaimOpen] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
-  const [ownerRegistered, setOwnerRegistered] = useState(false);
+  const [ownerRegistered, setOwnerRegistered] = useState(() => localStorage.getItem('aura_ownership_claimed') === 'true');
+  const [claimDate, setClaimDate] = useState<string | null>(() => localStorage.getItem('aura_claim_date'));
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [transferOpen, setTransferOpen] = useState(false);
+  const [redeemOpen, setRedeemOpen] = useState(false);
 
   const { trackEvent } = useScanTracking();
   const { settings } = usePlatformSettingsContext();
@@ -258,9 +265,27 @@ const ProductPage = () => {
     );
   };
 
+  const handleLoginSuccess = () => {
+    setLoginOpen(false);
+    setTimeout(() => setClaimOpen(true), 300);
+  };
+
   const handleClaimSuccess = () => {
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ', ' + now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
     setOwnerRegistered(true);
+    setClaimDate(dateStr);
+    localStorage.setItem('aura_ownership_claimed', 'true');
+    localStorage.setItem('aura_claim_date', dateStr);
     setSuccessOpen(true);
+  };
+
+  const handleResetOwnership = () => {
+    setOwnerRegistered(false);
+    setClaimDate(null);
+    localStorage.removeItem('aura_ownership_claimed');
+    localStorage.removeItem('aura_claim_date');
+    localStorage.removeItem('aura_owner_name');
   };
 
   return (
@@ -277,12 +302,19 @@ const ProductPage = () => {
               </span>
             )}
           </Link>
-          <Button asChild variant="ghost" size="sm" className="text-xs">
-            <Link to={`/product/${slug}/edit`}>
-              <Settings className="w-4 h-4" />
-              <span className="hidden sm:inline ml-1.5">Edit</span>
-            </Link>
-          </Button>
+          <div className="flex items-center gap-1">
+            {ownerRegistered && (
+              <Button variant="ghost" size="sm" className="text-xs" onClick={handleResetOwnership} title="Reset ownership demo">
+                <span className="text-[10px]">🔄</span>
+              </Button>
+            )}
+            <Button asChild variant="ghost" size="sm" className="text-xs">
+              <Link to={`/product/${slug}/edit`}>
+                <Settings className="w-4 h-4" />
+                <span className="hidden sm:inline ml-1.5">Edit</span>
+              </Link>
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -391,9 +423,11 @@ const ProductPage = () => {
 
       {/* Aura Digital Passport Card */}
       <AuraDigitalPassportCard
-        onOpenClaim={() => setClaimOpen(true)}
+        onOpenClaim={() => ownerRegistered ? setPassportOpen(true) : setLoginOpen(true)}
         onOpenPassport={() => setPassportOpen(true)}
         onOpenHistory={() => setHistoryOpen(true)}
+        onOpenTransfer={() => setTransferOpen(true)}
+        ownerRegistered={ownerRegistered}
       />
 
       {/* Activations: above_product_info */}
@@ -422,18 +456,28 @@ const ProductPage = () => {
         productName={product.name}
         productCode={product.product_code}
         ownerRegistered={ownerRegistered}
-        onOpenClaim={() => setClaimOpen(true)}
+        onOpenClaim={() => setLoginOpen(true)}
+        onOpenTransfer={() => setTransferOpen(true)}
+        onOpenRedeem={() => setRedeemOpen(true)}
+        claimDate={claimDate}
+      />
+      <AuraLoginModal
+        open={loginOpen}
+        onClose={() => setLoginOpen(false)}
+        onLoginSuccess={handleLoginSuccess}
       />
       <ClaimOwnershipModal
         open={claimOpen}
         onClose={() => setClaimOpen(false)}
         productName={product.name}
+        productImage={images[0] || null}
         onSuccess={handleClaimSuccess}
       />
       <RegistrationSuccessModal
         open={successOpen}
         onClose={() => setSuccessOpen(false)}
         productName={product.name}
+        productImage={images[0] || null}
         onViewPassport={() => setPassportOpen(true)}
       />
       <CertificationHistoryModal
@@ -441,6 +485,15 @@ const ProductPage = () => {
         onClose={() => setHistoryOpen(false)}
         productName={product.name}
         ownerRegistered={ownerRegistered}
+        claimDate={claimDate}
+      />
+      <TransferOwnershipModal
+        open={transferOpen}
+        onClose={() => setTransferOpen(false)}
+      />
+      <RedeemArtworkModal
+        open={redeemOpen}
+        onClose={() => setRedeemOpen(false)}
       />
 
       <ShareToResaleModal open={shareModalOpen} onOpenChange={setShareModalOpen} product={product} />
