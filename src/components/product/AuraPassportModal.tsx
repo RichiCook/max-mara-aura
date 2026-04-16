@@ -7,11 +7,15 @@ interface AuraPassportModalProps {
   productCode?: string | null;
   ownerRegistered?: boolean;
   onOpenClaim: () => void;
+  onOpenTransfer: () => void;
+  onOpenRedeem: () => void;
+  claimDate?: string | null;
 }
 
 const SWIPE_THRESHOLD = 80;
+const BRAND_BROWN = '#8B5E3C';
 
-const AuraPassportModal = ({ open, onClose, productName, productCode, ownerRegistered, onOpenClaim }: AuraPassportModalProps) => {
+const AuraPassportModal = ({ open, onClose, productName, productCode, ownerRegistered, onOpenClaim, onOpenTransfer, onOpenRedeem, claimDate }: AuraPassportModalProps) => {
   const [visible, setVisible] = useState(false);
   const [animating, setAnimating] = useState(false);
   const [dragY, setDragY] = useState(0);
@@ -34,7 +38,6 @@ const AuraPassportModal = ({ open, onClose, productName, productCode, ownerRegis
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     const el = sheetRef.current;
     if (!el) return;
-    // Only allow swipe when scrolled to top
     if (el.scrollTop > 5) return;
     dragStart.current = e.touches[0].clientY;
   }, []);
@@ -42,32 +45,36 @@ const AuraPassportModal = ({ open, onClose, productName, productCode, ownerRegis
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     if (dragStart.current === null) return;
     const delta = e.touches[0].clientY - dragStart.current;
-    if (delta > 0) {
-      setDragY(delta);
-    }
+    if (delta > 0) setDragY(delta);
   }, []);
 
   const handleTouchEnd = useCallback(() => {
     if (dragStart.current === null) return;
-    if (dragY > SWIPE_THRESHOLD) {
-      onClose();
-    } else {
-      setDragY(0);
-    }
+    if (dragY > SWIPE_THRESHOLD) onClose();
+    else setDragY(0);
     dragStart.current = null;
   }, [dragY, onClose]);
 
   if (!visible) return null;
 
-  const today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  const timeStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  const fullTimestamp = `${dateStr}, ${timeStr}`;
 
-  const historyRows = [
-    { date: today, event: 'Token Creation', status: 'Success' },
-    { date: today, event: 'Purchase', status: 'Success' },
-    ...(ownerRegistered ? [{ date: today, event: 'Ownership Registration', status: 'Success' }] : []),
-  ];
+  const historyRows = ownerRegistered
+    ? [
+        { date: claimDate || fullTimestamp, event: 'Ownership Registration', status: 'Success' },
+        { date: fullTimestamp, event: 'Token Creation', status: 'Success' },
+        { date: fullTimestamp, event: 'Purchase', status: 'Success' },
+      ]
+    : [
+        { date: fullTimestamp, event: 'Token Creation', status: 'Success' },
+        { date: fullTimestamp, event: 'Purchase', status: 'Success' },
+      ];
 
   const backdropOpacity = animating ? Math.max(0, 1 - dragY / 300) : 0;
+  const ownerName = localStorage.getItem('aura_owner_name') || 'Owner';
 
   return (
     <div
@@ -115,99 +122,152 @@ const AuraPassportModal = ({ open, onClose, productName, productCode, ownerRegis
           {/* Aura badge */}
           <div className="flex items-center gap-2">
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#2dd4bf', display: 'inline-block' }} />
-            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 10, fontWeight: 600, letterSpacing: '0.12em', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase' as const }}>
+            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 10, fontWeight: 600, letterSpacing: '0.12em', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase' }}>
               Certified by Aura Blockchain Consortium
             </span>
           </div>
+
+          {/* Owner info when claimed */}
+          {ownerRegistered && (
+            <div style={{ marginTop: 16 }}>
+              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: 'rgba(255,255,255,0.6)', margin: '0 0 4px', borderBottom: '1px solid rgba(255,255,255,0.15)', paddingBottom: 6 }}>
+                <span style={{ fontWeight: 600, color: 'rgba(255,255,255,0.4)', fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase' }}>NAME: </span>
+                <span style={{ color: '#fff', fontWeight: 500 }}>Mr {ownerName}</span>
+              </p>
+              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: 'rgba(255,255,255,0.6)', margin: '4px 0 0', borderBottom: '1px solid rgba(255,255,255,0.15)', paddingBottom: 6 }}>
+                <span style={{ fontWeight: 600, color: 'rgba(255,255,255,0.4)', fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase' }}>DATE: </span>
+                <span style={{ color: '#fff', fontWeight: 500 }}>{claimDate || dateStr}</span>
+              </p>
+            </div>
+          )}
+
+          {/* Action buttons in dark section */}
+          {ownerRegistered ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 16 }}>
+              <button
+                onClick={() => {}}
+                style={{
+                  fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 500,
+                  background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 8,
+                  padding: '12px 0', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                }}
+              >
+                📱 Add certificate to your wallet
+              </button>
+              <button
+                onClick={() => { onClose(); setTimeout(onOpenRedeem, 200); }}
+                style={{
+                  fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 500,
+                  background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 8,
+                  padding: '12px 0', cursor: 'pointer',
+                }}
+              >
+                Redeem the Digital Artwork
+              </button>
+              <button
+                onClick={() => { onClose(); setTimeout(onOpenTransfer, 200); }}
+                style={{
+                  fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 500,
+                  background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 8,
+                  padding: '12px 0', cursor: 'pointer',
+                }}
+              >
+                Transfer ownership
+              </button>
+              <button style={{
+                fontFamily: "'Inter', sans-serif", fontSize: 12, fontWeight: 500,
+                background: 'none', color: '#2dd4bf', border: 'none', padding: '6px 0', cursor: 'pointer',
+                textDecoration: 'underline', textUnderlineOffset: 3,
+              }}>
+                About Aura Blockchain Consortium
+              </button>
+            </div>
+          ) : null}
         </div>
 
         {/* Scrollable content */}
         <div ref={sheetRef} style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
-          {/* Owner status */}
-          <div style={{ marginBottom: 20 }}>
-            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', color: '#999', textTransform: 'uppercase' as const }}>
-              Owner
-            </span>
-            <div className="flex items-center gap-2" style={{ marginTop: 8 }}>
-              {ownerRegistered ? (
-                <>
-                  <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 600, color: '#1a1a1a' }}>Owner Registered</span>
-                  <span style={{
-                    fontFamily: "'Inter', sans-serif", fontSize: 10, fontWeight: 600,
-                    padding: '3px 10px', borderRadius: 20, background: '#dcfce7', color: '#166534',
-                  }}>Ownership Verified</span>
-                </>
-              ) : (
-                <>
+          {/* Unclaimed state actions */}
+          {!ownerRegistered && (
+            <>
+              <div style={{ marginBottom: 20 }}>
+                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', color: '#999', textTransform: 'uppercase' }}>
+                  Owner
+                </span>
+                <div className="flex items-center gap-2" style={{ marginTop: 8 }}>
                   <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, color: '#666' }}>This item has not been claimed</span>
                   <span style={{
                     fontFamily: "'Inter', sans-serif", fontSize: 10, fontWeight: 600,
                     padding: '3px 10px', borderRadius: 20, background: '#FEF3C7', color: '#92400E',
                   }}>Unclaimed</span>
-                </>
-              )}
-            </div>
-          </div>
+                </div>
+              </div>
 
-          {/* Action buttons */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <button
-              onClick={() => { onClose(); setTimeout(onOpenClaim, 200); }}
-              style={{
-                fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 600,
-                background: '#E12B38', color: '#fff', border: 'none', borderRadius: 10,
-                padding: '14px 0', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              }}
-            >
-              Claim ownership <span style={{ fontSize: 16 }}>⬡</span>
-            </button>
-            <button style={{
-              fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 500,
-              background: '#fff', color: '#1a1a1a', border: '1.5px solid #e0e0e0', borderRadius: 10,
-              padding: '14px 0', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            }}>
-              Add certificate to your wallet <span style={{ fontSize: 16 }}>📱</span>
-            </button>
-            <button style={{
-              fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 500,
-              background: '#1a1a1a', color: '#fff', border: 'none', borderRadius: 10,
-              padding: '14px 0', cursor: 'pointer',
-            }}>
-              Redeem the Digital Artwork
-            </button>
-            <button style={{
-              fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 500,
-              background: '#1a1a1a', color: '#fff', border: 'none', borderRadius: 10,
-              padding: '14px 0', cursor: 'pointer',
-            }}>
-              Transfer ownership
-            </button>
-            <button style={{
-              fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 500,
-              background: 'none', color: '#C4A265', border: 'none', padding: '8px 0', cursor: 'pointer',
-              textDecoration: 'underline', textUnderlineOffset: 3,
-            }}>
-              About Aura Blockchain Consortium
-            </button>
-          </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
+                <button
+                  onClick={() => { onClose(); setTimeout(onOpenClaim, 200); }}
+                  style={{
+                    fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 600,
+                    background: '#E12B38', color: '#fff', border: 'none', borderRadius: 10,
+                    padding: '14px 0', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  }}
+                >
+                  Claim ownership <span style={{ fontSize: 16 }}>⬡</span>
+                </button>
+                <button style={{
+                  fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 500,
+                  background: '#fff', color: '#1a1a1a', border: '1.5px solid #e0e0e0', borderRadius: 10,
+                  padding: '14px 0', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                }}>
+                  Add certificate to your wallet <span style={{ fontSize: 16 }}>📱</span>
+                </button>
+                <button
+                  onClick={() => { onClose(); setTimeout(onOpenRedeem, 200); }}
+                  style={{
+                    fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 500,
+                    background: '#1a1a1a', color: '#fff', border: 'none', borderRadius: 10,
+                    padding: '14px 0', cursor: 'pointer',
+                  }}
+                >
+                  Redeem the Digital Artwork
+                </button>
+                <button
+                  onClick={() => { onClose(); setTimeout(onOpenTransfer, 200); }}
+                  style={{
+                    fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 500,
+                    background: '#1a1a1a', color: '#fff', border: 'none', borderRadius: 10,
+                    padding: '14px 0', cursor: 'pointer',
+                  }}
+                >
+                  Transfer ownership
+                </button>
+                <button style={{
+                  fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 500,
+                  background: 'none', color: '#C4A265', border: 'none', padding: '8px 0', cursor: 'pointer',
+                  textDecoration: 'underline', textUnderlineOffset: 3,
+                }}>
+                  About Aura Blockchain Consortium
+                </button>
+              </div>
+            </>
+          )}
 
           {/* Certification History */}
-          <div style={{ marginTop: 28, borderTop: '1px solid #f0ece7', paddingTop: 20 }}>
+          <div style={{ borderTop: ownerRegistered ? 'none' : '1px solid #f0ece7', paddingTop: ownerRegistered ? 0 : 20 }}>
             <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, fontWeight: 600, color: '#1a1a1a', margin: '0 0 16px' }}>
               Certification History
             </h3>
 
             <div style={{ borderRadius: 10, border: '1px solid #f0ece7', overflow: 'hidden' }}>
-              {/* Table header */}
               <div className="grid grid-cols-3" style={{ background: '#faf8f5', padding: '10px 14px', borderBottom: '1px solid #f0ece7' }}>
-                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, fontWeight: 600, color: '#999', textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>Date</span>
-                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, fontWeight: 600, color: '#999', textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>Event</span>
-                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, fontWeight: 600, color: '#999', textTransform: 'uppercase' as const, letterSpacing: '0.06em', textAlign: 'right' as const }}>Status</span>
+                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, fontWeight: 600, color: '#999', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Date</span>
+                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, fontWeight: 600, color: '#999', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Event</span>
+                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, fontWeight: 600, color: '#999', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'right' }}>Status</span>
               </div>
               {historyRows.map((row, i) => (
                 <div key={i} className="grid grid-cols-3 items-center" style={{ padding: '12px 14px', borderBottom: i < historyRows.length - 1 ? '1px solid #f0ece7' : 'none' }}>
-                  <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: '#888' }}>{row.date}</span>
-                  <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, fontWeight: 500, color: '#1a1a1a' }}>{row.event}</span>
+                  <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: '#888' }}>{row.date}</span>
+                  <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, fontWeight: 500, color: '#1a1a1a' }}>{row.event}</span>
                   <div className="flex items-center justify-end gap-1.5">
                     <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#2dd4bf', display: 'inline-block' }} />
                     <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: '#2dd4bf', fontWeight: 500 }}>{row.status}</span>
@@ -215,6 +275,11 @@ const AuraPassportModal = ({ open, onClose, productName, productCode, ownerRegis
                 </div>
               ))}
             </div>
+
+            {/* Disclaimer */}
+            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 10, color: '#aaa', marginTop: 16, lineHeight: 1.6 }}>
+              Disclaimer: The Aura Blockchain Consortium provides the solution to issue this certificate. The content of this certificate is under the sole responsibility of the entity that has commercialised the product covered by the certificate.
+            </p>
           </div>
         </div>
 
