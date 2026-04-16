@@ -9,6 +9,7 @@ import ProductPage from "./pages/ProductPage";
 import ProductEditPage from "./pages/ProductEditPage";
 import ActivationsPage from "./pages/ActivationsPage";
 import ShortUrlRedirect from "./pages/ShortUrlRedirect";
+import DashboardPage from "./pages/DashboardPage";
 import LooksPage from "./pages/LooksPage";
 import LookGroupsSettingsPage from "./pages/LookGroupsSettingsPage";
 import AIGenerationSettingsPage from "./pages/AIGenerationSettingsPage";
@@ -41,6 +42,7 @@ const App = () => (
           <Route path="/auth" element={<PlatformSettingsProvider><AuthPage /></PlatformSettingsProvider>} />
           
           {/* Protected dashboard routes */}
+          <Route path="/dashboard" element={<PlatformSettingsProvider><ProtectedRoute><DashboardPage /></ProtectedRoute></PlatformSettingsProvider>} />
           <Route path="/" element={<PlatformSettingsProvider><ProtectedRoute><Index /></ProtectedRoute></PlatformSettingsProvider>} />
           <Route path="/product/:slug/edit" element={<PlatformSettingsProvider><ProtectedRoute><ProductEditPage /></ProtectedRoute></PlatformSettingsProvider>} />
           <Route path="/activations" element={<PlatformSettingsProvider><ProtectedRoute><ActivationsPage /></ProtectedRoute></PlatformSettingsProvider>} />

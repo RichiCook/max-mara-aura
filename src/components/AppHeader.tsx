@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom';
-import { Bookmark, Layers, Sparkles, Users, Settings2, LogOut, Palette, Upload, BarChart3, Menu, Star, ImageIcon, LayoutGrid } from 'lucide-react';
+import { Bookmark, Layers, Sparkles, Users, Settings2, LogOut, Palette, Upload, BarChart3, Menu, Star, ImageIcon, LayoutGrid, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { ExcelImportModal } from '@/components/ExcelImportModal';
 import { usePlatformSettingsContext } from '@/contexts/PlatformSettingsContext';
 import { useLogoDisplay } from '@/hooks/useLogoDisplay';
+import { useDashboardV2 } from '@/hooks/useDashboardV2';
 import defaultLogo from '@/assets/logo.png';
 
 interface AppHeaderProps {
@@ -20,6 +21,7 @@ export const AppHeader = ({ onImportComplete, children }: AppHeaderProps) => {
   const { settings } = usePlatformSettingsContext();
   const logoUrl = settings.logo_url || defaultLogo;
   const { height: logoHeight, position: logoPosition } = useLogoDisplay();
+  const { enabled: dashboardV2Enabled } = useDashboardV2();
 
   return (
     <div className="flex items-center justify-between">
@@ -46,6 +48,14 @@ export const AppHeader = ({ onImportComplete, children }: AppHeaderProps) => {
           <SheetContent side="right" className="w-64">
             <nav className="flex flex-col gap-2 mt-8">
               {onImportComplete && <ExcelImportModal onImportComplete={onImportComplete} />}
+              {dashboardV2Enabled && (
+                <Link to="/dashboard">
+                  <Button variant="ghost" className="w-full justify-start">
+                    <LayoutDashboard className="w-4 h-4 mr-2" />
+                    Dashboard
+                  </Button>
+                </Link>
+              )}
               <Link to="/">
                 <Button variant="ghost" className="w-full justify-start">
                   <Bookmark className="w-4 h-4 mr-2" />
