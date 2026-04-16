@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { normalizeImages } from '@/hooks/useProducts';
 import { getFlatLayImage, filterImagesBySku } from '@/utils/imageUtils';
+import { useProductLinkDestination } from '@/hooks/useProductLinkDestination';
 
 interface SimilarProduct {
   id: string;
