@@ -599,6 +599,8 @@ const ProductPage = () => {
           </div>
         </div>
       </footer>
+      {/* Spacer for fixed ownership bar */}
+      <div style={{ height: 80 }} />
     </div>
   );
 };
