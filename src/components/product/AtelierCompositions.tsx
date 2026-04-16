@@ -5,10 +5,9 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Sparkles, RefreshCw, X, ExternalLink, ShoppingBag, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Sparkles, RefreshCw, X, ChevronRight, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import ProductPreviewSheet from './ProductPreviewSheet';
 import { normalizeImages } from '@/hooks/useProducts';
 import { toast } from 'sonner';
 
