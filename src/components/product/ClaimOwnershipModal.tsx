@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
+import { useModalScrollLock } from '@/hooks/useModalScrollLock';
 
 interface ClaimOwnershipModalProps {
   open: boolean;
@@ -16,6 +17,8 @@ const ClaimOwnershipModal = ({ open, onClose, productName, productImage, onSucce
   const [digits, setDigits] = useState<string[]>(Array(9).fill(''));
   const [agreed, setAgreed] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  useModalScrollLock(visible);
 
   useEffect(() => {
     if (open) {
@@ -98,7 +101,7 @@ const ClaimOwnershipModal = ({ open, onClose, productName, productImage, onSucce
         onClick={(e) => e.stopPropagation()}
         style={{
           position: 'fixed', bottom: 0, left: 0, right: 0,
-          maxHeight: '90vh',
+          maxHeight: '90dvh',
           background: '#fff', borderRadius: '20px 20px 0 0',
           boxShadow: '0 -8px 60px rgba(0,0,0,0.25)',
           overflow: 'hidden', display: 'flex', flexDirection: 'column',
@@ -106,14 +109,17 @@ const ClaimOwnershipModal = ({ open, onClose, productName, productImage, onSucce
           transition: 'transform 0.35s cubic-bezier(0.32, 0.72, 0, 1)',
         }}
       >
+        {/* Drag handle */}
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(0,0,0,0.12)', margin: '12px auto 0', flexShrink: 0 }} />
+
         {/* Header */}
-        <div style={{ padding: '20px 20px 0', flexShrink: 0 }}>
+        <div style={{ padding: '16px 20px 0', flexShrink: 0 }}>
           <div className="flex items-center justify-between">
             <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 15, fontWeight: 600, color: '#1a1a1a' }}>
               Register my product
             </span>
             <button onClick={onClose} style={{ fontSize: 18, color: '#999', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px' }}>
-              ⤢
+              ✕
             </button>
           </div>
         </div>
@@ -125,8 +131,9 @@ const ClaimOwnershipModal = ({ open, onClose, productName, productImage, onSucce
             <div style={{
               width: 120, height: 160, margin: '0 auto 20px',
               borderRadius: 12, overflow: 'hidden', background: '#f5f0eb',
+              padding: 8,
             }}>
-              <img src={productImage} alt={productName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} referrerPolicy="no-referrer" />
+              <img src={productImage} alt={productName} style={{ width: '100%', height: '100%', objectFit: 'contain' }} referrerPolicy="no-referrer" />
             </div>
           ) : (
             <div className="flex items-center justify-center mx-auto mb-5" style={{
@@ -149,7 +156,6 @@ const ClaimOwnershipModal = ({ open, onClose, productName, productImage, onSucce
             Found on your receipt or product card
           </p>
 
-          {/* 9 digit inputs: 3-3-3 with dashes, underline style */}
           <div className="flex items-center justify-center gap-2 mb-6">
             {renderDigitGroup(0, 3)}
             <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 18, color: '#ccc', marginTop: -4 }}>–</span>
@@ -158,7 +164,6 @@ const ClaimOwnershipModal = ({ open, onClose, productName, productImage, onSucce
             {renderDigitGroup(6, 9)}
           </div>
 
-          {/* Checkbox — unchecked by default */}
           <label className="flex items-start gap-3 mb-6 cursor-pointer">
             <input
               type="checkbox"
@@ -172,7 +177,6 @@ const ClaimOwnershipModal = ({ open, onClose, productName, productImage, onSucce
             </span>
           </label>
 
-          {/* Submit — outline when inactive, brown filled when active */}
           <button
             onClick={handleSubmit}
             disabled={!canSubmit}
