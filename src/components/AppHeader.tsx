@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { ExcelImportModal } from '@/components/ExcelImportModal';
 import { usePlatformSettingsContext } from '@/contexts/PlatformSettingsContext';
+import { useLogoDisplay } from '@/hooks/useLogoDisplay';
 import defaultLogo from '@/assets/logo.png';
 
 interface AppHeaderProps {
@@ -18,15 +19,18 @@ export const AppHeader = ({ onImportComplete, children }: AppHeaderProps) => {
   const { signOut } = useAuth();
   const { settings } = usePlatformSettingsContext();
   const logoUrl = settings.logo_url || defaultLogo;
+  const { height: logoHeight, position: logoPosition } = useLogoDisplay();
 
   return (
     <div className="flex items-center justify-between">
-      <div className="flex items-center gap-4">
-        <Link to="/">
+      <div className={`flex items-center gap-4 ${logoPosition === 'center' ? 'flex-1' : ''}`}>
+        {logoPosition === 'center' && <div className="w-10" />}
+        <Link to="/" className={logoPosition === 'center' ? 'mx-auto' : ''}>
           <img
             src={logoUrl}
             alt={settings.brand_name || 'aitems'}
-            className="h-8"
+            style={{ height: logoHeight }}
+            className="object-contain"
           />
         </Link>
         {children}
