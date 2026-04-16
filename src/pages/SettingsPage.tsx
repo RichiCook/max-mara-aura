@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Upload, Palette, Type, Image, Save, Loader2, User, X, Tag, Wrench, ShoppingBag, ExternalLink, Trash2, Rocket } from 'lucide-react';
-import { useDashboardV2 } from '@/hooks/useDashboardV2';
+import { ArrowLeft, Upload, Palette, Type, Image, Save, Loader2, User, X, Tag, Wrench, ShoppingBag, ExternalLink, Trash2 } from 'lucide-react';
 import RepairServiceSettings from '@/components/repair/RepairServiceSettings';
 import CompositionSettingsSection from '@/components/settings/CompositionSettingsSection';
 import { AppHeader } from '@/components/AppHeader';
@@ -17,41 +16,6 @@ import { usePlatformSettingsContext } from '@/contexts/PlatformSettingsContext';
 import { supabase } from '@/integrations/supabase/client';
 import { invalidateProductLinkCache } from '@/hooks/useProductLinkDestination';
 import defaultLogo from '@/assets/logo.png';
-
-function DashboardV2Toggle() {
-  const { enabled, loading, toggle } = useDashboardV2();
-  const { toast } = useToast();
-
-  const handleToggle = async (val: boolean) => {
-    await toggle(val);
-    toast({ title: val ? 'Dashboard v2.0 enabled' : 'Dashboard v2.0 disabled' });
-  };
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Rocket className="w-5 h-5" />
-          Dashboard v2.0 <span className="text-xs font-normal text-muted-foreground">(Beta)</span>
-        </CardTitle>
-        <CardDescription>
-          Enable the new unified dashboard experience as your landing page.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <Label>Enable Dashboard v2.0</Label>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              When enabled, your home page becomes the new Dashboard with health score, KPIs, and recommendations.
-            </p>
-          </div>
-          <Switch checked={enabled} onCheckedChange={handleToggle} disabled={loading} />
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
 
 const SettingsPage = () => {
   const { settings, loading, saving, updateSettings, uploadLogo, uploadFavicon } = usePlatformSettings();
@@ -347,8 +311,6 @@ const SettingsPage = () => {
         </header>
 
         <div className="space-y-6">
-          {/* Dashboard v2.0 Toggle */}
-          <DashboardV2Toggle />
           {/* Branding */}
           <Card>
             <CardHeader>
