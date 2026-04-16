@@ -425,7 +425,7 @@ const ProductPage = () => {
             <div className="px-5 md:px-0 flex items-baseline justify-between mt-5">
               {product.price && (
                 <span className="font-serif text-foreground" style={{ fontSize: 28, fontWeight: 400 }}>
-                  {product.price.replace(/a partir de\s*/i, '')}
+                  {product.price}
                 </span>
               )}
               {product.product_code && (

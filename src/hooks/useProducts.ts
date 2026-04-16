@@ -21,6 +21,12 @@ export interface Product {
   updated_at: string;
 }
 
+/** Strip "a partir de" / "à partir de" prefix from prices */
+const normalizePrice = (price: string | null): string | null => {
+  if (!price) return null;
+  return price.replace(/[aà]\s*partir\s*de\s*/i, '').trim() || null;
+};
+
 /** Normalize image arrays: split any newline-joined URLs into separate entries */
 export const normalizeImages = (images: unknown): string[] => {
   if (!Array.isArray(images)) return [];
@@ -54,6 +60,7 @@ export const useProducts = () => {
     } else {
       const parsed: Product[] = (data || []).map(p => ({
         ...p,
+        price: normalizePrice(p.price),
         images: normalizeImages(p.images),
         wear_with: Array.isArray(p.wear_with) ? p.wear_with : [],
         you_may_also_like: Array.isArray(p.you_may_also_like) ? p.you_may_also_like : [],
@@ -130,6 +137,7 @@ export const useProducts = () => {
 
     return {
       ...data,
+      price: normalizePrice(data.price),
       images: normalizeImages(data.images),
       wear_with: Array.isArray(data.wear_with) ? data.wear_with : [],
       you_may_also_like: Array.isArray(data.you_may_also_like) ? data.you_may_also_like : [],
