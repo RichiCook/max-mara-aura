@@ -288,6 +288,110 @@ export type Database = {
         }
         Relationships: []
       }
+      dependence_rule_audit_log: {
+        Row: {
+          action: string
+          diff: Json | null
+          id: string
+          notes: string | null
+          performed_at: string
+          performed_by: string | null
+          rule_id: string
+        }
+        Insert: {
+          action: string
+          diff?: Json | null
+          id?: string
+          notes?: string | null
+          performed_at?: string
+          performed_by?: string | null
+          rule_id: string
+        }
+        Update: {
+          action?: string
+          diff?: Json | null
+          id?: string
+          notes?: string | null
+          performed_at?: string
+          performed_by?: string | null
+          rule_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dependence_rule_audit_log_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "dependence_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dependence_rules: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          match_dimensions: string[]
+          max_results: number
+          name: string
+          priority: number
+          sort_by: string
+          status: string
+          target_attribute_overrides: Json
+          target_category: string
+          trigger_categories: string[]
+          trigger_filters: Json
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          match_dimensions?: string[]
+          max_results?: number
+          name: string
+          priority?: number
+          sort_by?: string
+          status?: string
+          target_attribute_overrides?: Json
+          target_category: string
+          trigger_categories: string[]
+          trigger_filters?: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          match_dimensions?: string[]
+          max_results?: number
+          name?: string
+          priority?: number
+          sort_by?: string
+          status?: string
+          target_attribute_overrides?: Json
+          target_category?: string
+          trigger_categories?: string[]
+          trigger_filters?: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
           activation_id: string | null
@@ -523,13 +627,17 @@ export type Database = {
           id: string
           is_active: boolean
           layout: Json
+          linked_rule_ids: string[]
           match_config: Json
           match_type: string
           min_products: number
           name: string
           show_on_categories: string[]
           sort_by: string
+          target_attribute_overrides: Json
+          target_category: string
           updated_at: string
+          use_dependence_rules: boolean
         }
         Insert: {
           created_at?: string
@@ -539,13 +647,17 @@ export type Database = {
           id?: string
           is_active?: boolean
           layout?: Json
+          linked_rule_ids?: string[]
           match_config?: Json
           match_type?: string
           min_products?: number
           name: string
           show_on_categories?: string[]
           sort_by?: string
+          target_attribute_overrides?: Json
+          target_category?: string
           updated_at?: string
+          use_dependence_rules?: boolean
         }
         Update: {
           created_at?: string
@@ -555,13 +667,17 @@ export type Database = {
           id?: string
           is_active?: boolean
           layout?: Json
+          linked_rule_ids?: string[]
           match_config?: Json
           match_type?: string
           min_products?: number
           name?: string
           show_on_categories?: string[]
           sort_by?: string
+          target_attribute_overrides?: Json
+          target_category?: string
           updated_at?: string
+          use_dependence_rules?: boolean
         }
         Relationships: []
       }
@@ -643,6 +759,7 @@ export type Database = {
           composition: string | null
           created_at: string
           description: string | null
+          gender: string
           generated_look: Json | null
           heel_height_mm: number | null
           id: string
@@ -650,13 +767,16 @@ export type Database = {
           is_available: boolean
           material: string | null
           name: string
+          occasion: string[] | null
           price: string | null
+          price_tier: string | null
           product_code: string | null
           shopify_handle: string | null
           short_code: string | null
           silhouette_family: string | null
           slug: string
           source_url: string | null
+          style_mood: string | null
           updated_at: string
           wear_with: Json | null
           you_may_also_like: Json | null
@@ -670,6 +790,7 @@ export type Database = {
           composition?: string | null
           created_at?: string
           description?: string | null
+          gender?: string
           generated_look?: Json | null
           heel_height_mm?: number | null
           id?: string
@@ -677,13 +798,16 @@ export type Database = {
           is_available?: boolean
           material?: string | null
           name: string
+          occasion?: string[] | null
           price?: string | null
+          price_tier?: string | null
           product_code?: string | null
           shopify_handle?: string | null
           short_code?: string | null
           silhouette_family?: string | null
           slug: string
           source_url?: string | null
+          style_mood?: string | null
           updated_at?: string
           wear_with?: Json | null
           you_may_also_like?: Json | null
@@ -697,6 +821,7 @@ export type Database = {
           composition?: string | null
           created_at?: string
           description?: string | null
+          gender?: string
           generated_look?: Json | null
           heel_height_mm?: number | null
           id?: string
@@ -704,13 +829,16 @@ export type Database = {
           is_available?: boolean
           material?: string | null
           name?: string
+          occasion?: string[] | null
           price?: string | null
+          price_tier?: string | null
           product_code?: string | null
           shopify_handle?: string | null
           short_code?: string | null
           silhouette_family?: string | null
           slug?: string
           source_url?: string | null
+          style_mood?: string | null
           updated_at?: string
           wear_with?: Json | null
           you_may_also_like?: Json | null
@@ -740,6 +868,8 @@ export type Database = {
           carousel_id: string
           clicked_at: string
           id: string
+          match_reason: string | null
+          rule_id: string | null
           session_id: string | null
           source_product_id: string
           target_product_id: string
@@ -748,6 +878,8 @@ export type Database = {
           carousel_id: string
           clicked_at?: string
           id?: string
+          match_reason?: string | null
+          rule_id?: string | null
           session_id?: string | null
           source_product_id: string
           target_product_id: string
@@ -756,6 +888,8 @@ export type Database = {
           carousel_id?: string
           clicked_at?: string
           id?: string
+          match_reason?: string | null
+          rule_id?: string | null
           session_id?: string | null
           source_product_id?: string
           target_product_id?: string
@@ -766,6 +900,13 @@ export type Database = {
             columns: ["carousel_id"]
             isOneToOne: false
             referencedRelation: "product_carousels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recommendation_clicks_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "dependence_rules"
             referencedColumns: ["id"]
           },
           {
