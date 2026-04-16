@@ -1,12 +1,12 @@
-import { toast } from 'sonner';
-
 interface AuraDigitalPassportCardProps {
   onOpenClaim: () => void;
   onOpenPassport: () => void;
   onOpenHistory?: () => void;
+  onOpenTransfer?: () => void;
+  ownerRegistered?: boolean;
 }
 
-const AuraDigitalPassportCard = ({ onOpenClaim, onOpenPassport, onOpenHistory }: AuraDigitalPassportCardProps) => {
+const AuraDigitalPassportCard = ({ onOpenClaim, onOpenPassport, onOpenHistory, onOpenTransfer, ownerRegistered }: AuraDigitalPassportCardProps) => {
   return (
     <div
       className="animate-in"
@@ -23,7 +23,7 @@ const AuraDigitalPassportCard = ({ onOpenClaim, onOpenPassport, onOpenHistory }:
       <button
         onClick={onOpenPassport}
         className="flex items-center w-full"
-        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left' as const }}
+        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left' }}
       >
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C4A265" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
           <path d="M12 2L3 7v5c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z"/>
@@ -36,6 +36,15 @@ const AuraDigitalPassportCard = ({ onOpenClaim, onOpenPassport, onOpenHistory }:
             Aura Blockchain Consortium
           </span>
         </div>
+        {ownerRegistered && (
+          <span style={{
+            fontFamily: "var(--font-sans)", fontSize: 9, fontWeight: 600,
+            padding: '2px 8px', borderRadius: 20, background: '#dcfce7', color: '#166534',
+            marginRight: 8,
+          }}>
+            ✓ Claimed
+          </span>
+        )}
         <svg width="8" height="14" viewBox="0 0 8 14" fill="none" stroke="#C4A265" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
           <path d="M1 1l6 6-6 6" />
         </svg>
@@ -52,7 +61,7 @@ const AuraDigitalPassportCard = ({ onOpenClaim, onOpenPassport, onOpenHistory }:
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
           }}
         >
-          🔐 Claim
+          {ownerRegistered ? '✓ Claimed' : '🔐 Claim'}
         </button>
         <button
           onClick={onOpenHistory || onOpenPassport}
@@ -66,7 +75,7 @@ const AuraDigitalPassportCard = ({ onOpenClaim, onOpenPassport, onOpenHistory }:
           📋 History
         </button>
         <button
-          onClick={() => toast('Transfer coming soon')}
+          onClick={onOpenTransfer || onOpenPassport}
           style={{
             fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 600,
             background: '#faf8f5', color: '#1a1a1a', border: '1px solid #f0ece7',
