@@ -268,8 +268,8 @@ const ThemeSettingsPage = () => {
                 {/* Product card */}
                 <div className="p-4" style={{ background: colors.card, borderBottom: `1px solid ${colors.border}` }}>
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: '#dcfce7', color: '#166534' }}>✓ Genuine</span>
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: '#FEF3C7', color: '#92400E' }}>⬡ Certified</span>
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: '#dcfce7', color: '#166534' }}>Genuine</span>
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: '#FEF3C7', color: '#92400E' }}>Certified</span>
                   </div>
                   <h3 className="font-serif text-lg font-semibold" style={{ color: colors.foreground }}>So Kate 120mm</h3>
                   <p className="text-xs mt-1" style={{ color: colors['muted-foreground'] }}>Made in Italy · Iconic</p>

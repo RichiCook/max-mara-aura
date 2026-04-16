@@ -423,10 +423,7 @@ const ProductPage = () => {
 
       {/* Aura Digital Passport Card */}
       <AuraDigitalPassportCard
-        onOpenClaim={() => ownerRegistered ? setPassportOpen(true) : setLoginOpen(true)}
         onOpenPassport={() => setPassportOpen(true)}
-        onOpenHistory={() => setHistoryOpen(true)}
-        onOpenTransfer={() => setTransferOpen(true)}
         ownerRegistered={ownerRegistered}
       />
 

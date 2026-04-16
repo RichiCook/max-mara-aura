@@ -113,7 +113,7 @@ const RegistrationSuccessModal = ({ open, onClose, productName, productImage, on
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
             }}
           >
-            View Product Passport <span style={{ fontSize: 16 }}>⬡</span>
+            View Product Passport
           </button>
 
           <button
