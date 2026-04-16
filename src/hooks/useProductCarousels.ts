@@ -19,6 +19,9 @@ export interface CarouselDefinition {
   min_products: number;
   sort_by: string;
   exclude_current: boolean;
+  target_category: string;
+  target_attribute_overrides: Record<string, any>;
+  fallback_behavior: string;
   created_at: string;
   updated_at: string;
 }
@@ -52,6 +55,9 @@ export const useCarouselDefinitions = () => {
         min_products: (c as any).min_products ?? 3,
         sort_by: (c as any).sort_by || 'newest',
         exclude_current: (c as any).exclude_current !== false,
+        target_category: c.target_category || 'same',
+        target_attribute_overrides: (c.target_attribute_overrides || {}) as Record<string, any>,
+        fallback_behavior: c.fallback_behavior || 'use_match_type',
       })));
     }
     setLoading(false);
@@ -182,6 +188,9 @@ export const useProductCarousels = (product: Product | null) => {
             min_products: (carousel as any).min_products ?? 3,
             sort_by: (carousel as any).sort_by || 'newest',
             exclude_current: (carousel as any).exclude_current !== false,
+            target_category: carousel.target_category || 'same',
+            target_attribute_overrides: (carousel.target_attribute_overrides || {}) as Record<string, any>,
+            fallback_behavior: carousel.fallback_behavior || 'use_match_type',
             products,
             match_reason: data.match_reason,
           });
