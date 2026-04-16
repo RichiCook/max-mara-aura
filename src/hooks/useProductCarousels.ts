@@ -74,6 +74,7 @@ export const useCarouselDefinitions = () => {
         min_products: carousel.min_products ?? 3,
         sort_by: carousel.sort_by || 'newest',
         exclude_current: carousel.exclude_current !== false,
+        fallback_behavior: (carousel as any).fallback_behavior || 'use_match_type',
       } as any);
     if (error) return { success: false, error: error.message };
     await fetchCarousels();
