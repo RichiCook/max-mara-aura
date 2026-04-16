@@ -84,12 +84,6 @@ export const AppHeader = ({ onImportComplete, children }: AppHeaderProps) => {
                   Carousels
                 </Button>
               </Link>
-              <Link to="/admin/dependence-rules">
-                <Button variant="ghost" className="w-full justify-start">
-                  <Link2 className="w-4 h-4 mr-2" />
-                  Dependence Rules
-                </Button>
-              </Link>
               <Link to="/api-settings">
                 <Button variant="ghost" className="w-full justify-start">
                   <Settings2 className="w-4 h-4 mr-2" />
