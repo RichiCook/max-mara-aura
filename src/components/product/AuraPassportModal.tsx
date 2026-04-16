@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { usePlatformSettingsContext } from '@/contexts/PlatformSettingsContext';
+import { useModalScrollLock } from '@/hooks/useModalScrollLock';
 import defaultLogo from '@/assets/logo.png';
 
 interface AuraPassportModalProps {
@@ -16,7 +17,6 @@ interface AuraPassportModalProps {
 
 const SWIPE_THRESHOLD = 80;
 
-/* ── DPP Design Tokens ─────────────────────────────── */
 const T = {
   bgDark: '#2C1F17',
   gold: '#C9A96E',
@@ -41,6 +41,8 @@ const AuraPassportModal = ({
   const sheetRef = useRef<HTMLDivElement>(null);
   const { settings } = usePlatformSettingsContext();
   const logoUrl = settings.logo_url || defaultLogo;
+
+  useModalScrollLock(visible);
 
   useEffect(() => {
     if (open) {
@@ -111,7 +113,7 @@ const AuraPassportModal = ({
         onTouchEnd={handleTouchEnd}
         style={{
           position: 'fixed', bottom: 0, left: 0, right: 0,
-          maxHeight: '92vh',
+          maxHeight: '90dvh',
           background: '#fff', borderRadius: '20px 20px 0 0',
           boxShadow: '0 -8px 60px rgba(0,0,0,0.25)',
           overflow: 'hidden', display: 'flex', flexDirection: 'column',
@@ -120,170 +122,166 @@ const AuraPassportModal = ({
         }}
       >
         {/* ═══ DARK SECTION ═══ */}
-        <div style={{ background: T.bgDark, padding: '0 20px 40px', flexShrink: 0, textAlign: 'center' }}>
-          {/* Handle bar */}
-          <div style={{ width: 40, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.25)', margin: '12px auto 0' }} />
+        <div style={{ background: T.bgDark, flexShrink: 0, textAlign: 'center' }}>
+          {/* Drag handle */}
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.25)', margin: '12px auto 0' }} />
 
-          {/* ── Shared Header ── */}
-          {/* Brand logo */}
-          <div style={{ marginTop: 28 }}>
-            <img
-              src={logoUrl}
-              alt={settings.brand_name || 'Brand'}
-              style={{ height: 36, margin: '0 auto', display: 'block', objectFit: 'contain', filter: 'brightness(0) invert(1)' }}
-            />
-          </div>
+          <div style={{ padding: '0 20px 40px' }}>
+            {/* Brand logo */}
+            <div style={{ marginTop: 28 }}>
+              <img
+                src={logoUrl}
+                alt={settings.brand_name || 'Brand'}
+                style={{ height: 36, margin: '0 auto', display: 'block', objectFit: 'contain', filter: 'brightness(0) invert(1)' }}
+              />
+            </div>
 
-          {/* Product name */}
-          <p style={{
-            fontFamily: T.fontSerif, fontSize: 27, fontWeight: 400,
-            color: T.textCream, margin: '24px 0 0', lineHeight: 1.2,
-          }}>
-            {productName}
-          </p>
-
-          {/* Gold divider */}
-          <div style={{ width: 40, height: 1, background: T.gold, margin: '16px auto' }} />
-
-          {/* Certification label */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: T.green, display: 'inline-block', flexShrink: 0 }} />
-            <span style={{
-              fontFamily: T.fontSans, fontSize: 10, fontWeight: 600,
-              letterSpacing: '0.15em', color: T.textSecondary, textTransform: 'uppercase',
+            {/* Product name */}
+            <p style={{
+              fontFamily: T.fontSerif, fontSize: 27, fontWeight: 400,
+              color: T.textCream, margin: '24px 0 0', lineHeight: 1.2,
             }}>
-              Certified by Aura Blockchain Consortium
-            </span>
-          </div>
+              {productName}
+            </p>
 
-          {/* ── Body: Unclaimed ── */}
-          {!ownerRegistered && (
-            <div style={{ marginTop: 48 }}>
-              <p style={{
-                fontFamily: T.fontSerif, fontSize: 15, fontWeight: 300,
-                color: T.textMutedCream, margin: '0 0 32px', lineHeight: 1.5,
+            {/* Gold divider */}
+            <div style={{ width: 40, height: 1, background: T.gold, margin: '16px auto' }} />
+
+            {/* Certification label */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: T.green, display: 'inline-block', flexShrink: 0 }} />
+              <span style={{
+                fontFamily: T.fontSans, fontSize: 10, fontWeight: 600,
+                letterSpacing: '0.15em', color: T.textSecondary, textTransform: 'uppercase',
               }}>
-                This item has not been claimed.
-              </p>
-
-              <button
-                onClick={() => { onClose(); setTimeout(onOpenClaim, 200); }}
-                style={{
-                  fontFamily: T.fontSerif, fontSize: 14, fontWeight: 500,
-                  background: T.textCream, color: '#2C1F17', border: 'none', borderRadius: 5,
-                  padding: '16px 32px', cursor: 'pointer', display: 'inline-flex',
-                  alignItems: 'center', gap: 8, margin: '0 auto',
-                }}
-              >
-                Claim ownership
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={T.green} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                </svg>
-              </button>
-
-              <div style={{ marginTop: 24 }}>
-                <a
-                  href="https://auraconsortium.com/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    fontFamily: T.fontSerif, fontSize: 12, fontWeight: 400,
-                    color: T.gold, textDecoration: 'underline', textUnderlineOffset: 3,
-                  }}
-                >
-                  About Aura Blockchain Consortium
-                </a>
-              </div>
+                Certified by Aura Blockchain Consortium
+              </span>
             </div>
-          )}
 
-          {/* ── Body: Claimed ── */}
-          {ownerRegistered && (
-            <div style={{ marginTop: 32 }}>
-              {/* Owner fields */}
-              <div style={{ maxWidth: 280, margin: '0 auto', textAlign: 'left' }}>
-                {/* NAME */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '0 0 8px', borderBottom: `1px solid ${T.borderSubtle}` }}>
-                  <span style={{ fontFamily: T.fontSans, fontSize: 10, fontWeight: 600, letterSpacing: '0.12em', color: T.textSecondary, textTransform: 'uppercase' }}>
-                    Name
-                  </span>
-                  <span style={{ fontFamily: T.fontSerif, fontSize: 15, color: T.textCream, fontWeight: 400 }}>
-                    Mr {ownerName}
-                  </span>
-                </div>
+            {/* ── Body: Unclaimed ── */}
+            {!ownerRegistered && (
+              <div style={{ marginTop: 48 }}>
+                <p style={{
+                  fontFamily: T.fontSerif, fontSize: 15, fontWeight: 300,
+                  color: T.textMutedCream, margin: '0 0 32px', lineHeight: 1.5,
+                }}>
+                  This item has not been claimed.
+                </p>
 
-                {/* DATE */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '16px 0 8px', borderBottom: `1px solid ${T.borderSubtle}` }}>
-                  <span style={{ fontFamily: T.fontSans, fontSize: 10, fontWeight: 600, letterSpacing: '0.12em', color: T.textSecondary, textTransform: 'uppercase' }}>
-                    Date
-                  </span>
-                  <span style={{ fontFamily: T.fontSerif, fontSize: 15, color: T.textCream, fontWeight: 400 }}>
-                    {claimDate || fullTimestamp}
-                  </span>
-                </div>
-              </div>
-
-              {/* Action buttons */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 40, maxWidth: 300, marginLeft: 'auto', marginRight: 'auto' }}>
                 <button
-                  onClick={() => {}}
+                  onClick={() => { onClose(); setTimeout(onOpenClaim, 200); }}
                   style={{
-                    fontFamily: T.fontSans, fontSize: 13, fontWeight: 500,
-                    background: 'transparent', color: T.textPrimary,
-                    border: `1px solid ${T.borderSubtle}`, borderRadius: 5,
-                    padding: '14px 0', cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                    fontFamily: T.fontSerif, fontSize: 14, fontWeight: 500,
+                    background: T.textCream, color: '#2C1F17', border: 'none', borderRadius: 5,
+                    padding: '16px 32px', cursor: 'pointer', display: 'inline-flex',
+                    alignItems: 'center', gap: 8, margin: '0 auto',
                   }}
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="2" y="5" width="20" height="14" rx="2" />
-                    <path d="M2 10h20" />
+                  Claim ownership
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={T.green} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                   </svg>
-                  Add certificate to your wallet
                 </button>
-                <button
-                  onClick={() => { onClose(); setTimeout(onOpenRedeem, 200); }}
-                  style={{
-                    fontFamily: T.fontSans, fontSize: 13, fontWeight: 500,
-                    background: 'transparent', color: T.textPrimary,
-                    border: `1px solid ${T.borderSubtle}`, borderRadius: 5,
-                    padding: '14px 0', cursor: 'pointer',
-                  }}
-                >
-                  Redeem the Digital Artwork
-                </button>
-                <button
-                  onClick={() => { onClose(); setTimeout(onOpenTransfer, 200); }}
-                  style={{
-                    fontFamily: T.fontSans, fontSize: 13, fontWeight: 500,
-                    background: 'transparent', color: T.textPrimary,
-                    border: `1px solid ${T.borderSubtle}`, borderRadius: 5,
-                    padding: '14px 0', cursor: 'pointer',
-                  }}
-                >
-                  Transfer ownership
-                </button>
-              </div>
 
-              <div style={{ marginTop: 24 }}>
-                <a
-                  href="https://auraconsortium.com/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    fontFamily: T.fontSerif, fontSize: 12, fontWeight: 400,
-                    color: T.gold, textDecoration: 'underline', textUnderlineOffset: 3,
-                  }}
-                >
-                  About Aura Blockchain Consortium
-                </a>
+                <div style={{ marginTop: 24 }}>
+                  <a
+                    href="https://auraconsortium.com/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      fontFamily: T.fontSerif, fontSize: 12, fontWeight: 400,
+                      color: T.gold, textDecoration: 'underline', textUnderlineOffset: 3,
+                    }}
+                  >
+                    About Aura Blockchain Consortium
+                  </a>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+
+            {/* ── Body: Claimed ── */}
+            {ownerRegistered && (
+              <div style={{ marginTop: 32 }}>
+                <div style={{ maxWidth: 280, margin: '0 auto', textAlign: 'left' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '0 0 8px', borderBottom: `1px solid ${T.borderSubtle}` }}>
+                    <span style={{ fontFamily: T.fontSans, fontSize: 10, fontWeight: 600, letterSpacing: '0.12em', color: T.textSecondary, textTransform: 'uppercase' }}>
+                      Name
+                    </span>
+                    <span style={{ fontFamily: T.fontSerif, fontSize: 15, color: T.textCream, fontWeight: 400 }}>
+                      Mr {ownerName}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '16px 0 8px', borderBottom: `1px solid ${T.borderSubtle}` }}>
+                    <span style={{ fontFamily: T.fontSans, fontSize: 10, fontWeight: 600, letterSpacing: '0.12em', color: T.textSecondary, textTransform: 'uppercase' }}>
+                      Date
+                    </span>
+                    <span style={{ fontFamily: T.fontSerif, fontSize: 15, color: T.textCream, fontWeight: 400 }}>
+                      {claimDate || fullTimestamp}
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 40, maxWidth: 300, marginLeft: 'auto', marginRight: 'auto' }}>
+                  <button
+                    onClick={() => {}}
+                    style={{
+                      fontFamily: T.fontSans, fontSize: 13, fontWeight: 500,
+                      background: 'transparent', color: T.textPrimary,
+                      border: `1px solid ${T.borderSubtle}`, borderRadius: 5,
+                      padding: '14px 0', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                    }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="2" y="5" width="20" height="14" rx="2" />
+                      <path d="M2 10h20" />
+                    </svg>
+                    Add certificate to your wallet
+                  </button>
+                  <button
+                    onClick={() => { onClose(); setTimeout(onOpenRedeem, 200); }}
+                    style={{
+                      fontFamily: T.fontSans, fontSize: 13, fontWeight: 500,
+                      background: 'transparent', color: T.textPrimary,
+                      border: `1px solid ${T.borderSubtle}`, borderRadius: 5,
+                      padding: '14px 0', cursor: 'pointer',
+                    }}
+                  >
+                    Redeem the Digital Artwork
+                  </button>
+                  <button
+                    onClick={() => { onClose(); setTimeout(onOpenTransfer, 200); }}
+                    style={{
+                      fontFamily: T.fontSans, fontSize: 13, fontWeight: 500,
+                      background: 'transparent', color: T.textPrimary,
+                      border: `1px solid ${T.borderSubtle}`, borderRadius: 5,
+                      padding: '14px 0', cursor: 'pointer',
+                    }}
+                  >
+                    Transfer ownership
+                  </button>
+                </div>
+
+                <div style={{ marginTop: 24 }}>
+                  <a
+                    href="https://auraconsortium.com/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      fontFamily: T.fontSerif, fontSize: 12, fontWeight: 400,
+                      color: T.gold, textDecoration: 'underline', textUnderlineOffset: 3,
+                    }}
+                  >
+                    About Aura Blockchain Consortium
+                  </a>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* ═══ WHITE SECTION — Certification History ═══ */}
-        <div ref={sheetRef} style={{ flex: 1, overflowY: 'auto', padding: '24px 20px' }}>
+        <div ref={sheetRef} style={{ flex: 1, overflowY: 'auto', padding: '24px 20px 0' }}>
           <h3 style={{ fontFamily: T.fontSerif, fontSize: 18, fontWeight: 600, color: '#1a1a1a', margin: '0 0 16px' }}>
             Certification History
           </h3>
@@ -317,8 +315,8 @@ const AuraPassportModal = ({
           </p>
         </div>
 
-        {/* Close button */}
-        <div style={{ padding: '12px 20px 24px', flexShrink: 0 }}>
+        {/* Close button — sticky footer */}
+        <div style={{ padding: '12px 20px 24px', flexShrink: 0, background: '#fff' }}>
           <button
             onClick={onClose}
             style={{
