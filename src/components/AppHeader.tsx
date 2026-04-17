@@ -1,5 +1,6 @@
-import { Link } from 'react-router-dom';
-import { Bookmark, Layers, Sparkles, Users, Settings2, LogOut, Palette, Upload, BarChart3, Menu, Star, ImageIcon, LayoutGrid } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import { Bookmark, Layers, Sparkles, Users, Settings2, LogOut, Palette, BarChart3, Menu, Star, ImageIcon, LayoutGrid } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -15,14 +16,28 @@ interface AppHeaderProps {
   children?: React.ReactNode;
 }
 
+const NAV_ITEMS = [
+  { to: '/', label: 'Products', Icon: Bookmark },
+  { to: '/leads', label: 'Leads', Icon: Users },
+  { to: '/looks', label: 'Total Looks', Icon: Sparkles },
+  { to: '/celebrity-content', label: 'Celebrity Content', Icon: Star },
+  { to: '/activations', label: 'Activations', Icon: Layers },
+  { to: '/admin/media-manager', label: 'Campaign Assets', Icon: ImageIcon },
+  { to: '/admin/carousels', label: 'Carousels', Icon: LayoutGrid },
+  { to: '/api-settings', label: 'API', Icon: Settings2 },
+  { to: '/scan-analytics', label: 'Analytics', Icon: BarChart3 },
+  { to: '/settings', label: 'Settings', Icon: Palette },
+];
+
 export const AppHeader = ({ onImportComplete, children }: AppHeaderProps) => {
   const { signOut } = useAuth();
   const { settings } = usePlatformSettingsContext();
   const logoUrl = settings.logo_url || defaultLogo;
   const { height: logoHeight, position: logoPosition } = useLogoDisplay();
+  const { pathname } = useLocation();
 
   return (
-    <div className="flex items-center justify-between">
+    <div className="admin-topnav flex items-center justify-between rounded-xl px-4 py-3">
       <div className={`flex items-center gap-4 ${logoPosition === 'center' ? 'flex-1' : ''}`}>
         {logoPosition === 'center' && <div className="w-10" />}
         <Link to="/" className={logoPosition === 'center' ? 'mx-auto' : ''}>
@@ -43,73 +58,32 @@ export const AppHeader = ({ onImportComplete, children }: AppHeaderProps) => {
               <Menu className="w-5 h-5" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="right" className="w-64">
-            <nav className="flex flex-col gap-2 mt-8">
+          <SheetContent side="right" className="w-64 admin-theme">
+            <nav className="flex flex-col gap-1 mt-8">
               {onImportComplete && <ExcelImportModal onImportComplete={onImportComplete} />}
-              <Link to="/">
-                <Button variant="ghost" className="w-full justify-start">
-                  <Bookmark className="w-4 h-4 mr-2" />
-                  Products
-                </Button>
-              </Link>
-              <Link to="/leads">
-                <Button variant="ghost" className="w-full justify-start">
-                  <Users className="w-4 h-4 mr-2" />
-                  Leads
-                </Button>
-              </Link>
-              <Link to="/looks">
-                <Button variant="ghost" className="w-full justify-start">
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Total Looks
-                </Button>
-              </Link>
-              <Link to="/celebrity-content">
-                <Button variant="ghost" className="w-full justify-start">
-                  <Star className="w-4 h-4 mr-2" />
-                  Celebrity Content
-                </Button>
-              </Link>
-              <Link to="/activations">
-                <Button variant="ghost" className="w-full justify-start">
-                  <Layers className="w-4 h-4 mr-2" />
-                  Activations
-                </Button>
-              </Link>
-              <Link to="/admin/media-manager">
-                <Button variant="ghost" className="w-full justify-start">
-                  <ImageIcon className="w-4 h-4 mr-2" />
-                  Campaign Assets
-                </Button>
-              </Link>
-              <Link to="/admin/carousels">
-                <Button variant="ghost" className="w-full justify-start">
-                  <LayoutGrid className="w-4 h-4 mr-2" />
-                  Carousels
-                </Button>
-              </Link>
-              <Link to="/api-settings">
-                <Button variant="ghost" className="w-full justify-start">
-                  <Settings2 className="w-4 h-4 mr-2" />
-                  API
-                </Button>
-              </Link>
-              <Link to="/scan-analytics">
-                <Button variant="ghost" className="w-full justify-start">
-                  <BarChart3 className="w-4 h-4 mr-2" />
-                  Analytics
-                </Button>
-              </Link>
-              <Link to="/settings">
-                <Button variant="ghost" className="w-full justify-start">
-                  <Palette className="w-4 h-4 mr-2" />
-                  Settings
-                </Button>
-              </Link>
-              <Button variant="ghost" className="w-full justify-start" onClick={() => signOut()}>
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
+              {NAV_ITEMS.map(({ to, label, Icon }) => {
+                const isActive = to === '/' ? pathname === '/' : pathname.startsWith(to);
+                return (
+                  <Link key={to} to={to}>
+                    <button
+                      className={cn(
+                        'admin-sidebar-item w-full flex items-center gap-2',
+                        isActive && 'active',
+                      )}
+                    >
+                      <Icon className="w-4 h-4" />
+                      <span>{label}</span>
+                    </button>
+                  </Link>
+                );
+              })}
+              <button
+                className="admin-sidebar-item w-full flex items-center gap-2 mt-2"
+                onClick={() => signOut()}
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Logout</span>
+              </button>
             </nav>
           </SheetContent>
         </Sheet>
