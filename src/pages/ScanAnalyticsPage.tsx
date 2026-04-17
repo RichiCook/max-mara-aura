@@ -240,13 +240,30 @@ const ScanAnalyticsPage = () => {
                   {topProducts.length === 0 ? (
                     <p className="text-sm text-muted-foreground">No data yet</p>
                   ) : (
-                    <div className="space-y-3">
-                      {topProducts.map((p, i) => (
-                        <div key={p.code} className="flex items-center justify-between">
-                          <span className="text-sm text-foreground"><span className="text-muted-foreground mr-2">{i + 1}.</span>{p.code}</span>
-                          <span className="text-sm font-medium text-foreground">{p.count}</span>
-                        </div>
-                      ))}
+                    <div className="space-y-2">
+                      {topProducts.map((p, i) => {
+                        const info = productByCode.get(p.code);
+                        const content = (
+                          <div className="flex items-center gap-3 py-1.5 px-2 -mx-2 rounded-lg hover:bg-[var(--admin-surface-container-high)] transition-colors">
+                            <span className="text-xs font-semibold w-5 shrink-0" style={{ color: 'var(--admin-text-tertiary)' }}>{i + 1}</span>
+                            <div className="w-10 h-10 rounded-md overflow-hidden shrink-0" style={{ background: 'var(--admin-surface-container-high)' }}>
+                              {info?.image ? (
+                                <img src={info.image} alt={info.name} className="w-full h-full object-cover" loading="lazy" />
+                              ) : null}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium truncate" style={{ color: 'var(--admin-text-primary)' }}>{info?.name ?? p.code}</div>
+                              <div className="text-[11px] truncate" style={{ color: 'var(--admin-text-tertiary)' }}>{p.code}</div>
+                            </div>
+                            <span className="text-sm font-semibold tabular-nums" style={{ color: 'var(--admin-primary)' }}>{p.count}</span>
+                          </div>
+                        );
+                        return info ? (
+                          <Link key={p.code} to={`/product/${info.slug}`} target="_blank" rel="noopener">{content}</Link>
+                        ) : (
+                          <div key={p.code}>{content}</div>
+                        );
+                      })}
                     </div>
                   )}
                 </CardContent>
