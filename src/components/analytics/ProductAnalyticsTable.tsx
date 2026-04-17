@@ -4,12 +4,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ProductRow } from '@/hooks/useScanAnalytics';
 import { format } from 'date-fns';
 import { Search } from 'lucide-react';
+import { ProductCell, ProductInfo } from './ProductCell';
 
 interface Props {
   rows: ProductRow[];
+  productByCode?: Map<string, ProductInfo>;
 }
 
-export function ProductAnalyticsTable({ rows }: Props) {
+export function ProductAnalyticsTable({ rows, productByCode }: Props) {
   const [search, setSearch] = useState('');
   const [sortKey, setSortKey] = useState<keyof ProductRow>('pageViews');
   const [sortAsc, setSortAsc] = useState(false);
@@ -62,7 +64,9 @@ export function ProductAnalyticsTable({ rows }: Props) {
               <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No data</TableCell></TableRow>
             ) : sorted.map(r => (
               <TableRow key={r.code}>
-                <TableCell className="font-mono text-xs">{r.code}</TableCell>
+                <TableCell className="min-w-[220px]">
+                  <ProductCell code={r.code} info={productByCode?.get(r.code)} size="sm" />
+                </TableCell>
                 <TableCell>{r.scans}</TableCell>
                 <TableCell>{r.pageViews}</TableCell>
                 <TableCell>{r.clicks}</TableCell>

@@ -331,12 +331,12 @@ const ScanAnalyticsPage = () => {
 
           {/* Products Tab */}
           <TabsContent value="products">
-            <ProductAnalyticsTable rows={productRows} />
+            <ProductAnalyticsTable rows={productRows} productByCode={productByCode} />
           </TabsContent>
 
           {/* Sessions Tab */}
           <TabsContent value="sessions">
-            <SessionsList sessions={sessionRows} />
+            <SessionsList sessions={sessionRows} productByCode={productByCode} />
           </TabsContent>
 
           {/* Event Log Tab */}
