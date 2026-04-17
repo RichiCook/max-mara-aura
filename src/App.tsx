@@ -23,8 +23,18 @@ import CarouselSettingsPage from "./pages/CarouselSettingsPage";
 import AuthPage from "./pages/AuthPage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { PlatformSettingsProvider } from "./contexts/PlatformSettingsContext";
+import { AdminLayout } from "./layouts/AdminLayout";
 
 const queryClient = new QueryClient();
+
+/** Wrap admin pages: PlatformSettings + Auth gate + Teal Curator theme */
+const Admin = ({ children }: { children: React.ReactNode }) => (
+  <PlatformSettingsProvider>
+    <ProtectedRoute>
+      <AdminLayout>{children}</AdminLayout>
+    </ProtectedRoute>
+  </PlatformSettingsProvider>
+);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -40,21 +50,21 @@ const App = () => (
           <Route path="/product/:slug" element={<PlatformSettingsProvider><ProductPage /></PlatformSettingsProvider>} />
           <Route path="/auth" element={<PlatformSettingsProvider><AuthPage /></PlatformSettingsProvider>} />
           
-          {/* Protected dashboard routes */}
-          <Route path="/" element={<PlatformSettingsProvider><ProtectedRoute><Index /></ProtectedRoute></PlatformSettingsProvider>} />
-          <Route path="/product/:slug/edit" element={<PlatformSettingsProvider><ProtectedRoute><ProductEditPage /></ProtectedRoute></PlatformSettingsProvider>} />
-          <Route path="/activations" element={<PlatformSettingsProvider><ProtectedRoute><ActivationsPage /></ProtectedRoute></PlatformSettingsProvider>} />
-          <Route path="/looks" element={<PlatformSettingsProvider><ProtectedRoute><LooksPage /></ProtectedRoute></PlatformSettingsProvider>} />
-          <Route path="/looks/settings" element={<PlatformSettingsProvider><ProtectedRoute><LookGroupsSettingsPage /></ProtectedRoute></PlatformSettingsProvider>} />
-          <Route path="/looks/ai-settings" element={<PlatformSettingsProvider><ProtectedRoute><AIGenerationSettingsPage /></ProtectedRoute></PlatformSettingsProvider>} />
-          <Route path="/leads" element={<PlatformSettingsProvider><ProtectedRoute><LeadsPage /></ProtectedRoute></PlatformSettingsProvider>} />
-          <Route path="/api-settings" element={<PlatformSettingsProvider><ProtectedRoute><ApiSettingsPage /></ProtectedRoute></PlatformSettingsProvider>} />
-          <Route path="/settings" element={<PlatformSettingsProvider><ProtectedRoute><SettingsPage /></ProtectedRoute></PlatformSettingsProvider>} />
-          <Route path="/settings/theme" element={<PlatformSettingsProvider><ProtectedRoute><ThemeSettingsPage /></ProtectedRoute></PlatformSettingsProvider>} />
-          <Route path="/scan-analytics" element={<PlatformSettingsProvider><ProtectedRoute><ScanAnalyticsPage /></ProtectedRoute></PlatformSettingsProvider>} />
-          <Route path="/celebrity-content" element={<PlatformSettingsProvider><ProtectedRoute><CelebrityContentPage /></ProtectedRoute></PlatformSettingsProvider>} />
-          <Route path="/admin/media-manager" element={<PlatformSettingsProvider><ProtectedRoute><AdminMediaManager /></ProtectedRoute></PlatformSettingsProvider>} />
-          <Route path="/admin/carousels" element={<PlatformSettingsProvider><ProtectedRoute><CarouselSettingsPage /></ProtectedRoute></PlatformSettingsProvider>} />
+          {/* Protected dashboard routes — Teal Curator admin theme */}
+          <Route path="/" element={<Admin><Index /></Admin>} />
+          <Route path="/product/:slug/edit" element={<Admin><ProductEditPage /></Admin>} />
+          <Route path="/activations" element={<Admin><ActivationsPage /></Admin>} />
+          <Route path="/looks" element={<Admin><LooksPage /></Admin>} />
+          <Route path="/looks/settings" element={<Admin><LookGroupsSettingsPage /></Admin>} />
+          <Route path="/looks/ai-settings" element={<Admin><AIGenerationSettingsPage /></Admin>} />
+          <Route path="/leads" element={<Admin><LeadsPage /></Admin>} />
+          <Route path="/api-settings" element={<Admin><ApiSettingsPage /></Admin>} />
+          <Route path="/settings" element={<Admin><SettingsPage /></Admin>} />
+          <Route path="/settings/theme" element={<Admin><ThemeSettingsPage /></Admin>} />
+          <Route path="/scan-analytics" element={<Admin><ScanAnalyticsPage /></Admin>} />
+          <Route path="/celebrity-content" element={<Admin><CelebrityContentPage /></Admin>} />
+          <Route path="/admin/media-manager" element={<Admin><AdminMediaManager /></Admin>} />
+          <Route path="/admin/carousels" element={<Admin><CarouselSettingsPage /></Admin>} />
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
