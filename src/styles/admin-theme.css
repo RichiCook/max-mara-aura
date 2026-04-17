@@ -1,0 +1,355 @@
+/* ============================================================
+   The Teal Curator — Admin Design System
+   Scoped to .admin-theme so it never leaks into public pages.
+   ============================================================ */
+
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap");
+
+.admin-theme {
+  /* ─── Brand tones ─── */
+  --admin-primary: #0dc8a3;
+  --admin-primary-hover: #0ab38f;
+  --admin-primary-gradient: linear-gradient(135deg, #0dc8a3, #3ee8c7);
+  --admin-secondary: #4f5d82;
+  --admin-tertiary: #ff8670;
+  --admin-neutral: #f5ddc5;
+
+  /* ─── Surface tonal layers ─── */
+  --admin-surface: #faf6f0;
+  --admin-surface-container-low: #f5efe6;
+  --admin-surface-container: #efe8dd;
+  --admin-surface-container-high: #e8dfd3;
+  --admin-surface-container-highest: #e0d6c8;
+
+  /* ─── Text ─── */
+  --admin-text-primary: #2a2f3e;
+  --admin-text-secondary: #4f5d82;
+  --admin-text-tertiary: #8a8e9e;
+  --admin-text-on-primary: #ffffff;
+  --admin-text-on-dark: #f5efe6;
+
+  /* ─── Ghost borders (focus + accessibility fallback) ─── */
+  --admin-ghost-border: rgba(13, 200, 163, 0.15);
+  --admin-ghost-border-focus: rgba(13, 200, 163, 0.4);
+
+  /* ─── Shadows (parchment-tinted) ─── */
+  --admin-shadow-sm: 0 2px 8px rgba(120, 90, 60, 0.06);
+  --admin-shadow-md: 0 4px 24px rgba(120, 90, 60, 0.08);
+  --admin-shadow-lg: 0 8px 40px rgba(120, 90, 60, 0.1);
+
+  /* ─── Glass ─── */
+  --admin-glass-bg: rgba(250, 246, 240, 0.75);
+  --admin-glass-blur: blur(16px);
+
+  /* ─── Type ─── */
+  --admin-font-display: "Manrope", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --admin-font-body: "Inter", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+
+  /* ─── Spacing ─── */
+  --admin-space-xs: 4px;
+  --admin-space-sm: 8px;
+  --admin-space-md: 16px;
+  --admin-space-lg: 24px;
+  --admin-space-xl: 32px;
+  --admin-space-2xl: 48px;
+  --admin-space-3xl: 64px;
+
+  /* ─── Radius ─── */
+  --admin-radius-sm: 6px;
+  --admin-radius-md: 10px;
+  --admin-radius-lg: 14px;
+  --admin-radius-pill: 999px;
+
+  /* ============================================================
+     Remap shadcn semantic tokens (HSL) so existing components
+     auto-restyle with the teal palette inside admin pages.
+     ============================================================ */
+  --background: 36 50% 96%;          /* #faf6f0 */
+  --foreground: 226 19% 20%;         /* #2a2f3e */
+
+  --card: 36 38% 92%;                /* #efe8dd */
+  --card-foreground: 226 19% 20%;
+
+  --popover: 36 50% 96%;
+  --popover-foreground: 226 19% 20%;
+
+  --primary: 169 88% 42%;            /* #0dc8a3 */
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 36 38% 88%;           /* #e8dfd3 */
+  --secondary-foreground: 226 19% 20%;
+
+  --muted: 36 38% 88%;
+  --muted-foreground: 226 18% 45%;   /* slate-blue */
+
+  --accent: 12 100% 72%;             /* coral #ff8670 */
+  --accent-foreground: 0 0% 100%;
+
+  --destructive: 6 78% 60%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 36 30% 82%;              /* tonal, not a sharp line */
+  --input: 36 35% 80%;
+  --ring: 169 88% 42%;
+
+  --radius: 0.625rem;
+
+  --sidebar-background: 36 42% 94%;
+  --sidebar-foreground: 226 19% 20%;
+  --sidebar-primary: 169 88% 42%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 36 38% 88%;
+  --sidebar-accent-foreground: 169 88% 32%;
+  --sidebar-border: 36 30% 82%;
+  --sidebar-ring: 169 88% 42%;
+
+  font-family: var(--admin-font-body);
+  background: var(--admin-surface);
+  color: var(--admin-text-primary);
+}
+
+/* ============================================================
+   Typography utilities
+   ============================================================ */
+.admin-theme .admin-display,
+.admin-theme h1,
+.admin-theme h2,
+.admin-theme h3 {
+  font-family: var(--admin-font-display);
+  letter-spacing: -0.02em;
+  color: var(--admin-text-primary);
+}
+
+.admin-theme .admin-page-title {
+  font-family: var(--admin-font-display);
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--admin-text-primary);
+}
+
+.admin-theme .admin-section-heading {
+  font-family: var(--admin-font-display);
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--admin-text-primary);
+}
+
+.admin-theme .admin-hero-metric {
+  font-family: var(--admin-font-display);
+  font-size: 3.5rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--admin-primary);
+}
+
+.admin-theme .admin-hero-metric-label,
+.admin-theme .admin-label {
+  font-family: var(--admin-font-body);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--admin-text-tertiary);
+}
+
+/* ============================================================
+   Buttons — primary teal gradient
+   Applies to shadcn default Buttons (variant="default") + .admin-btn-primary
+   ============================================================ */
+.admin-theme .admin-btn-primary,
+.admin-theme button[data-variant="default"],
+.admin-theme .btn-primary {
+  background: var(--admin-primary-gradient);
+  color: var(--admin-text-on-primary);
+  border: none;
+  border-radius: var(--admin-radius-sm);
+  font-family: var(--admin-font-body);
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+.admin-theme .admin-btn-primary:hover,
+.admin-theme .btn-primary:hover {
+  background: linear-gradient(135deg, #0ab38f, #2dd9b3);
+  box-shadow: var(--admin-shadow-md);
+  transform: translateY(-1px);
+}
+
+/* Replace any leftover Louboutin red CTA classes inside admin */
+.admin-theme .bg-\[\#E00400\],
+.admin-theme .bg-\[\#e00400\] {
+  background: var(--admin-primary-gradient) !important;
+  color: var(--admin-text-on-primary) !important;
+}
+.admin-theme .hover\:bg-\[\#C00300\]:hover,
+.admin-theme .hover\:bg-\[\#c00300\]:hover {
+  background: linear-gradient(135deg, #0ab38f, #2dd9b3) !important;
+}
+.admin-theme .text-\[\#E00400\],
+.admin-theme .text-\[\#e00400\] {
+  color: var(--admin-primary) !important;
+}
+.admin-theme .border-\[\#E00400\],
+.admin-theme .border-\[\#e00400\] {
+  border-color: var(--admin-primary) !important;
+}
+
+/* ============================================================
+   Cards (shadcn Card auto-themed)
+   ============================================================ */
+.admin-theme .admin-card {
+  background: var(--admin-surface-container);
+  border: none;
+  border-radius: var(--admin-radius-lg);
+  padding: var(--admin-space-xl);
+  box-shadow: var(--admin-shadow-sm);
+}
+
+/* Soften shadcn cards: keep border for pragmatic separation but dial it down */
+.admin-theme [class*="rounded-lg"][class*="border"][class*="bg-card"] {
+  box-shadow: var(--admin-shadow-sm);
+}
+
+/* ============================================================
+   Inputs / Textareas / Selects — recessed, no hard border
+   ============================================================ */
+.admin-theme input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+.admin-theme textarea,
+.admin-theme select,
+.admin-theme .admin-input {
+  background: var(--admin-surface-container-highest);
+  border: 1px solid transparent;
+  border-radius: var(--admin-radius-sm);
+  color: var(--admin-text-primary);
+  transition: box-shadow 0.15s ease, background 0.15s ease;
+}
+.admin-theme input:focus-visible,
+.admin-theme textarea:focus-visible,
+.admin-theme select:focus-visible,
+.admin-theme .admin-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--admin-ghost-border-focus);
+  border-color: transparent;
+}
+.admin-theme input::placeholder,
+.admin-theme textarea::placeholder {
+  color: var(--admin-text-tertiary);
+}
+
+/* ============================================================
+   Tables — spaced rows, tonal backgrounds (pragmatic dividers kept light)
+   ============================================================ */
+.admin-theme .admin-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 var(--admin-space-sm);
+}
+.admin-theme .admin-table thead th {
+  font-family: var(--admin-font-body);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--admin-text-secondary);
+  padding: var(--admin-space-sm) var(--admin-space-md);
+  text-align: left;
+  border: none;
+}
+.admin-theme .admin-table tbody tr {
+  background: var(--admin-surface-container);
+  border: none;
+  transition: background 0.15s ease;
+}
+.admin-theme .admin-table tbody tr:hover {
+  background: var(--admin-surface-container-high);
+}
+.admin-theme .admin-table tbody td {
+  padding: var(--admin-space-md);
+  border: none;
+  font-size: 14px;
+}
+.admin-theme .admin-table tbody td:first-child {
+  border-radius: var(--admin-radius-md) 0 0 var(--admin-radius-md);
+}
+.admin-theme .admin-table tbody td:last-child {
+  border-radius: 0 var(--admin-radius-md) var(--admin-radius-md) 0;
+}
+
+/* ============================================================
+   Badges
+   ============================================================ */
+.admin-theme .admin-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: var(--admin-radius-pill);
+  font-family: var(--admin-font-body);
+  font-size: 12px;
+  font-weight: 600;
+  border: none;
+}
+.admin-theme .admin-badge.active {
+  background: rgba(13, 200, 163, 0.12);
+  color: #0ab38f;
+}
+.admin-theme .admin-badge.alert {
+  background: rgba(255, 134, 112, 0.14);
+  color: #e06650;
+}
+.admin-theme .admin-badge.info {
+  background: rgba(79, 93, 130, 0.12);
+  color: var(--admin-secondary);
+}
+
+/* ============================================================
+   Glass top nav + modals
+   ============================================================ */
+.admin-theme .admin-topnav {
+  background: var(--admin-glass-bg);
+  backdrop-filter: var(--admin-glass-blur);
+  -webkit-backdrop-filter: var(--admin-glass-blur);
+  border-bottom: none;
+}
+
+.admin-theme [role="dialog"] {
+  border: none;
+  box-shadow: var(--admin-shadow-lg);
+}
+
+/* ============================================================
+   Sidebar / nav items inside the burger menu
+   ============================================================ */
+.admin-theme .admin-sidebar-item {
+  font-family: var(--admin-font-body);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--admin-text-secondary);
+  padding: var(--admin-space-sm) var(--admin-space-md);
+  border-radius: var(--admin-radius-md);
+  border: none;
+  transition: all 0.2s ease;
+}
+.admin-theme .admin-sidebar-item:hover {
+  background: var(--admin-surface-container);
+  color: var(--admin-text-primary);
+}
+.admin-theme .admin-sidebar-item.active {
+  background: var(--admin-surface-container-high);
+  color: var(--admin-primary);
+  font-weight: 600;
+}
+
+/* ============================================================
+   Pragmatic border softening — kill harsh black/gray hairlines
+   but keep tonal separation where useful.
+   ============================================================ */
+.admin-theme .border,
+.admin-theme .border-t,
+.admin-theme .border-b,
+.admin-theme .border-l,
+.admin-theme .border-r {
+  border-color: hsl(var(--border));
+}
