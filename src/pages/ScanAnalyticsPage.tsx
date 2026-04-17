@@ -297,16 +297,31 @@ const ScanAnalyticsPage = () => {
                   ) : pairScores.length === 0 ? (
                     <p className="text-sm text-muted-foreground">No pair scores yet. Click "Aggregate" to compute.</p>
                   ) : (
-                    <div className="space-y-3">
-                      {pairScores.slice(0, 10).map((pair, i) => (
-                        <div key={pair.id} className="flex items-center justify-between text-sm">
-                          <span className="text-foreground"><span className="text-muted-foreground mr-2">{i + 1}.</span>{pair.product_code_a} × {pair.product_code_b}</span>
-                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                            <span>{pair.click_count} clicks</span>
-                            <span className="font-medium text-foreground">{pair.score.toFixed(0)}pts</span>
+                    <div className="space-y-2">
+                      {pairScores.slice(0, 10).map((pair, i) => {
+                        const a = productByCode.get(pair.product_code_a);
+                        const b = productByCode.get(pair.product_code_b);
+                        return (
+                          <div key={pair.id} className="flex items-center gap-3 py-1.5 px-2 -mx-2 rounded-lg hover:bg-[var(--admin-surface-container-high)] transition-colors">
+                            <span className="text-xs font-semibold w-5 shrink-0" style={{ color: 'var(--admin-text-tertiary)' }}>{i + 1}</span>
+                            <div className="flex items-center -space-x-2 shrink-0">
+                              <div className="w-9 h-9 rounded-md overflow-hidden ring-2" style={{ background: 'var(--admin-surface-container-high)', boxShadow: '0 0 0 2px var(--admin-surface-container)' }}>
+                                {a?.image && <img src={a.image} alt={a.name} className="w-full h-full object-cover" loading="lazy" />}
+                              </div>
+                              <div className="w-9 h-9 rounded-md overflow-hidden" style={{ background: 'var(--admin-surface-container-high)', boxShadow: '0 0 0 2px var(--admin-surface-container)' }}>
+                                {b?.image && <img src={b.image} alt={b.name} className="w-full h-full object-cover" loading="lazy" />}
+                              </div>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-xs font-medium truncate" style={{ color: 'var(--admin-text-primary)' }}>
+                                {a?.name ?? pair.product_code_a} <span style={{ color: 'var(--admin-text-tertiary)' }}>×</span> {b?.name ?? pair.product_code_b}
+                              </div>
+                              <div className="text-[11px]" style={{ color: 'var(--admin-text-tertiary)' }}>{pair.click_count} clicks</div>
+                            </div>
+                            <span className="text-sm font-semibold tabular-nums shrink-0" style={{ color: 'var(--admin-primary)' }}>{pair.score.toFixed(0)}</span>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </CardContent>
