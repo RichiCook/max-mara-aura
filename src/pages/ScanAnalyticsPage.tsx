@@ -101,6 +101,22 @@ const ScanAnalyticsPage = () => {
     clearEvents, clearing,
     exportCsv,
   } = useScanAnalytics();
+  const { products } = useProducts();
+
+  // Lookup map: product_code -> { name, image, slug }
+  const productByCode = useMemo(() => {
+    const map = new Map<string, { name: string; image: string | null; slug: string }>();
+    products.forEach((p) => {
+      if (p.product_code) {
+        map.set(p.product_code, {
+          name: p.name,
+          image: p.images?.[0] ?? null,
+          slug: p.slug,
+        });
+      }
+    });
+    return map;
+  }, [products]);
 
   if (eventsLoading) {
     return (
