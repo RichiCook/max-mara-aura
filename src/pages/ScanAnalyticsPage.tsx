@@ -11,6 +11,9 @@ import { SourceFilter } from '@/components/analytics/SourceFilter';
 import { ProductAnalyticsTable } from '@/components/analytics/ProductAnalyticsTable';
 import { SessionsList } from '@/components/analytics/SessionsList';
 import { EventLogTable } from '@/components/analytics/EventLogTable';
+import { useProducts } from '@/hooks/useProducts';
+import { useMemo } from 'react';
+import { Link } from 'react-router-dom';
 
 // Teal Curator chart palette
 const TEAL_DEEP = '#0ab38f';
