@@ -11,6 +11,9 @@ import { SourceFilter } from '@/components/analytics/SourceFilter';
 import { ProductAnalyticsTable } from '@/components/analytics/ProductAnalyticsTable';
 import { SessionsList } from '@/components/analytics/SessionsList';
 import { EventLogTable } from '@/components/analytics/EventLogTable';
+import { useProducts } from '@/hooks/useProducts';
+import { useMemo } from 'react';
+import { Link } from 'react-router-dom';
 
 // Teal Curator chart palette
 const TEAL_DEEP = '#0ab38f';
@@ -98,6 +101,22 @@ const ScanAnalyticsPage = () => {
     clearEvents, clearing,
     exportCsv,
   } = useScanAnalytics();
+  const { products } = useProducts();
+
+  // Lookup map: product_code -> { name, image, slug }
+  const productByCode = useMemo(() => {
+    const map = new Map<string, { name: string; image: string | null; slug: string }>();
+    products.forEach((p) => {
+      if (p.product_code) {
+        map.set(p.product_code, {
+          name: p.name,
+          image: p.images?.[0] ?? null,
+          slug: p.slug,
+        });
+      }
+    });
+    return map;
+  }, [products]);
 
   if (eventsLoading) {
     return (
@@ -221,13 +240,30 @@ const ScanAnalyticsPage = () => {
                   {topProducts.length === 0 ? (
                     <p className="text-sm text-muted-foreground">No data yet</p>
                   ) : (
-                    <div className="space-y-3">
-                      {topProducts.map((p, i) => (
-                        <div key={p.code} className="flex items-center justify-between">
-                          <span className="text-sm text-foreground"><span className="text-muted-foreground mr-2">{i + 1}.</span>{p.code}</span>
-                          <span className="text-sm font-medium text-foreground">{p.count}</span>
-                        </div>
-                      ))}
+                    <div className="space-y-2">
+                      {topProducts.map((p, i) => {
+                        const info = productByCode.get(p.code);
+                        const content = (
+                          <div className="flex items-center gap-3 py-1.5 px-2 -mx-2 rounded-lg hover:bg-[var(--admin-surface-container-high)] transition-colors">
+                            <span className="text-xs font-semibold w-5 shrink-0" style={{ color: 'var(--admin-text-tertiary)' }}>{i + 1}</span>
+                            <div className="w-10 h-10 rounded-md overflow-hidden shrink-0" style={{ background: 'var(--admin-surface-container-high)' }}>
+                              {info?.image ? (
+                                <img src={info.image} alt={info.name} className="w-full h-full object-cover" loading="lazy" />
+                              ) : null}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium truncate" style={{ color: 'var(--admin-text-primary)' }}>{info?.name ?? p.code}</div>
+                              <div className="text-[11px] truncate" style={{ color: 'var(--admin-text-tertiary)' }}>{p.code}</div>
+                            </div>
+                            <span className="text-sm font-semibold tabular-nums" style={{ color: 'var(--admin-primary)' }}>{p.count}</span>
+                          </div>
+                        );
+                        return info ? (
+                          <Link key={p.code} to={`/product/${info.slug}`} target="_blank" rel="noopener">{content}</Link>
+                        ) : (
+                          <div key={p.code}>{content}</div>
+                        );
+                      })}
                     </div>
                   )}
                 </CardContent>
@@ -261,16 +297,31 @@ const ScanAnalyticsPage = () => {
                   ) : pairScores.length === 0 ? (
                     <p className="text-sm text-muted-foreground">No pair scores yet. Click "Aggregate" to compute.</p>
                   ) : (
-                    <div className="space-y-3">
-                      {pairScores.slice(0, 10).map((pair, i) => (
-                        <div key={pair.id} className="flex items-center justify-between text-sm">
-                          <span className="text-foreground"><span className="text-muted-foreground mr-2">{i + 1}.</span>{pair.product_code_a} × {pair.product_code_b}</span>
-                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                            <span>{pair.click_count} clicks</span>
-                            <span className="font-medium text-foreground">{pair.score.toFixed(0)}pts</span>
+                    <div className="space-y-2">
+                      {pairScores.slice(0, 10).map((pair, i) => {
+                        const a = productByCode.get(pair.product_code_a);
+                        const b = productByCode.get(pair.product_code_b);
+                        return (
+                          <div key={pair.id} className="flex items-center gap-3 py-1.5 px-2 -mx-2 rounded-lg hover:bg-[var(--admin-surface-container-high)] transition-colors">
+                            <span className="text-xs font-semibold w-5 shrink-0" style={{ color: 'var(--admin-text-tertiary)' }}>{i + 1}</span>
+                            <div className="flex items-center -space-x-2 shrink-0">
+                              <div className="w-9 h-9 rounded-md overflow-hidden ring-2" style={{ background: 'var(--admin-surface-container-high)', boxShadow: '0 0 0 2px var(--admin-surface-container)' }}>
+                                {a?.image && <img src={a.image} alt={a.name} className="w-full h-full object-cover" loading="lazy" />}
+                              </div>
+                              <div className="w-9 h-9 rounded-md overflow-hidden" style={{ background: 'var(--admin-surface-container-high)', boxShadow: '0 0 0 2px var(--admin-surface-container)' }}>
+                                {b?.image && <img src={b.image} alt={b.name} className="w-full h-full object-cover" loading="lazy" />}
+                              </div>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-xs font-medium truncate" style={{ color: 'var(--admin-text-primary)' }}>
+                                {a?.name ?? pair.product_code_a} <span style={{ color: 'var(--admin-text-tertiary)' }}>×</span> {b?.name ?? pair.product_code_b}
+                              </div>
+                              <div className="text-[11px]" style={{ color: 'var(--admin-text-tertiary)' }}>{pair.click_count} clicks</div>
+                            </div>
+                            <span className="text-sm font-semibold tabular-nums shrink-0" style={{ color: 'var(--admin-primary)' }}>{pair.score.toFixed(0)}</span>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </CardContent>
