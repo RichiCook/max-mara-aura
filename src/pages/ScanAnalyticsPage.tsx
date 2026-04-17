@@ -1,17 +1,82 @@
-import { Link } from 'react-router-dom';
 import { AppHeader } from '@/components/AppHeader';
-import { ArrowLeft, BarChart3, Eye, MousePointerClick, Users, RefreshCw, Loader2, MapPin, Download, Trash2 } from 'lucide-react';
+import { BarChart3, Eye, MousePointerClick, Users, RefreshCw, Loader2, MapPin, Download, Trash2, QrCode } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useScanAnalytics } from '@/hooks/useScanAnalytics';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, AreaChart, Area } from 'recharts';
 import { DateRangeFilter } from '@/components/analytics/DateRangeFilter';
 import { SourceFilter } from '@/components/analytics/SourceFilter';
 import { ProductAnalyticsTable } from '@/components/analytics/ProductAnalyticsTable';
 import { SessionsList } from '@/components/analytics/SessionsList';
 import { EventLogTable } from '@/components/analytics/EventLogTable';
+
+// Teal Curator chart palette
+const TEAL_DEEP = '#0ab38f';
+const TEAL_MID = '#0dc8a3';
+const TEAL_PALE = '#a3e8d6';
+const CORAL = '#ff8670';
+const SLATE = '#4f5d82';
+
+interface MetricCardProps {
+  label: string;
+  value: string | number;
+  Icon: React.ElementType;
+  trend?: { value: number; positive: boolean };
+  spark?: number[];
+  sparkColor?: string;
+}
+
+const MetricCard = ({ label, value, Icon, trend, spark, sparkColor = TEAL_MID }: MetricCardProps) => (
+  <div
+    className="rounded-xl overflow-hidden flex flex-col"
+    style={{
+      background: 'var(--admin-surface-container)',
+      boxShadow: 'var(--admin-shadow-sm)',
+    }}
+  >
+    <div className="flex items-start justify-between px-5 pt-5">
+      <div>
+        <p className="admin-label" style={{ marginBottom: 12 }}>{label}</p>
+        <p className="admin-hero-metric" style={{ fontSize: '2.25rem' }}>{value}</p>
+      </div>
+      <div className="flex flex-col items-end gap-2">
+        <Icon className="w-4 h-4" style={{ color: 'var(--admin-text-tertiary)' }} />
+        {trend && (
+          <span
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold"
+            style={{
+              background: trend.positive ? 'rgba(13, 200, 163, 0.12)' : 'rgba(255, 134, 112, 0.14)',
+              color: trend.positive ? TEAL_DEEP : '#e06650',
+            }}
+          >
+            {trend.positive ? '↗' : '↘'} {Math.abs(trend.value)}%
+          </span>
+        )}
+      </div>
+    </div>
+    {/* Sparkline strip */}
+    <div className="h-12 mt-3">
+      {spark && spark.length > 1 ? (
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={spark.map((v, i) => ({ i, v }))}>
+            <defs>
+              <linearGradient id={`spark-${label}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={sparkColor} stopOpacity={0.35} />
+                <stop offset="100%" stopColor={sparkColor} stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <Area type="monotone" dataKey="v" stroke={sparkColor} strokeWidth={1.5} fill={`url(#spark-${label})`} />
+          </AreaChart>
+        </ResponsiveContainer>
+      ) : (
+        <div className="h-full" style={{ background: `linear-gradient(180deg, ${sparkColor}22, transparent)` }} />
+      )}
+    </div>
+  </div>
+);
+
 
 const ScanAnalyticsPage = () => {
   const {
@@ -42,16 +107,27 @@ const ScanAnalyticsPage = () => {
     );
   }
 
+  // Sparkline data per metric (last N days)
+  const scanSpark = dailyData.map((d) => d.scans ?? 0);
+  const viewSpark = dailyData.map((d) => d.page_views ?? 0);
+  const clickSpark = dailyData.map((d) => d.clicks ?? 0);
+  const leadSpark = dailyData.map((d) => d.leads ?? 0);
+
   return (
     <div className="min-h-screen bg-background">
-      <div className="container max-w-6xl mx-auto px-4 py-8">
+      <div className="container max-w-6xl mx-auto px-4 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-6">
-          <AppHeader>
-            <h1 className="text-2xl font-light text-foreground">Scan Analytics</h1>
-          </AppHeader>
+        <div className="mb-6 lg:hidden">
+          <AppHeader />
         </div>
-        <div className="flex items-center justify-end gap-2 mb-6">
+        <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
+          <div>
+            <h1 className="admin-page-title">Analytics</h1>
+            <p className="text-sm mt-1" style={{ color: 'var(--admin-text-tertiary)' }}>
+              Performance insights and audience engagement metrics.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
             <Button onClick={() => exportCsv()} variant="outline" size="sm" className="gap-1.5">
               <Download className="w-4 h-4" />
               Export CSV
@@ -81,9 +157,10 @@ const ScanAnalyticsPage = () => {
               </AlertDialogContent>
             </AlertDialog>
           </div>
+        </div>
 
         {/* Filters */}
-        <div className="flex flex-wrap items-center gap-4 mb-6">
+        <div className="flex flex-wrap items-center gap-4 mb-8">
           <DateRangeFilter
             datePreset={datePreset}
             setDatePreset={setDatePreset}
@@ -95,25 +172,14 @@ const ScanAnalyticsPage = () => {
           <SourceFilter value={sourceFilter} onChange={setSourceFilter} />
         </div>
 
-        {/* KPI Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2"><BarChart3 className="w-4 h-4" />QR Scans</CardTitle></CardHeader>
-            <CardContent><p className="text-3xl font-bold text-foreground">{totalScans}</p></CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2"><Eye className="w-4 h-4" />Page Views</CardTitle></CardHeader>
-            <CardContent><p className="text-3xl font-bold text-foreground">{totalPageViews}</p></CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2"><MousePointerClick className="w-4 h-4" />Look Clicks</CardTitle></CardHeader>
-            <CardContent><p className="text-3xl font-bold text-foreground">{totalClicks}</p></CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2"><Users className="w-4 h-4" />Lead Captures</CardTitle></CardHeader>
-            <CardContent><p className="text-3xl font-bold text-foreground">{totalLeads}</p></CardContent>
-          </Card>
+        {/* Hero metrics — Teal Curator */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <MetricCard label="Total Scans" value={totalScans.toLocaleString()} Icon={QrCode} spark={scanSpark} sparkColor={TEAL_MID} />
+          <MetricCard label="Page Views" value={totalPageViews.toLocaleString()} Icon={Eye} spark={viewSpark} sparkColor={SLATE} />
+          <MetricCard label="Clicks" value={totalClicks.toLocaleString()} Icon={MousePointerClick} spark={clickSpark} sparkColor={TEAL_DEEP} />
+          <MetricCard label="Leads Generated" value={totalLeads.toLocaleString()} Icon={Users} spark={leadSpark} sparkColor={CORAL} />
         </div>
+
 
         {/* Tabs */}
         <Tabs defaultValue="overview" className="space-y-6">
@@ -137,10 +203,10 @@ const ScanAnalyticsPage = () => {
                       <YAxis tick={{ fontSize: 12 }} className="fill-muted-foreground" />
                       <Tooltip />
                       <Legend />
-                      <Bar dataKey="scans" stackId="a" fill="hsl(142, 71%, 45%)" name="Scans" radius={[0, 0, 0, 0]} />
-                      <Bar dataKey="page_views" stackId="a" fill="hsl(217, 91%, 60%)" name="Page Views" />
-                      <Bar dataKey="clicks" stackId="a" fill="hsl(271, 81%, 56%)" name="Clicks" />
-                      <Bar dataKey="leads" stackId="a" fill="hsl(45, 93%, 47%)" name="Leads" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="scans" stackId="a" fill={TEAL_DEEP} name="Scans" radius={[0, 0, 0, 0]} />
+                      <Bar dataKey="page_views" stackId="a" fill={TEAL_PALE} name="Page Views" />
+                      <Bar dataKey="clicks" stackId="a" fill={SLATE} name="Clicks" />
+                      <Bar dataKey="leads" stackId="a" fill={CORAL} name="Leads" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </CardContent>
