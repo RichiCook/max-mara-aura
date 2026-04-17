@@ -107,16 +107,27 @@ const ScanAnalyticsPage = () => {
     );
   }
 
+  // Sparkline data per metric (last N days)
+  const scanSpark = dailyData.map((d) => d.scans ?? 0);
+  const viewSpark = dailyData.map((d) => d.page_views ?? 0);
+  const clickSpark = dailyData.map((d) => d.clicks ?? 0);
+  const leadSpark = dailyData.map((d) => d.leads ?? 0);
+
   return (
     <div className="min-h-screen bg-background">
-      <div className="container max-w-6xl mx-auto px-4 py-8">
+      <div className="container max-w-6xl mx-auto px-4 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-6">
-          <AppHeader>
-            <h1 className="text-2xl font-light text-foreground">Scan Analytics</h1>
-          </AppHeader>
+        <div className="mb-6 lg:hidden">
+          <AppHeader />
         </div>
-        <div className="flex items-center justify-end gap-2 mb-6">
+        <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
+          <div>
+            <h1 className="admin-page-title">Analytics</h1>
+            <p className="text-sm mt-1" style={{ color: 'var(--admin-text-tertiary)' }}>
+              Performance insights and audience engagement metrics.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
             <Button onClick={() => exportCsv()} variant="outline" size="sm" className="gap-1.5">
               <Download className="w-4 h-4" />
               Export CSV
@@ -146,9 +157,10 @@ const ScanAnalyticsPage = () => {
               </AlertDialogContent>
             </AlertDialog>
           </div>
+        </div>
 
         {/* Filters */}
-        <div className="flex flex-wrap items-center gap-4 mb-6">
+        <div className="flex flex-wrap items-center gap-4 mb-8">
           <DateRangeFilter
             datePreset={datePreset}
             setDatePreset={setDatePreset}
@@ -160,25 +172,14 @@ const ScanAnalyticsPage = () => {
           <SourceFilter value={sourceFilter} onChange={setSourceFilter} />
         </div>
 
-        {/* KPI Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2"><BarChart3 className="w-4 h-4" />QR Scans</CardTitle></CardHeader>
-            <CardContent><p className="text-3xl font-bold text-foreground">{totalScans}</p></CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2"><Eye className="w-4 h-4" />Page Views</CardTitle></CardHeader>
-            <CardContent><p className="text-3xl font-bold text-foreground">{totalPageViews}</p></CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2"><MousePointerClick className="w-4 h-4" />Look Clicks</CardTitle></CardHeader>
-            <CardContent><p className="text-3xl font-bold text-foreground">{totalClicks}</p></CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2"><Users className="w-4 h-4" />Lead Captures</CardTitle></CardHeader>
-            <CardContent><p className="text-3xl font-bold text-foreground">{totalLeads}</p></CardContent>
-          </Card>
+        {/* Hero metrics — Teal Curator */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <MetricCard label="Total Scans" value={totalScans.toLocaleString()} Icon={QrCode} spark={scanSpark} sparkColor={TEAL_MID} />
+          <MetricCard label="Page Views" value={totalPageViews.toLocaleString()} Icon={Eye} spark={viewSpark} sparkColor={SLATE} />
+          <MetricCard label="Clicks" value={totalClicks.toLocaleString()} Icon={MousePointerClick} spark={clickSpark} sparkColor={TEAL_DEEP} />
+          <MetricCard label="Leads Generated" value={totalLeads.toLocaleString()} Icon={Users} spark={leadSpark} sparkColor={CORAL} />
         </div>
+
 
         {/* Tabs */}
         <Tabs defaultValue="overview" className="space-y-6">
@@ -202,10 +203,10 @@ const ScanAnalyticsPage = () => {
                       <YAxis tick={{ fontSize: 12 }} className="fill-muted-foreground" />
                       <Tooltip />
                       <Legend />
-                      <Bar dataKey="scans" stackId="a" fill="hsl(142, 71%, 45%)" name="Scans" radius={[0, 0, 0, 0]} />
-                      <Bar dataKey="page_views" stackId="a" fill="hsl(217, 91%, 60%)" name="Page Views" />
-                      <Bar dataKey="clicks" stackId="a" fill="hsl(271, 81%, 56%)" name="Clicks" />
-                      <Bar dataKey="leads" stackId="a" fill="hsl(45, 93%, 47%)" name="Leads" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="scans" stackId="a" fill={TEAL_DEEP} name="Scans" radius={[0, 0, 0, 0]} />
+                      <Bar dataKey="page_views" stackId="a" fill={TEAL_PALE} name="Page Views" />
+                      <Bar dataKey="clicks" stackId="a" fill={SLATE} name="Clicks" />
+                      <Bar dataKey="leads" stackId="a" fill={CORAL} name="Leads" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </CardContent>
