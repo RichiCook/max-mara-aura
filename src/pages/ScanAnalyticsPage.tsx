@@ -1,17 +1,82 @@
-import { Link } from 'react-router-dom';
 import { AppHeader } from '@/components/AppHeader';
-import { ArrowLeft, BarChart3, Eye, MousePointerClick, Users, RefreshCw, Loader2, MapPin, Download, Trash2 } from 'lucide-react';
+import { BarChart3, Eye, MousePointerClick, Users, RefreshCw, Loader2, MapPin, Download, Trash2, QrCode } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useScanAnalytics } from '@/hooks/useScanAnalytics';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, AreaChart, Area } from 'recharts';
 import { DateRangeFilter } from '@/components/analytics/DateRangeFilter';
 import { SourceFilter } from '@/components/analytics/SourceFilter';
 import { ProductAnalyticsTable } from '@/components/analytics/ProductAnalyticsTable';
 import { SessionsList } from '@/components/analytics/SessionsList';
 import { EventLogTable } from '@/components/analytics/EventLogTable';
+
+// Teal Curator chart palette
+const TEAL_DEEP = '#0ab38f';
+const TEAL_MID = '#0dc8a3';
+const TEAL_PALE = '#a3e8d6';
+const CORAL = '#ff8670';
+const SLATE = '#4f5d82';
+
+interface MetricCardProps {
+  label: string;
+  value: string | number;
+  Icon: React.ElementType;
+  trend?: { value: number; positive: boolean };
+  spark?: number[];
+  sparkColor?: string;
+}
+
+const MetricCard = ({ label, value, Icon, trend, spark, sparkColor = TEAL_MID }: MetricCardProps) => (
+  <div
+    className="rounded-xl overflow-hidden flex flex-col"
+    style={{
+      background: 'var(--admin-surface-container)',
+      boxShadow: 'var(--admin-shadow-sm)',
+    }}
+  >
+    <div className="flex items-start justify-between px-5 pt-5">
+      <div>
+        <p className="admin-label" style={{ marginBottom: 12 }}>{label}</p>
+        <p className="admin-hero-metric" style={{ fontSize: '2.25rem' }}>{value}</p>
+      </div>
+      <div className="flex flex-col items-end gap-2">
+        <Icon className="w-4 h-4" style={{ color: 'var(--admin-text-tertiary)' }} />
+        {trend && (
+          <span
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold"
+            style={{
+              background: trend.positive ? 'rgba(13, 200, 163, 0.12)' : 'rgba(255, 134, 112, 0.14)',
+              color: trend.positive ? TEAL_DEEP : '#e06650',
+            }}
+          >
+            {trend.positive ? '↗' : '↘'} {Math.abs(trend.value)}%
+          </span>
+        )}
+      </div>
+    </div>
+    {/* Sparkline strip */}
+    <div className="h-12 mt-3">
+      {spark && spark.length > 1 ? (
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={spark.map((v, i) => ({ i, v }))}>
+            <defs>
+              <linearGradient id={`spark-${label}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={sparkColor} stopOpacity={0.35} />
+                <stop offset="100%" stopColor={sparkColor} stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <Area type="monotone" dataKey="v" stroke={sparkColor} strokeWidth={1.5} fill={`url(#spark-${label})`} />
+          </AreaChart>
+        </ResponsiveContainer>
+      ) : (
+        <div className="h-full" style={{ background: `linear-gradient(180deg, ${sparkColor}22, transparent)` }} />
+      )}
+    </div>
+  </div>
+);
+
 
 const ScanAnalyticsPage = () => {
   const {
