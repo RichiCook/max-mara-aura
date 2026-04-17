@@ -4,12 +4,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ProductRow } from '@/hooks/useScanAnalytics';
 import { format } from 'date-fns';
 import { Search } from 'lucide-react';
+import { ProductCell, ProductInfo } from './ProductCell';
 
 interface Props {
   rows: ProductRow[];
+  productByCode?: Map<string, ProductInfo>;
 }
 
-export function ProductAnalyticsTable({ rows }: Props) {
+export function ProductAnalyticsTable({ rows, productByCode }: Props) {
   const [search, setSearch] = useState('');
   const [sortKey, setSortKey] = useState<keyof ProductRow>('pageViews');
   const [sortAsc, setSortAsc] = useState(false);
