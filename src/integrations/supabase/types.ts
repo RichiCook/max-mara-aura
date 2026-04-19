@@ -1023,6 +1023,10 @@ export type Database = {
     Functions: {
       clear_scan_events: { Args: never; Returns: undefined }
       generate_short_code: { Args: never; Returns: string }
+      get_integration_secret: {
+        Args: { _integration_id: string }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

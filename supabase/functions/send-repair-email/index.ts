@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -23,6 +24,28 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'No recipient email' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    }
+
+    // Generate signed URLs for repair photos (bucket is private)
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+    const signedPhotoUrls: string[] = [];
+    if (photos && photos.length > 0) {
+      for (const photoPath of photos) {
+        // Backwards compat: if it's already a full URL, pass through
+        if (typeof photoPath === 'string' && /^https?:\/\//i.test(photoPath)) {
+          signedPhotoUrls.push(photoPath);
+          continue;
+        }
+        const { data, error } = await supabase.storage
+          .from('repair-photos')
+          .createSignedUrl(photoPath, 60 * 60 * 24 * 7); // 7 days
+        if (!error && data?.signedUrl) {
+          signedPhotoUrls.push(data.signedUrl);
+        }
+      }
     }
 
     // Build email body based on enabled fields
@@ -57,9 +80,9 @@ serve(async (req) => {
     if (enabledFieldIds.has('date_of_request')) {
       lines.push(`<p><strong>Date:</strong> ${new Date().toISOString().split('T')[0]}</p>`);
     }
-    if (enabledFieldIds.has('damage_photos') && photos && photos.length > 0) {
+    if (enabledFieldIds.has('damage_photos') && signedPhotoUrls.length > 0) {
       lines.push('<p><strong>Photos:</strong></p>');
-      for (const url of photos) {
+      for (const url of signedPhotoUrls) {
         lines.push(`<p><a href="${url}" target="_blank"><img src="${url}" style="max-width:200px;border-radius:4px;margin:4px 0;" /></a></p>`);
       }
     }
