@@ -57,15 +57,17 @@ const RepairRequestSheet = ({ open, onClose, productName, productCode, productId
     if (!selectedDamage) return;
     setSubmitting(true);
     try {
-      // Upload photos
+      // Upload photos — store the storage path; email function will generate signed URLs
       const photoUrls: string[] = [];
       for (const photo of photos) {
         const ext = photo.file.name.split('.').pop();
         const path = `${crypto.randomUUID()}.${ext}`;
-        const { error } = await supabase.storage.from('repair-photos').upload(path, photo.file);
+        const { error } = await supabase.storage.from('repair-photos').upload(path, photo.file, {
+          contentType: photo.file.type,
+          upsert: false,
+        });
         if (!error) {
-          const { data } = supabase.storage.from('repair-photos').getPublicUrl(path);
-          photoUrls.push(data.publicUrl);
+          photoUrls.push(path);
         }
       }
 
