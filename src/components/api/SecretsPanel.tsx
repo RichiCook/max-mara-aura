@@ -191,16 +191,14 @@ const SecretsPanel = () => {
       <ImageProviderCard />
 
       <div className="grid gap-6 md:grid-cols-2">
-        {/* Lovable AI */}
+        {/* AI Text */}
         <SecretCard
-          title="Lovable AI (Text)"
+          title="AI Text Generation"
           description="Powers AI text generation and look descriptions"
           icon={<Bot className="h-5 w-5" />}
           status="auto_managed"
-          helpText="Learn more about Lovable AI"
-          helpUrl="https://docs.lovable.dev/features/ai"
           canUpdate={false}
-          storageNote="This key is automatically managed by Lovable Cloud and cannot be modified."
+          storageNote="Managed by the platform and cannot be modified."
         />
 
         {/* Resend */}
@@ -213,7 +211,7 @@ const SecretsPanel = () => {
           helpUrl="https://resend.com/api-keys"
           helpText="Get your Resend API key"
           canUpdate={true}
-          storageNote="Stored securely in Lovable Cloud. Contact support to update."
+          storageNote="Stored securely in the platform vault. Contact support to update."
         />
 
         {/* Firecrawl */}

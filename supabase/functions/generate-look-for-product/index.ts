@@ -714,7 +714,7 @@ RESPOND WITH ONLY A JSON OBJECT (no markdown, no explanation):
       }
       if (aiResponse.status === 402) {
         return new Response(
-          JSON.stringify({ error: 'Payment required. Please add funds to your Lovable AI workspace.' }),
+          JSON.stringify({ error: 'AI service quota exceeded. Please contact support.' }),
           { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }

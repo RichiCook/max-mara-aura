@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
 
     const upstream = await fetch(parsedTarget.toString(), {
       headers: {
-        'user-agent': 'Mozilla/5.0 (compatible; Lovable Export Proxy)',
+        'user-agent': 'Mozilla/5.0 (compatible; AitemsProxy)',
         'accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
         'referer': `${parsedTarget.origin}/`,
       },
