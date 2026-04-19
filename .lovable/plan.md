@@ -1,72 +1,72 @@
 
 
 ## Goal
-Strip every visible/source reference to "Lovable" from the project so a competitor inspecting the site, viewing source, or reading the codebase can't tell what built it. Keep the underlying functionality intact (the AI gateway and Cloud still work — only labels and exposed strings change).
+Close the real abuse vectors flagged by the security scan without breaking the public DPP experience (which legitimately needs unauthenticated read access to products/activations/looks and unauthenticated lead/repair submissions from QR scans).
 
-## What stays (technical, non-revealing)
-These MUST stay or things break, but none of them surface "Lovable" to a visitor:
-- `LOVABLE_API_KEY` env var name and `https://ai.gateway.lovable.dev/...` calls inside edge functions (server-side only, never reaches the browser).
-- The `lovable-tagger` dev dependency in `package.json` — only loaded in `mode === "development"`, never in the production build.
-- `.lovable/` internal memory folder (not shipped).
+## What I will fix
 
-## What gets removed/renamed (visible surface)
+### 1. Repair photos bucket — currently anyone can dump arbitrary files
+- Make `repair-photos` bucket **private** (it's currently public).
+- Restrict INSERT to: file path under a generated submission folder + size ≤ 5 MB + MIME type in `image/jpeg`, `image/png`, `image/webp`, `image/heic`.
+- Keep admin SELECT; remove public SELECT (the edge function `send-repair-email` already runs as service role, so it can still read).
+- Update the upload code in the repair flow to use a signed URL when the admin needs to view a photo.
 
-### A. Public HTML — `index.html`
-- `<meta name="author" content="Lovable">` → `<meta name="author" content="Christian Louboutin">`
-- `<meta name="twitter:site" content="@Lovable">` → remove the tag entirely (no Twitter handle to substitute)
-- Two OG/Twitter image URLs that point at `…lovable.app-…png` on R2 → re-host or replace. Plan: download the current OG image once, re-upload to Supabase Storage under a neutral path (e.g. `public-assets/og-cover.png`), and swap both `<meta>` URLs to that public Supabase URL. Falls back to `/favicon.png` if upload isn't possible.
+### 2. Look-images bucket — anon upload abuse
+- Drop the `Anon can upload look images` policy. Look generation runs server-side via the `generate-look-image` edge function (service role), so anonymous browser uploads are not needed.
+- Keep public SELECT (look images are shown on public product pages).
 
-### B. Admin UI — `src/components/api/SecretsPanel.tsx`
-- "Lovable AI (Text)" → "AI Text Generation"
-- Description "Powers AI text generation…" stays
-- helpText "Learn more about Lovable AI" → remove (drop the `helpText`/`helpUrl` props)
-- storageNote "automatically managed by Lovable Cloud…" → "Managed by the platform and cannot be modified."
-- Resend storageNote "Stored securely in Lovable Cloud…" → "Stored securely in the platform vault. Contact support to update."
+### 3. Public bucket listing (linter warns 3 buckets allow listing)
+- Tighten the public SELECT policies on `branding`, `look-images`, `campaign-assets` to require an explicit `name` match pattern instead of bucket-wide listing. Practically: keep `bucket_id = 'X'` SELECT (needed to fetch by URL), but add per-bucket configuration to disable listing via `storage.buckets.public = true` + path-scoped policies. The simplest fix that addresses the linter: replace the broad SELECT with a policy that allows reading any object in the bucket but blocks `LIST` operations (which require a different permission pattern). I'll implement this by keeping read-by-key and not granting listing.
 
-### C. Export PDF fallback — `src/utils/exportUtils.ts`
-- `baseUrl || 'https://loubotin.lovable.app'` → `baseUrl || 'https://louboutin.aitems.dev'` (the custom domain you already own, per project URLs).
+### 4. Leads table — anonymous flood / spam protection
+- Add input length CHECK constraints: `email ≤ 255`, `name ≤ 100`, `phone ≤ 32`, `reward_code ≤ 64`.
+- Add a per-IP-less rate guard via a trigger that rejects more than N inserts per minute using a small counter table (lightweight, no extra service).
+- Hide `reward_code` from any anon SELECT (no SELECT policy exists for anon currently — confirmed — so this is already safe; just adding length limits).
 
-### D. README — `README.md`
-- Replace the entire contents with a short, neutral project README:
-  ```
-  # Christian Louboutin × Aura
-  Digital Product Passport platform.
-  
-  ## Stack
-  Vite · React · TypeScript · Tailwind · shadcn/ui · Supabase
-  
-  ## Local development
-  npm i
-  npm run dev
-  ```
-  No mention of how it was built or where it's hosted.
+### 5. Repair requests — same hardening
+- Add length CHECK constraints on `user_name (100)`, `user_email (255)`, `city (100)`, `country (100)`, plus the message/notes fields.
+- Add the same per-minute insert rate guard trigger.
+- Note re: PII scoping — the form is consumer-facing from a QR scan, users are not logged in, so we can't add `user_id`. PII access stays admin-only (already the case).
 
-### E. Edge function User-Agent strings (low priority but visible to scraped sites)
-- `supabase/functions/scrape-campaigns/index.ts` UA `"Mozilla/5.0 (compatible; Lovable Campaign Scraper)"` → `"Mozilla/5.0 (compatible; AitemsBot)"`
-- `supabase/functions/export-image-proxy/index.ts` UA `"Mozilla/5.0 (compatible; Lovable Export Proxy)"` → `"Mozilla/5.0 (compatible; AitemsProxy)"`
-- Edge-function error message "Please add funds to your Lovable AI workspace." (in `generate-look-for-product` and `generate-looks`) → "AI service quota exceeded. Please contact support."
+### 6. Scan events / product_views / recommendation_clicks — analytics tables
+- Add length limits on text fields (`product_code`, `session_id`, `source`, `referrer`) to prevent payload bloating.
+- Add insert rate guard (per minute per session_id).
 
-### F. Already handled
-- "Edit with Lovable" badge on the published site is already hidden (verified via publish settings — `hide_badge: true`). No action needed.
+### 7. API integrations table (admin-only, but hardening)
+- Move `api_key` reads behind a security-definer function `get_integration_secret(integration_id)` that only returns the key to admins via edge functions. Frontend admin UI keeps showing masked values only.
+- Mark the `api_key` column as not selectable by default by revoking column-level SELECT from `authenticated` and `anon`, granting only to `service_role`.
 
-## What we deliberately do NOT touch
-- `package.json` / `package-lock.json` `lovable-tagger` entries — removing it would break dev tooling. It is dev-only, tree-shaken out of production bundles, and never appears in the live HTML/JS a competitor can inspect.
-- Edge-function internals (`LOVABLE_API_KEY`, `ai.gateway.lovable.dev`) — server-side only. A competitor viewing the deployed site cannot see these. Renaming the env var requires re-provisioning and would break the AI gateway.
-- `.lovable/` memory directory — internal, not deployed.
+### 8. Auth hardening
+- Enable **Leaked Password Protection (HIBP)** on the auth provider. Currently disabled.
+- Confirm OTP expiry is at the recommended 1 hour (not the 24h default).
 
-## Files changed
-1. `index.html` — meta tags + OG image URLs
-2. `src/components/api/SecretsPanel.tsx` — labels and storage notes
-3. `src/utils/exportUtils.ts` — fallback URL
-4. `README.md` — full rewrite
-5. `supabase/functions/scrape-campaigns/index.ts` — User-Agent
-6. `supabase/functions/export-image-proxy/index.ts` — User-Agent
-7. `supabase/functions/generate-look-for-product/index.ts` — error message
-8. `supabase/functions/generate-looks/index.ts` — error message
+### 9. What I will NOT change (and why)
+- **SELECT `USING (true)` on products / activations / looks / carousels / celebrity_content / campaign_assets / app_settings / platform_settings** — these are intentionally public for the unauthenticated DPP experience. The scanner flags them as a pattern, but they're correct. I'll mark these findings as "ignore" with a clear reason.
+- **Public anonymous INSERTs** on `leads`, `repair_requests`, `scan_events` — required for QR-scan flows where users aren't logged in. Mitigation is via length limits + rate guard above, not removal.
 
-## Note on the "lovable.app" OG image URL
-The current OG image is hosted at a `…lovable.app-….png` filename on R2. Even though the domain is `pub-…r2.dev`, the *filename* contains "lovable.app". I'll re-host it to a Supabase Storage public URL with a clean filename so the OG preview a competitor sees on social shares contains zero "lovable" strings.
+## Files / changes
 
-## Honest caveat
-After these changes, the *deployed* site (HTML, JS bundles, network responses, OG previews) will contain no "Lovable" references. The GitHub repo will still contain `lovable-tagger` in `package.json` and the edge-function `LOVABLE_API_KEY`/`ai.gateway.lovable.dev` strings — these are unavoidable without breaking the build. If the repo is private, competitors can't see them. If the repo is public, full obfuscation isn't possible without re-architecting the AI calls through a self-hosted proxy.
+**Database migration** (one migration covering all SQL changes):
+- Bucket privacy + storage policy rewrites (repair-photos, look-images)
+- CHECK constraints on `leads`, `repair_requests`, `scan_events`, `product_views`, `recommendation_clicks`
+- Rate-limit trigger function `public.enforce_insert_rate_limit()` + per-table BEFORE INSERT triggers
+- Column-level grants on `api_integrations.api_key`
+- New `public.get_integration_secret(uuid)` security-definer function
+
+**Edge function updates**:
+- `send-repair-email/index.ts` — use service-role signed URL when including photo links in admin emails (since bucket goes private)
+- `capture-lead/index.ts` — surface friendly error when rate-limit trigger fires
+
+**Auth config**:
+- Enable HIBP password check via auth settings
+- Set OTP expiry to 1 hour
+
+**No changes to**:
+- The DPP product page, activations, lead capture form UI (server enforces limits; UI already validates with Zod)
+
+## Outcome
+- Scanner: drops from **13 findings** to ~**0–2 informational**. The 5 "RLS policy always true" SELECT findings on public content will be marked "ignore" with documented reasoning (they are intentional for the public DPP).
+- Linter: 3 storage warnings cleared, 5 RLS warnings cleared (those that are on INSERT/UPDATE will be tightened; SELECT-public ones marked as accepted).
+- DPP user experience: unchanged.
+- Admin experience: unchanged except repair photos now load via short-lived signed URLs.
 
