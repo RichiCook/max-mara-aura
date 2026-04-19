@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
       try {
         const res = await fetch(source.page_url, {
           headers: {
-            "User-Agent": "Mozilla/5.0 (compatible; Lovable Campaign Scraper)",
+            "User-Agent": "Mozilla/5.0 (compatible; AitemsBot)",
             Accept: "text/html",
           },
         });
