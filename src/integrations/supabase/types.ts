@@ -884,6 +884,7 @@ export type Database = {
           status: string
           updated_at: string
           user_email: string | null
+          user_id: string | null
           user_name: string | null
           warranty_status: string | null
         }
@@ -900,6 +901,7 @@ export type Database = {
           status?: string
           updated_at?: string
           user_email?: string | null
+          user_id?: string | null
           user_name?: string | null
           warranty_status?: string | null
         }
@@ -916,6 +918,7 @@ export type Database = {
           status?: string
           updated_at?: string
           user_email?: string | null
+          user_id?: string | null
           user_name?: string | null
           warranty_status?: string | null
         }
