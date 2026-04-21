@@ -3,7 +3,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
+import AitemzDashboard from "./pages/AitemzDashboard";
+import ImportPage from "./pages/ImportPage";
 import NotFound from "./pages/NotFound";
 import ProductPage from "./pages/ProductPage";
 import ProductEditPage from "./pages/ProductEditPage";
@@ -51,7 +52,8 @@ const App = () => (
           <Route path="/auth" element={<PlatformSettingsProvider><AuthPage /></PlatformSettingsProvider>} />
           
           {/* Protected dashboard routes — Teal Curator admin theme */}
-          <Route path="/" element={<Admin><Index /></Admin>} />
+          <Route path="/" element={<Admin><AitemzDashboard /></Admin>} />
+          <Route path="/import" element={<Admin><ImportPage /></Admin>} />
           <Route path="/product/:slug/edit" element={<Admin><ProductEditPage /></Admin>} />
           <Route path="/activations" element={<Admin><ActivationsPage /></Admin>} />
           <Route path="/looks" element={<Admin><LooksPage /></Admin>} />

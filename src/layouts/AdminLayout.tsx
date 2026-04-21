@@ -27,7 +27,7 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
     <div className="admin-theme min-h-screen bg-background text-foreground">
       <AdminSidebar />
       {/* Main content offset for sticky sidebar on lg+ */}
-      <div className="lg:pl-[240px]">{children}</div>
+      <div className="lg:pl-[260px]">{children}</div>
     </div>
   );
 };
