@@ -40,6 +40,32 @@ const SettingsPage = () => {
   const [shopifyEmbed, setShopifyEmbed] = useState(true);
   const [logoHeight, setLogoHeight] = useState(32);
   const [logoPosition, setLogoPosition] = useState<'left' | 'center'>('left');
+  const [productPageVersion, setProductPageVersion] = useState<'classic' | 'editorial'>('classic');
+
+  // Load product page version
+  useEffect(() => {
+    supabase.from('app_settings').select('value').eq('id', 'product_page_version').single()
+      .then(({ data }) => {
+        const v = (data?.value as { version?: string } | null)?.version;
+        if (v === 'editorial' || v === 'classic') setProductPageVersion(v);
+      });
+  }, []);
+
+  const handleProductPageVersionToggle = async (useEditorial: boolean) => {
+    const version = useEditorial ? 'editorial' : 'classic';
+    setProductPageVersion(version);
+    try {
+      await supabase.from('app_settings').upsert({
+        id: 'product_page_version',
+        value: { version } as any,
+        updated_at: new Date().toISOString(),
+      });
+      toast({ title: useEditorial ? 'Product page → Editorial' : 'Product page → Classic' });
+    } catch {
+      toast({ title: 'Failed to update setting', variant: 'destructive' });
+      setProductPageVersion(useEditorial ? 'classic' : 'editorial');
+    }
+  };
 
   // Load logo display settings
   useEffect(() => {
