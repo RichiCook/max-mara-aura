@@ -16,15 +16,19 @@ const CARD_SIZES = {
 };
 
 const ProductCarousels = ({ product, position = 'below_product_info' }: ProductCarouselsProps) => {
-  const { carouselsWithProducts, loading } = useProductCarousels(product);
+  const { carouselsWithProducts, loading, skeletons } = useProductCarousels(product);
 
   const filtered = carouselsWithProducts.filter(c => (c.display_position || 'below_product_info') === position);
+  const filteredSkeletons = (skeletons || []).filter(c => (c.display_position || 'below_product_info') === position);
 
-  if (import.meta.env.DEV && position === 'below_product_info') {
-    console.log(`[Carousels] position=${position}, total=${carouselsWithProducts.length}, filtered=${filtered.length}, loading=${loading}`);
-    carouselsWithProducts.forEach(c => {
-      console.log(`  → ${c.name}: ${c.products.length} products, position=${c.display_position}, match=${c.match_reason}`);
-    });
+  if (loading && filteredSkeletons.length > 0) {
+    return (
+      <>
+        {filteredSkeletons.map(c => (
+          <CarouselSkeleton key={`sk-${c.id}`} carousel={c} />
+        ))}
+      </>
+    );
   }
 
   if (loading || filtered.length === 0) return null;
@@ -35,6 +39,39 @@ const ProductCarousels = ({ product, position = 'below_product_info' }: ProductC
         <CarouselSection key={carousel.id} carousel={carousel} sourceProductId={product.id} />
       ))}
     </>
+  );
+};
+
+const CarouselSkeleton = ({ carousel }: { carousel: CarouselWithProducts }) => {
+  const cardSize = CARD_SIZES[carousel.layout.card_size] || CARD_SIZES.small;
+  const displayTitle = carousel.dynamic_title || carousel.name;
+  return (
+    <section className="py-8 border-t border-border">
+      <div className="px-5 mb-4">
+        <h2
+          className="text-xl sm:text-2xl m-0"
+          style={{ fontFamily: "'Cormorant Garamond', serif", color: '#1a1a1a', fontWeight: 300 }}
+        >
+          {displayTitle}
+        </h2>
+        <p className="font-sans text-[10px] tracking-wide text-muted-foreground m-0 mt-1 italic">
+          A curated selection chosen to complement this piece
+        </p>
+      </div>
+      <div className="flex overflow-hidden" style={{ gap: 10, padding: '0 20px' }}>
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="shrink-0" style={{ minWidth: cardSize.minWidth, maxWidth: cardSize.maxWidth }}>
+            <div className="rounded-lg overflow-hidden bg-card">
+              <div className={`${cardSize.aspectClass} bg-secondary animate-pulse`} />
+              <div className="p-2 pb-2.5 space-y-1.5">
+                <div className="h-2.5 bg-secondary rounded animate-pulse w-3/4" />
+                <div className="h-2 bg-secondary rounded animate-pulse w-1/3" />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 };
 

@@ -128,12 +128,16 @@ export const useCarouselDefinitions = () => {
 export const useProductCarousels = (product: Product | null) => {
   const [carouselsWithProducts, setCarouselsWithProducts] = useState<CarouselWithProducts[]>([]);
   const [loading, setLoading] = useState(true);
+  const [skeletons, setSkeletons] = useState<CarouselWithProducts[]>([]);
 
   useEffect(() => {
     if (!product) { setLoading(false); return; }
+    let cancelled = false;
 
     const resolve = async () => {
       setLoading(true);
+      setCarouselsWithProducts([]);
+      setSkeletons([]);
 
       const { data: carousels } = await supabase
         .from('product_carousels')
@@ -141,24 +145,41 @@ export const useProductCarousels = (product: Product | null) => {
         .eq('is_active', true)
         .order('display_order', { ascending: true });
 
+      if (cancelled) return;
       if (!carousels || carousels.length === 0) {
         setCarouselsWithProducts([]);
         setLoading(false);
         return;
       }
 
-      // Filter by show_on_categories
       const productCategory = product.category || '';
       const filtered = carousels.filter(c => {
         const cats = (c as any).show_on_categories || ['all'];
         return cats.includes('all') || cats.some((cat: string) => productCategory.toLowerCase().includes(cat.toLowerCase()));
       });
 
-      const sessionId = sessionStorage.getItem('scan_session_id') || '';
-      const results: CarouselWithProducts[] = [];
+      const normalize = (carousel: any, extra: Partial<CarouselWithProducts> = {}): CarouselWithProducts => ({
+        ...carousel,
+        match_config: (carousel.match_config || {}) as Record<string, any>,
+        layout: (carousel.layout || { card_size: 'small', columns: 4 }) as CarouselDefinition['layout'],
+        show_on_categories: carousel.show_on_categories || ['all'],
+        display_position: carousel.display_position || 'below_product_info',
+        min_products: carousel.min_products ?? 3,
+        sort_by: carousel.sort_by || 'newest',
+        exclude_current: carousel.exclude_current !== false,
+        target_category: carousel.target_category || 'same',
+        target_attribute_overrides: (carousel.target_attribute_overrides || {}) as Record<string, any>,
+        fallback_behavior: carousel.fallback_behavior || 'use_match_type',
+        products: [],
+        ...extra,
+      });
 
-      // Resolve via edge function
-      for (const carousel of filtered) {
+      // Show skeletons immediately for all candidate carousels
+      setSkeletons(filtered.map(c => normalize(c)));
+
+      const sessionId = sessionStorage.getItem('scan_session_id') || '';
+
+      const settled = await Promise.all(filtered.map(async (carousel) => {
         try {
           const { data, error } = await supabase.functions.invoke('get-recommendations', {
             body: {
@@ -168,11 +189,10 @@ export const useProductCarousels = (product: Product | null) => {
               limit: (carousel.match_config as any)?.max_items || 12,
             },
           });
-
-          if (error || !data?.products) continue;
+          if (error || !data?.products) return null;
 
           const minProducts = (carousel as any).min_products ?? 3;
-          if (data.products.length < minProducts) continue;
+          if (data.products.length < minProducts) return null;
 
           const products = data.products.map((p: any) => ({
             ...p,
@@ -181,18 +201,7 @@ export const useProductCarousels = (product: Product | null) => {
             you_may_also_like: Array.isArray(p.you_may_also_like) ? p.you_may_also_like : [],
           }));
 
-          results.push({
-            ...carousel,
-            match_config: (carousel.match_config || {}) as Record<string, any>,
-            layout: (carousel.layout || { card_size: 'small', columns: 4 }) as CarouselDefinition['layout'],
-            show_on_categories: (carousel as any).show_on_categories || ['all'],
-            display_position: (carousel as any).display_position || 'below_product_info',
-            min_products: (carousel as any).min_products ?? 3,
-            sort_by: (carousel as any).sort_by || 'newest',
-            exclude_current: (carousel as any).exclude_current !== false,
-            target_category: carousel.target_category || 'same',
-            target_attribute_overrides: (carousel.target_attribute_overrides || {}) as Record<string, any>,
-            fallback_behavior: carousel.fallback_behavior || 'use_match_type',
+          return normalize(carousel, {
             products,
             match_reason: data.match_reason,
             dynamic_title: data.dynamic_title || null,
@@ -200,17 +209,22 @@ export const useProductCarousels = (product: Product | null) => {
           });
         } catch (err) {
           console.error(`Carousel ${carousel.name} failed:`, err);
+          return null;
         }
-      }
+      }));
 
+      if (cancelled) return;
+      const results = settled.filter((c): c is CarouselWithProducts => c !== null);
       setCarouselsWithProducts(results);
+      setSkeletons([]);
       setLoading(false);
     };
 
     resolve();
+    return () => { cancelled = true; };
   }, [product?.id]);
 
-  return { carouselsWithProducts, loading };
+  return { carouselsWithProducts, loading, skeletons };
 };
 
 /** Track a recommendation click */
