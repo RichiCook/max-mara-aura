@@ -50,21 +50,16 @@ const CarouselSection = ({ carousel, sourceProductId }: { carousel: CarouselWith
 
   return (
     <section className="py-8 border-t border-border">
-      <div className="px-5 mb-4 flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-foreground opacity-50">
-            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
-          </svg>
-          <h2
-            className="text-xl sm:text-2xl m-0"
-            style={{ fontFamily: "'Cormorant Garamond', serif", color: '#1a1a1a', fontWeight: 300 }}
-          >
-            {displayTitle}
-          </h2>
-        </div>
-        <span className="font-sans text-[11px] text-muted-foreground">
-          {carousel.match_reason || carousel.match_type}
-        </span>
+      <div className="px-5 mb-4">
+        <h2
+          className="text-xl sm:text-2xl m-0"
+          style={{ fontFamily: "'Cormorant Garamond', serif", color: '#1a1a1a', fontWeight: 300 }}
+        >
+          {displayTitle}
+        </h2>
+        <p className="font-sans text-[10px] tracking-wide text-muted-foreground m-0 mt-1 italic">
+          A curated selection chosen to complement this piece
+        </p>
       </div>
 
       <div
