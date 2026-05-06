@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import AitemzDashboard from "./pages/AitemzDashboard";
 import ImportPage from "./pages/ImportPage";
 import NotFound from "./pages/NotFound";
-import ProductPage from "./pages/ProductPage";
+import ProductPageRouter from "./pages/ProductPageRouter";
 import ProductEditPage from "./pages/ProductEditPage";
 import ActivationsPage from "./pages/ActivationsPage";
 import ShortUrlRedirect from "./pages/ShortUrlRedirect";
