@@ -486,6 +486,8 @@ const CarouselSettingsPage = () => {
           </div>
         </header>
 
+        <ShowPricesToggle />
+
         {carousels.length === 0 ? (
           <Card><CardContent className="py-12 text-center">
             <p className="text-muted-foreground mb-4">No carousels configured yet</p>
