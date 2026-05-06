@@ -55,7 +55,10 @@ const CarouselSection = ({ carousel, sourceProductId }: { carousel: CarouselWith
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-foreground opacity-50">
             <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
           </svg>
-          <h2 className="font-serif text-xl font-semibold text-foreground m-0">
+          <h2
+            className="text-xl sm:text-2xl font-light m-0"
+            style={{ fontFamily: "'Cormorant Garamond', serif", color: '#1a1a1a' }}
+          >
             {displayTitle}
           </h2>
         </div>
