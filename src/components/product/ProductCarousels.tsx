@@ -98,6 +98,7 @@ const CarouselSection = ({ carousel, sourceProductId }: { carousel: CarouselWith
   const displayTitle = carousel.dynamic_title || carousel.name;
   const firstRuleId = carousel.matched_rule_ids?.[0] || null;
   const { getProductUrl, isExternal } = useProductLinkDestination();
+  const showPrices = useCarouselShowPrices();
 
   const handleClick = (targetId: string) => {
     trackRecommendationClick(sourceProductId, targetId, carousel.id, firstRuleId);
