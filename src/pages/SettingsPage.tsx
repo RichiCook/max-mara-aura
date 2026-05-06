@@ -686,7 +686,34 @@ const SettingsPage = () => {
             </CardContent>
           </Card>
 
-          {/* Resale Sharing */}
+          {/* Product Page Version */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Type className="w-5 h-5" />
+                Product Page Version
+              </CardTitle>
+              <CardDescription>
+                Switch between the Classic product page and the new Editorial Boutique layout. Changes apply instantly with no deploy required.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="productPageVersion">Use Editorial layout</Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Currently: <span className="font-medium">{productPageVersion === 'editorial' ? 'Editorial' : 'Classic'}</span>
+                  </p>
+                </div>
+                <Switch
+                  id="productPageVersion"
+                  checked={productPageVersion === 'editorial'}
+                  onCheckedChange={handleProductPageVersionToggle}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
