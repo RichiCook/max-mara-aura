@@ -1,8 +1,26 @@
 import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { useProductCarousels, CarouselWithProducts, trackRecommendationClick } from '@/hooks/useProductCarousels';
 import { Product } from '@/hooks/useProducts';
 import { getFlatLayImage, filterImagesBySku } from '@/utils/imageUtils';
 import { useProductLinkDestination } from '@/hooks/useProductLinkDestination';
+import { supabase } from '@/integrations/supabase/client';
+
+const useCarouselShowPrices = () => {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    supabase
+      .from('app_settings')
+      .select('value')
+      .eq('id', 'carousel_show_prices')
+      .maybeSingle()
+      .then(({ data }) => {
+        const val = data?.value as any;
+        if (val?.enabled === true) setShow(true);
+      });
+  }, []);
+  return show;
+};
 
 interface ProductCarouselsProps {
   product: Product;
@@ -80,6 +98,7 @@ const CarouselSection = ({ carousel, sourceProductId }: { carousel: CarouselWith
   const displayTitle = carousel.dynamic_title || carousel.name;
   const firstRuleId = carousel.matched_rule_ids?.[0] || null;
   const { getProductUrl, isExternal } = useProductLinkDestination();
+  const showPrices = useCarouselShowPrices();
 
   const handleClick = (targetId: string) => {
     trackRecommendationClick(sourceProductId, targetId, carousel.id, firstRuleId);
@@ -128,7 +147,7 @@ const CarouselSection = ({ carousel, sourceProductId }: { carousel: CarouselWith
                 </div>
                 <div className="p-2 pb-2.5">
                   <p className="font-sans text-[11px] font-medium text-foreground m-0 truncate">{p.name}</p>
-                  {p.price && <p className="font-sans text-[11px] text-muted-foreground m-0 mt-0.5">{p.price}</p>}
+                  {showPrices && p.price && <p className="font-sans text-[11px] text-muted-foreground m-0 mt-0.5">{p.price}</p>}
                   {carousel.layout.card_size === 'large' && p.description && (
                     <p className="font-sans text-[10px] text-muted-foreground m-0 mt-1 line-clamp-2">{p.description}</p>
                   )}

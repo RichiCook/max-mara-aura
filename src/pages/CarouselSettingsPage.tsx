@@ -386,6 +386,47 @@ const CarouselRulesTab = ({
   );
 };
 
+// ─── Show Prices Toggle ───
+const ShowPricesToggle = () => {
+  const [enabled, setEnabled] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    supabase
+      .from('app_settings')
+      .select('value')
+      .eq('id', 'carousel_show_prices')
+      .maybeSingle()
+      .then(({ data }) => {
+        const val = data?.value as any;
+        setEnabled(val?.enabled === true);
+        setLoaded(true);
+      });
+  }, []);
+
+  const handleChange = async (v: boolean) => {
+    setEnabled(v);
+    await supabase.from('app_settings').upsert({
+      id: 'carousel_show_prices',
+      value: { enabled: v } as any,
+      updated_at: new Date().toISOString(),
+    } as any);
+  };
+
+  if (!loaded) return null;
+  return (
+    <Card className="mb-4">
+      <CardContent className="py-4 flex items-center justify-between">
+        <div>
+          <Label className="text-sm font-medium">Show prices in carousels</Label>
+          <p className="text-xs text-muted-foreground mt-0.5">When off, product prices are hidden in all recommendation carousels.</p>
+        </div>
+        <Switch checked={enabled} onCheckedChange={handleChange} />
+      </CardContent>
+    </Card>
+  );
+};
+
 // ─── Main Page ───
 const CarouselSettingsPage = () => {
   const { carousels, loading, createCarousel, updateCarousel, deleteCarousel, refetch, installEssentials } = useCarouselDefinitions();
@@ -485,6 +526,8 @@ const CarouselSettingsPage = () => {
             </div>
           </div>
         </header>
+
+        <ShowPricesToggle />
 
         {carousels.length === 0 ? (
           <Card><CardContent className="py-12 text-center">
