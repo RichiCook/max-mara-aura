@@ -1,8 +1,26 @@
 import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { useProductCarousels, CarouselWithProducts, trackRecommendationClick } from '@/hooks/useProductCarousels';
 import { Product } from '@/hooks/useProducts';
 import { getFlatLayImage, filterImagesBySku } from '@/utils/imageUtils';
 import { useProductLinkDestination } from '@/hooks/useProductLinkDestination';
+import { supabase } from '@/integrations/supabase/client';
+
+const useCarouselShowPrices = () => {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    supabase
+      .from('app_settings')
+      .select('value')
+      .eq('id', 'carousel_show_prices')
+      .maybeSingle()
+      .then(({ data }) => {
+        const val = data?.value as any;
+        if (val?.enabled === true) setShow(true);
+      });
+  }, []);
+  return show;
+};
 
 interface ProductCarouselsProps {
   product: Product;
