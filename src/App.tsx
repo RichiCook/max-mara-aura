@@ -48,7 +48,7 @@ const App = () => (
           <Route path="/p/:code" element={<ShortUrlRedirect />} />
           
           {/* All other routes wrapped in PlatformSettingsProvider */}
-          <Route path="/product/:slug" element={<PlatformSettingsProvider><ProductPage /></PlatformSettingsProvider>} />
+          <Route path="/product/:slug" element={<PlatformSettingsProvider><ProductPageRouter /></PlatformSettingsProvider>} />
           <Route path="/auth" element={<PlatformSettingsProvider><AuthPage /></PlatformSettingsProvider>} />
           
           {/* Protected dashboard routes — Teal Curator admin theme */}
