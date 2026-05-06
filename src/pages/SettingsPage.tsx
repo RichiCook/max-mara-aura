@@ -820,25 +820,63 @@ const SettingsPage = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  try {
-                    localStorage.clear();
-                    sessionStorage.clear();
-                    if ('caches' in window) {
-                      caches.keys().then(names => names.forEach(name => caches.delete(name)));
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    try {
+                      localStorage.clear();
+                      sessionStorage.clear();
+                      if ('caches' in window) {
+                        caches.keys().then(names => names.forEach(name => caches.delete(name)));
+                      }
+                      toast({ title: 'Cache cleared', description: 'All local caches have been cleared. The page will reload.' });
+                      setTimeout(() => window.location.reload(), 1200);
+                    } catch {
+                      toast({ title: 'Error', description: 'Failed to clear cache', variant: 'destructive' });
                     }
-                    toast({ title: 'Cache cleared', description: 'All local caches have been cleared. The page will reload.' });
-                    setTimeout(() => window.location.reload(), 1200);
-                  } catch {
-                    toast({ title: 'Error', description: 'Failed to clear cache', variant: 'destructive' });
-                  }
-                }}
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Clear All Cache
-              </Button>
+                  }}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Clear Local Cache
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={async () => {
+                    try {
+                      // List and delete all generated atelier composition images from storage
+                      let allFiles: string[] = [];
+                      let offset = 0;
+                      const pageSize = 1000;
+                      // paginate
+                      while (true) {
+                        const { data, error } = await supabase
+                          .storage
+                          .from('look-images')
+                          .list('compositions', { limit: pageSize, offset });
+                        if (error) throw error;
+                        if (!data || data.length === 0) break;
+                        allFiles.push(...data.map((f: any) => `compositions/${f.name}`));
+                        if (data.length < pageSize) break;
+                        offset += pageSize;
+                      }
+                      if (allFiles.length > 0) {
+                        const { error: rmErr } = await supabase.storage.from('look-images').remove(allFiles);
+                        if (rmErr) throw rmErr;
+                      }
+                      toast({
+                        title: 'Compositions cleared',
+                        description: `Removed ${allFiles.length} cached atelier composition${allFiles.length === 1 ? '' : 's'}. They will be regenerated on next view.`,
+                      });
+                    } catch (e: any) {
+                      toast({ title: 'Error', description: e?.message || 'Failed to clear compositions', variant: 'destructive' });
+                    }
+                  }}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Clear Atelier Compositions
+                </Button>
+              </div>
             </CardContent>
           </Card>
 
