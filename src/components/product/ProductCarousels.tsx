@@ -147,7 +147,7 @@ const CarouselSection = ({ carousel, sourceProductId }: { carousel: CarouselWith
                 </div>
                 <div className="p-2 pb-2.5">
                   <p className="font-sans text-[11px] font-medium text-foreground m-0 truncate">{p.name}</p>
-                  {p.price && <p className="font-sans text-[11px] text-muted-foreground m-0 mt-0.5">{p.price}</p>}
+                  {showPrices && p.price && <p className="font-sans text-[11px] text-muted-foreground m-0 mt-0.5">{p.price}</p>}
                   {carousel.layout.card_size === 'large' && p.description && (
                     <p className="font-sans text-[10px] text-muted-foreground m-0 mt-1 line-clamp-2">{p.description}</p>
                   )}
