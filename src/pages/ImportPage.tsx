@@ -8,8 +8,11 @@ import { useSavedProducts } from '@/hooks/useSavedProducts';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { ExcelImportModal } from '@/components/ExcelImportModal';
+import { usePlatformSettingsContext } from '@/contexts/PlatformSettingsContext';
 
 const ImportPage = () => {
+  const { settings } = usePlatformSettingsContext();
+  const brand = settings.brand_name || 'Studio';
   const [isApiKeySet, setIsApiKeySet] = useState(true);
   const [usePremiumMode, setUsePremiumMode] = useState(false);
   const [results, setResults] = useState<ScrapeResult[]>([]);
@@ -41,7 +44,7 @@ const ImportPage = () => {
   return (
     <div className="px-8 py-10 max-w-[1200px] mx-auto">
       <header className="mb-10">
-        <div className="admin-subtitle mb-2">Aitemz Studio</div>
+        <div className="admin-subtitle mb-2">{brand} Studio</div>
         <h1 className="admin-page-title mb-1">Product Import</h1>
         <div className="admin-body-secondary">
           Extract product data from fashion websites or upload via Excel.

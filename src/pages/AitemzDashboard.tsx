@@ -134,9 +134,9 @@ export const AitemzDashboard = () => {
     <div className="px-8 py-10 max-w-[1400px] mx-auto">
       {/* Page header */}
       <div className="mb-10">
-        <div className="admin-subtitle mb-2">Aitemz Studio</div>
+        <div className="admin-subtitle mb-2">{brand} Studio</div>
         <h1 className="admin-page-title mb-1">Dashboard</h1>
-        <div className="admin-body-secondary">Christian Louboutin — Last 30 days</div>
+        <div className="admin-body-secondary">{brand} — Last 30 days</div>
       </div>
 
       {/* Metrics */}
