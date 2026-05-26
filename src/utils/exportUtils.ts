@@ -300,7 +300,7 @@ export const exportAsPdf = async (
   const imageHeight = 35;
   const cardHeight = 80;
   
-  const siteUrl = baseUrl || 'https://louboutin.aitems.dev';
+  const siteUrl = baseUrl || (typeof window !== 'undefined' ? window.location.origin : '');
   
   let currentY = margin;
   let currentCol = 0;
