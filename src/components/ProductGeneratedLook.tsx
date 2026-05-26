@@ -113,6 +113,10 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
   const generatingRef = useRef(false);
   const usedProductCodesRef = useRef<Set<string>>(new Set());
   const [layoutVersion, setLayoutVersion] = useState<'v1' | 'v2' | 'v2.1'>('v2');
+  const [modeRules, setModeRules] = useState<LookModeRules>(DEFAULT_LOOK_MODE_RULES);
+  const [initialModes, setInitialModes] = useState<Record<number, LookMode>>({});
+
+  useEffect(() => { fetchLookModeRules().then(setModeRules); }, []);
 
   // Fetch layout version preference
   useEffect(() => {
