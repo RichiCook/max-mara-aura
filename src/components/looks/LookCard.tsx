@@ -91,6 +91,59 @@ export const LookCard = ({ look, onSave, onDelete, isSaved = false }: LookCardPr
   const products = look.products || [];
   const { isModelLoading, isModelReady, loadProgress, classifyProductImages, getCached } = useImageClassification();
 
+  // Photo / Collage mode state
+  const [rules, setRules] = useState<LookModeRules>(DEFAULT_LOOK_MODE_RULES);
+  const [mode, setMode] = useState<LookMode>('photo');
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [collageUrl, setCollageUrl] = useState<string | null>(null);
+  const [genPhoto, setGenPhoto] = useState(false);
+  const [genCollage, setGenCollage] = useState(false);
+
+  useEffect(() => {
+    fetchLookModeRules().then(r => {
+      setRules(r);
+      setMode(resolveLookMode(products, r));
+    });
+  }, [look.id]);
+
+  const productPayload = useMemo(() => products.map(p => {
+    const imgs = parseImages(p.images);
+    return {
+      name: p.name,
+      color: p.color,
+      category: p.category,
+      image: getFlatLayImage(filterImagesBySku(imgs, null), p.category) || imgs[0],
+    };
+  }), [products]);
+
+  const generatePhoto = async () => {
+    if (genPhoto || products.length === 0) return;
+    setGenPhoto(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-look-image', {
+        body: { products: productPayload, lookName: look.name, lookDescription: look.description, lookStyle: 'elegant' }
+      });
+      if (!error && data?.image) setPhotoUrl(data.image);
+    } finally { setGenPhoto(false); }
+  };
+
+  const generateCollage = async () => {
+    if (genCollage || products.length === 0) return;
+    setGenCollage(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-look-collage', {
+        body: { products: productPayload }
+      });
+      if (!error && data?.image) setCollageUrl(data.image);
+    } finally { setGenCollage(false); }
+  };
+
+  const handleSwitch = (m: LookMode) => {
+    setMode(m);
+    if (m === 'photo' && !photoUrl && !genPhoto) generatePhoto();
+    if (m === 'collage' && !collageUrl && !genCollage) generateCollage();
+  };
+
   // Calculate total price
   const totalPrice = products.reduce((sum, product) => {
     if (product.price) {
@@ -101,6 +154,9 @@ export const LookCard = ({ look, onSave, onDelete, isSaved = false }: LookCardPr
     }
     return sum;
   }, 0);
+
+  const activeImage = mode === 'photo' ? photoUrl : collageUrl;
+  const activeGenerating = mode === 'photo' ? genPhoto : genCollage;
 
   return (
     <Card className="overflow-hidden">
