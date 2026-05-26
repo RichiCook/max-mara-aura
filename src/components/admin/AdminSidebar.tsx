@@ -17,6 +17,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 import aitemzMark from '@/assets/aitemz-mark.svg';
+import { usePlatformSettingsContext } from '@/contexts/PlatformSettingsContext';
 
 const NAV = [
   { to: '/', label: 'Dashboard', Icon: LayoutDashboard },
