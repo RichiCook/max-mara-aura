@@ -36,6 +36,8 @@ const NAV = [
 export const AdminSidebar = () => {
   const { signOut } = useAuth();
   const { pathname } = useLocation();
+  const { settings } = usePlatformSettingsContext();
+  const brand = settings.brand_name || 'Studio';
 
   return (
     <aside
