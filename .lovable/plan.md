@@ -1,72 +1,52 @@
+# Add Collage Mode to Total Look Generation
 
+Today the Total Look generator produces a single AI photoshoot image (model wearing the products) via the `generate-look-image` edge function. We'll add a second visual mode: a **product cut-out collage** like the reference image — packshots of each item arranged together on a soft neutral background, no model.
 
-## Goal
-Close the real abuse vectors flagged by the security scan without breaking the public DPP experience (which legitimately needs unauthenticated read access to products/activations/looks and unauthenticated lead/repair submissions from QR scans).
+The user keeps the existing photoshoot option AND gets a new collage option. Both modes coexist per look.
 
-## What I will fix
+## UX
 
-### 1. Repair photos bucket — currently anyone can dump arbitrary files
-- Make `repair-photos` bucket **private** (it's currently public).
-- Restrict INSERT to: file path under a generated submission folder + size ≤ 5 MB + MIME type in `image/jpeg`, `image/png`, `image/webp`, `image/heic`.
-- Keep admin SELECT; remove public SELECT (the edge function `send-repair-email` already runs as service role, so it can still read).
-- Update the upload code in the repair flow to use a signed URL when the admin needs to view a photo.
+In the Total Look generator panel (`LookGeneratorPanel.tsx`) and on each generated/saved look card (`ProductGeneratedLook.tsx` / `LookCardV2.tsx`), add a mode toggle:
 
-### 2. Look-images bucket — anon upload abuse
-- Drop the `Anon can upload look images` policy. Look generation runs server-side via the `generate-look-image` edge function (service role), so anonymous browser uploads are not needed.
-- Keep public SELECT (look images are shown on public product pages).
+- **Photoshoot** (existing) — AI-rendered model wearing the look
+- **Collage** (new) — composed packshots of each product on a neutral backdrop
 
-### 3. Public bucket listing (linter warns 3 buckets allow listing)
-- Tighten the public SELECT policies on `branding`, `look-images`, `campaign-assets` to require an explicit `name` match pattern instead of bucket-wide listing. Practically: keep `bucket_id = 'X'` SELECT (needed to fetch by URL), but add per-bucket configuration to disable listing via `storage.buckets.public = true` + path-scoped policies. The simplest fix that addresses the linter: replace the broad SELECT with a policy that allows reading any object in the bucket but blocks `LIST` operations (which require a different permission pattern). I'll implement this by keeping read-by-key and not granting listing.
+When a user clicks "Generate image" they pick the mode (or generate both). The result is displayed in the same image slot. They can switch between the two if both exist.
 
-### 4. Leads table — anonymous flood / spam protection
-- Add input length CHECK constraints: `email ≤ 255`, `name ≤ 100`, `phone ≤ 32`, `reward_code ≤ 64`.
-- Add a per-IP-less rate guard via a trigger that rejects more than N inserts per minute using a small counter table (lightweight, no extra service).
-- Hide `reward_code` from any anon SELECT (no SELECT policy exists for anon currently — confirmed — so this is already safe; just adding length limits).
+## How the collage is built
 
-### 5. Repair requests — same hardening
-- Add length CHECK constraints on `user_name (100)`, `user_email (255)`, `city (100)`, `country (100)`, plus the message/notes fields.
-- Add the same per-minute insert rate guard trigger.
-- Note re: PII scoping — the form is consumer-facing from a QR scan, users are not logged in, so we can't add `user_id`. PII access stays admin-only (already the case).
+The collage is composed deterministically from existing product packshot images — no model, no AI hallucination of garments. Two-step pipeline inside a new edge function `generate-look-collage`:
 
-### 6. Scan events / product_views / recommendation_clicks — analytics tables
-- Add length limits on text fields (`product_code`, `session_id`, `source`, `referrer`) to prevent payload bloating.
-- Add insert rate guard (per minute per session_id).
+1. **Pick best packshot per product** — reuse the existing flat-lay / SKU-filter logic (`getFlatLayImage`, `filterImagesBySku`, optional `classify-shoes`-style classification) so we pick the cleanest cut-out-style image per product.
+2. **Compose the collage** — call Lovable AI Gateway (`google/gemini-3.1-flash-image-preview`, the editing model) with all product packshots attached and a prompt that:
+   - Cuts out each garment from its background
+   - Arranges them in an editorial flat-lay collage (coat as anchor, knit + jeans layered, accessories floating around — matching the Max Mara luxury aesthetic)
+   - Uses a soft warm-neutral backdrop (palette token `--background` / Warm Naturals `#f0ece7`)
+   - No model, no mannequin, no text
 
-### 7. API integrations table (admin-only, but hardening)
-- Move `api_key` reads behind a security-definer function `get_integration_secret(integration_id)` that only returns the key to admins via edge functions. Frontend admin UI keeps showing masked values only.
-- Mark the `api_key` column as not selectable by default by revoking column-level SELECT from `authenticated` and `anon`, granting only to `service_role`.
+This matches our existing pattern for `generate-look-image` (image-editing gateway calls with multiple image refs) and stays within the Lovable AI Gateway — no new secrets.
 
-### 8. Auth hardening
-- Enable **Leaked Password Protection (HIBP)** on the auth provider. Currently disabled.
-- Confirm OTP expiry is at the recommended 1 hour (not the 24h default).
+## Data
 
-### 9. What I will NOT change (and why)
-- **SELECT `USING (true)` on products / activations / looks / carousels / celebrity_content / campaign_assets / app_settings / platform_settings** — these are intentionally public for the unauthenticated DPP experience. The scanner flags them as a pattern, but they're correct. I'll mark these findings as "ignore" with a clear reason.
-- **Public anonymous INSERTs** on `leads`, `repair_requests`, `scan_events` — required for QR-scan flows where users aren't logged in. Mitigation is via length limits + rate guard above, not removal.
+Add a second nullable column to the `looks` table so we can store both renders without losing the existing one:
 
-## Files / changes
+- `image_url TEXT` (already there, used by photoshoot)
+- `collage_url TEXT` (new)
 
-**Database migration** (one migration covering all SQL changes):
-- Bucket privacy + storage policy rewrites (repair-photos, look-images)
-- CHECK constraints on `leads`, `repair_requests`, `scan_events`, `product_views`, `recommendation_clicks`
-- Rate-limit trigger function `public.enforce_insert_rate_limit()` + per-table BEFORE INSERT triggers
-- Column-level grants on `api_integrations.api_key`
-- New `public.get_integration_secret(uuid)` security-definer function
+A `mode` field is not needed — the UI just shows whichever the user is viewing.
 
-**Edge function updates**:
-- `send-repair-email/index.ts` — use service-role signed URL when including photo links in admin emails (since bucket goes private)
-- `capture-lead/index.ts` — surface friendly error when rate-limit trigger fires
+## Files to change
 
-**Auth config**:
-- Enable HIBP password check via auth settings
-- Set OTP expiry to 1 hour
+- `supabase/migrations/<new>.sql` — add `collage_url` column to `public.looks`.
+- `supabase/functions/generate-look-collage/index.ts` — new edge function (mirrors `generate-look-image` structure, different prompt + no model/style/env references).
+- `supabase/config.toml` — register the new function with `verify_jwt = false`.
+- `src/hooks/useLooks.ts` — expose `collage_url`, add `generateCollage(lookId)` helper.
+- `src/components/ProductGeneratedLook.tsx` — add mode toggle (Photoshoot / Collage), wire new function, show whichever image the user selects.
+- `src/components/looks/LookCard.tsx` and `src/components/product/LookCardV2.tsx` — render the toggle + the selected image.
+- `src/components/looks/LookGeneratorPanel.tsx` — add a default-mode selector for new generations (Photoshoot, Collage, or Both).
 
-**No changes to**:
-- The DPP product page, activations, lead capture form UI (server enforces limits; UI already validates with Zod)
+## Out of scope
 
-## Outcome
-- Scanner: drops from **13 findings** to ~**0–2 informational**. The 5 "RLS policy always true" SELECT findings on public content will be marked "ignore" with documented reasoning (they are intentional for the public DPP).
-- Linter: 3 storage warnings cleared, 5 RLS warnings cleared (those that are on INSERT/UPDATE will be tightened; SELECT-public ones marked as accepted).
-- DPP user experience: unchanged.
-- Admin experience: unchanged except repair photos now load via short-lived signed URLs.
-
+- No changes to the AI styling / pairing logic (categories, exclusions, prompts for `generate-looks`) — that work was done in earlier turns.
+- No new third-party image services; we stay on Lovable AI Gateway.
+- No changes to QR codes, scan page, or product page hardcoded naming.

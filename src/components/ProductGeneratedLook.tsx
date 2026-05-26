@@ -25,6 +25,7 @@ interface GeneratedLook {
   reasoning: string;
   generated_at: string;
   look_image?: string;
+  collage_image?: string;
   config?: LookConfig;
 }
 
@@ -44,7 +45,9 @@ interface LookWithProducts {
   look: GeneratedLook;
   products: LookProduct[];
   lookImage: string | null;
+  collageImage: string | null;
   generatingImage: boolean;
+  generatingCollage: boolean;
 }
 
 interface ProductGeneratedLookProps {
@@ -226,12 +229,16 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
     }
   };
 
-  // Cache all looks (with images) to the product's generated_look field
+  // Cache all looks (with images + collages) to the product's generated_look field
   const cacheLooks = async (allLooks: LookWithProducts[]) => {
     try {
       const looksToCache = allLooks
-        .filter(l => l.lookImage || l.look.look_image)
-        .map(l => ({ ...l.look, look_image: l.lookImage || l.look.look_image }));
+        .filter(l => l.lookImage || l.look.look_image || l.collageImage || l.look.collage_image)
+        .map(l => ({
+          ...l.look,
+          look_image: l.lookImage || l.look.look_image,
+          collage_image: l.collageImage || l.look.collage_image,
+        }));
       if (looksToCache.length === 0) return;
       // Store as array in generated_look
       await supabase.from('products').update({ 
@@ -239,6 +246,46 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
       }).eq('product_code', productCode);
     } catch { /* silent */ }
   };
+
+  const generateCollageImage = async (products: LookProduct[], lookData: GeneratedLook, lookIndex: number, retryCount = 0) => {
+    if (products.length === 0) return;
+    setLooks(prev => prev.map((l, i) => i === lookIndex ? { ...l, generatingCollage: true } : l));
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-look-collage', {
+        body: {
+          products: products.map(p => ({
+            name: p.name, color: p.color, category: p.category,
+            image: getFlatLayImage(filterImagesBySku(p.images, p.product_code), p.category) || p.images[0]
+          })),
+        }
+      });
+      if (error) throw error;
+      if (data?.error) {
+        if (data.error.includes('Rate limit') && retryCount < 1) {
+          setTimeout(() => generateCollageImage(products, lookData, lookIndex, retryCount + 1), 3000);
+          return;
+        }
+        return;
+      }
+      if (data?.image) {
+        const storageUrl = await uploadImageToStorage(data.image, lookIndex);
+        const finalImage = storageUrl || data.image;
+        setLooks(prev => {
+          const updated = prev.map((l, i) => i === lookIndex ? { ...l, collageImage: finalImage, generatingCollage: false } : l);
+          cacheLooks(updated);
+          return updated;
+        });
+      }
+    } catch (err) {
+      if (retryCount < 1) {
+        setTimeout(() => generateCollageImage(products, lookData, lookIndex, retryCount + 1), 2000);
+        return;
+      }
+    } finally {
+      setLooks(prev => prev.map((l, i) => i === lookIndex ? { ...l, generatingCollage: false } : l));
+    }
+  };
+
 
   const generateLookImage = async (products: LookProduct[], lookData: GeneratedLook, lookIndex: number, retryCount = 0) => {
     if (products.length === 0) return;
@@ -304,7 +351,7 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
           usedProductCodesRef.current.add(code);
         }
       }
-      return { look: data.look, products, lookImage: null, generatingImage: false };
+      return { look: data.look, products, lookImage: null, collageImage: null, generatingImage: false, generatingCollage: false };
     } catch {
       return null;
     }
@@ -323,7 +370,7 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
     for (const cl of cachedLooks) {
       const products = await fetchLookProducts(cl.product_codes || []);
       if (products.length > 0) {
-        results.push({ look: cl, products, lookImage: cl.look_image || null, generatingImage: false });
+        results.push({ look: cl, products, lookImage: cl.look_image || null, collageImage: cl.collage_image || null, generatingImage: false, generatingCollage: false });
         for (const code of cl.product_codes || []) {
           if (code !== productCode) usedProductCodesRef.current.add(code);
         }
@@ -339,7 +386,7 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
         if (!error && data?.look) {
           const products = await fetchLookProducts(data.look.product_codes || []);
           if (products.length > 0) {
-            results.push({ look: data.look, products, lookImage: data.look.look_image || null, generatingImage: false });
+            results.push({ look: data.look, products, lookImage: data.look.look_image || null, collageImage: data.look.collage_image || null, generatingImage: false, generatingCollage: false });
             for (const code of data.look.product_codes || []) {
               if (code !== productCode) usedProductCodesRef.current.add(code);
             }
@@ -461,6 +508,10 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
         }}
         calculateTotal={calculateTotal}
         variant={layoutVersion === 'v2.1' ? 'editorial' : 'refined'}
+        onGenerateCollage={(idx) => {
+          const l = looks[idx];
+          if (l && !l.generatingCollage) generateCollageImage(l.products, l.look, idx);
+        }}
       />
     );
   }
