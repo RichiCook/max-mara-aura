@@ -477,7 +477,7 @@ serve(async (req) => {
     }
 
     // Get the template to use (for naming only)
-    const templateKey = heroCategory ? getBestTemplateForCategory(heroCategory) : 'casual_top_bottom';
+    const templateKey = heroCategory ? getBestTemplateForCategory(heroCategory) : 'top_bottom';
     const template = OUTFIT_TEMPLATES[templateKey];
     console.log(`Using template: ${templateKey} - ${template?.name}`);
 
@@ -598,7 +598,7 @@ serve(async (req) => {
 EXCLUSION RULES (MUST FOLLOW):
 - Mare/beachwear products ONLY go with other mare products and accessories
 - The hero product is: ${heroCategory || 'unknown category'}
-- Respect style coherence: keep the look within a consistent sportswear aesthetic (casual, performance, or streetwear)
+- Respect style coherence: keep the look within a consistent luxury womenswear aesthetic
 - GENDER RULE: NEVER mix "Donna" (women), "Uomo" (men), and "Bambini" (children) products. Each look must be for ONE audience only.${heroGender ? ` The hero product is ${heroGender === 'bambini' ? 'CHILDREN\'S' : heroGender === 'donna' ? 'WOMEN\'S' : 'MEN\'S'} — only select ${heroGender === 'bambini' ? 'children\'s' : heroGender === 'donna' ? 'women\'s' : 'men\'s'} or unisex items.` : ''}`;
 
     // Build configuration context from settings
@@ -647,7 +647,7 @@ EXCLUSION RULES (MUST FOLLOW):
       );
     }
 
-    const prompt = `You are a professional luxury fashion stylist creating a complete outfit look for the Christian Louboutin brand.
+    const prompt = `You are a professional luxury fashion stylist creating a complete outfit look.
 
 HERO PRODUCT (the centerpiece of this outfit - MUST be included):
 - Name: ${heroProduct.name}
@@ -668,8 +668,8 @@ AVAILABLE PRODUCTS TO COMPLETE THE LOOK:
 ${JSON.stringify(productOptions, null, 2)}
 
 YOUR TASK:
-Select ONE product from each available category slot to create a cohesive, stylish sportswear outfit that complements the hero product.
-Consider color harmony, style consistency, and overall athletic/streetwear aesthetic.
+Select ONE product from each available category slot to create a cohesive, refined luxury outfit that complements the hero product.
+Consider color harmony, style consistency, and overall elegant aesthetic.
 
 IMPORTANT: You MUST select a shoe (scarpe) and an accessory (accessori) if they are listed in the available products. These complete the total look.
 CRITICAL: Select EXACTLY ONE shoe. Never select two shoes. Select EXACTLY ONE accessory. Never select two accessories. Each category slot must have EXACTLY ONE product.
@@ -679,7 +679,7 @@ RULES:
 2. Items should match in style (${effectiveStyle}) and work together aesthetically
 3. Colors should be harmonious - consider matching or complementary colors
 4. STRICTLY follow the exclusion rules above
-5. Consider the overall vibe: casual, performance, or streetwear
+5. Consider the overall vibe: refined luxury womenswear
 6. Gender/age consistency: NEVER mix "Donna" (women), "Uomo" (men), and "Bambini" (children) products. All items must be for the same audience.
 7. ALWAYS include exactly ONE shoe and exactly ONE accessory to complete the total look
 
@@ -705,7 +705,7 @@ RESPOND WITH ONLY A JSON OBJECT (no markdown, no explanation):
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
         messages: [
-          { role: 'system', content: 'You are a professional luxury fashion stylist for the Christian Louboutin brand. You create cohesive luxury outfits that work well together in terms of color, style, and elegance. Always respond with valid JSON only. STRICTLY follow exclusion rules.' },
+          { role: 'system', content: 'You are a professional luxury fashion stylist. You create cohesive luxury outfits that work well together in terms of color, style, and elegance. Always respond with valid JSON only. STRICTLY follow exclusion rules.' },
           { role: 'user', content: prompt }
         ],
         temperature: 0.7,
