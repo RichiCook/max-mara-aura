@@ -1,0 +1,1 @@
+DELETE FROM public.app_settings WHERE id IN ('look_pairings', 'look_exclusions');
