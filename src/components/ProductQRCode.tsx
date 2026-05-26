@@ -14,8 +14,8 @@ export const ProductQRCode = ({ shortCode, productName }: ProductQRCodeProps) =>
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   
-  // Always use the published URL for QR codes so they work when scanned externally
-  const publishedOrigin = 'https://loubotin.lovable.app';
+  // Use the current origin so QR codes match the deployed domain
+  const publishedOrigin = typeof window !== 'undefined' ? window.location.origin : '';
   const shortUrl = `${publishedOrigin}/p/${shortCode}`;
 
   const handleCopy = async () => {
