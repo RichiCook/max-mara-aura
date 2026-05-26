@@ -250,8 +250,15 @@ const LookCardV2 = ({ looks, productCode, loading, loadingMore, onTrackEvent, on
                       </button>
                     </div>
                   ) : (
-                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <span style={{ fontSize: 16, opacity: 0.25 }}>✦</span>
+                    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: 20, textAlign: 'center' as const }}>
+                      <span style={{ fontSize: 20, opacity: 0.4 }}>✦</span>
+                      <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: '#8b7355', margin: 0, letterSpacing: '0.04em' }}>Generate an AI photoshoot of this look</p>
+                      <button
+                        onClick={() => onGeneratePhoto?.(lookIdx)}
+                        style={{ marginTop: 4, padding: '8px 14px', background: '#1a1a1a', color: '#fff', border: 'none', borderRadius: 4, fontFamily: "'Inter', sans-serif", fontSize: 11, fontWeight: 500, letterSpacing: '0.04em', cursor: 'pointer' }}
+                      >
+                        Generate Photo
+                      </button>
                     </div>
                   )}
 
