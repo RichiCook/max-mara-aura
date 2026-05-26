@@ -184,6 +184,8 @@ async function preloadCachedImages(compositions: Composition[]): Promise<Composi
 // ── Component ────────────────────────────────────────────────
 
 const AtelierCompositions = ({ currentProduct }: AtelierCompositionsProps) => {
+  const { settings } = usePlatformSettingsContext();
+  const brandName = settings.brand_name || 'Studio';
   const [compositions, setCompositions] = useState<Composition[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [quickViewProduct, setQuickViewProduct] = useState<any>(null);
