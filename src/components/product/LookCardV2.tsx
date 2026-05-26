@@ -207,31 +207,70 @@ const LookCardV2 = ({ looks, productCode, loading, loadingMore, onTrackEvent, on
                   </div>
                 )}
 
-                {/* AI Image */}
-                <div style={{ aspectRatio: '3/4', position: 'relative', overflow: 'hidden', background: '#f0ece7' }}>
-                  {lookItem.generatingImage ? (
+                {/* AI Image / Collage */}
+                {(() => {
+                  const mode = getMode(lookIdx);
+                  const isCollage = mode === 'collage';
+                  const activeImage = isCollage ? lookItem.collageImage : lookItem.lookImage;
+                  const isGenerating = isCollage ? lookItem.generatingCollage : lookItem.generatingImage;
+                  const label = isCollage ? 'GENERATING COLLAGE' : 'GENERATING LOOK';
+                  const badge = isCollage ? '✦ AI Collage' : '✦ AI Generated';
+                  return (
+                <div style={{ aspectRatio: '3/4', position: 'relative', overflow: 'hidden', background: isCollage ? '#efeae3' : '#f0ece7' }}>
+                  {isGenerating ? (
                     <>
                       <div className="animate-shimmer" style={{ position: 'absolute', inset: 0, background: 'linear-gradient(110deg, #f0ece7 30%, #f8f4f0 50%, #f0ece7 70%)', backgroundSize: '200% 100%', zIndex: 1 }} />
                       <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, zIndex: 1 }}>
                         <span style={{ fontSize: 16, opacity: 0.25 }}>✦</span>
-                        <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 9.5, color: '#c5c0ba', letterSpacing: '0.12em', textTransform: 'uppercase' as const }}>GENERATING LOOK</span>
+                        <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 9.5, color: '#c5c0ba', letterSpacing: '0.12em', textTransform: 'uppercase' as const }}>{label}</span>
                         <div style={{ width: 100, height: 1.5, borderRadius: 1, background: 'rgba(0,0,0,0.04)', overflow: 'hidden' }}>
                           <ProgressBar />
                         </div>
                       </div>
                     </>
-                  ) : lookItem.lookImage ? (
+                  ) : activeImage ? (
                     <>
-                      <img src={lookItem.lookImage} alt={look.name} style={{ width: '100%', height: '100%', objectFit: 'cover', zIndex: 2, position: 'relative' }} />
+                      <img src={activeImage} alt={look.name} style={{ width: '100%', height: '100%', objectFit: isCollage ? 'contain' : 'cover', zIndex: 2, position: 'relative' }} />
                       <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 3, background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(8px)', borderRadius: 5, padding: '4px 9px', fontFamily: "'Inter', sans-serif", fontSize: 9, fontWeight: 500, color: '#fff' }}>
-                        ✦ AI Generated
+                        {badge}
                       </div>
                     </>
+                  ) : isCollage ? (
+                    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: 20, textAlign: 'center' as const }}>
+                      <span style={{ fontSize: 20, opacity: 0.4 }}>✦</span>
+                      <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: '#8b7355', margin: 0, letterSpacing: '0.04em' }}>Generate a flat-lay collage of the products</p>
+                      <button
+                        onClick={() => onGenerateCollage?.(lookIdx)}
+                        style={{ marginTop: 4, padding: '8px 14px', background: '#1a1a1a', color: '#fff', border: 'none', borderRadius: 4, fontFamily: "'Inter', sans-serif", fontSize: 11, fontWeight: 500, letterSpacing: '0.04em', cursor: 'pointer' }}
+                      >
+                        Create Collage
+                      </button>
+                    </div>
                   ) : (
                     <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <span style={{ fontSize: 16, opacity: 0.25 }}>✦</span>
                     </div>
                   )}
+
+                  {/* Mode toggle (Photo / Collage) */}
+                  <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 5, display: 'inline-flex', background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(8px)', borderRadius: 5, padding: 2 }}>
+                    {(['photo', 'collage'] as const).map(m => (
+                      <button
+                        key={m}
+                        onClick={() => setMode(lookIdx, m)}
+                        style={{
+                          padding: '4px 9px', border: 'none', cursor: 'pointer',
+                          background: mode === m ? '#fff' : 'transparent',
+                          color: mode === m ? '#1a1a1a' : 'rgba(255,255,255,0.85)',
+                          fontFamily: "'Inter', sans-serif", fontSize: 9, fontWeight: 600,
+                          letterSpacing: '0.06em', textTransform: 'uppercase' as const, borderRadius: 4,
+                        }}
+                      >
+                        {m === 'photo' ? 'Photo' : 'Collage'}
+                      </button>
+                    ))}
+                  </div>
+
                   <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 4, background: 'linear-gradient(transparent, rgba(0,0,0,0.6))', padding: '40px 16px 14px' }}>
                     <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 600, color: '#fff', margin: 0 }}>{look.name}</h3>
                     {look.description && (
@@ -239,6 +278,8 @@ const LookCardV2 = ({ looks, productCode, loading, loadingMore, onTrackEvent, on
                     )}
                   </div>
                 </div>
+                  );
+                })()}
 
                 {/* v2.0 Refined: stacked product rows BELOW the image */}
                 {variant !== 'editorial' && (
