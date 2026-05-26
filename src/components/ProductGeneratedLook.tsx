@@ -508,6 +508,10 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
         }}
         calculateTotal={calculateTotal}
         variant={layoutVersion === 'v2.1' ? 'editorial' : 'refined'}
+        onGenerateCollage={(idx) => {
+          const l = looks[idx];
+          if (l && !l.generatingCollage) generateCollageImage(l.products, l.look, idx);
+        }}
       />
     );
   }
