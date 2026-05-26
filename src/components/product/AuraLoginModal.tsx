@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useModalScrollLock } from '@/hooks/useModalScrollLock';
 import { useSwipeToDismiss } from '@/hooks/useSwipeToDismiss';
+import { usePlatformSettingsContext } from '@/contexts/PlatformSettingsContext';
 
 interface AuraLoginModalProps {
   open: boolean;
@@ -12,6 +13,8 @@ const BRAND_BROWN = '#8B5E3C';
 const BRAND_MUTED = '#A0846B';
 
 const AuraLoginModal = ({ open, onClose, onLoginSuccess }: AuraLoginModalProps) => {
+  const { settings } = usePlatformSettingsContext();
+  const brandLabel = (settings.brand_name || 'Studio').toUpperCase();
   const [visible, setVisible] = useState(false);
   const [animating, setAnimating] = useState(false);
   const [isRegister, setIsRegister] = useState(false);
@@ -89,7 +92,7 @@ const AuraLoginModal = ({ open, onClose, onLoginSuccess }: AuraLoginModalProps) 
             </button>
           </div>
           <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 10, fontWeight: 600, letterSpacing: '0.12em', color: BRAND_MUTED, textTransform: 'uppercase', marginTop: 4 }}>
-            MY CHRISTIAN LOUBOUTIN
+            MY {brandLabel}
           </p>
         </div>
 

@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useModalScrollLock } from '@/hooks/useModalScrollLock';
 import { useSwipeToDismiss } from '@/hooks/useSwipeToDismiss';
+import { usePlatformSettingsContext } from '@/contexts/PlatformSettingsContext';
 
 interface ClaimOwnershipModalProps {
   open: boolean;
@@ -13,6 +14,8 @@ interface ClaimOwnershipModalProps {
 const BRAND_BROWN = '#8B5E3C';
 
 const ClaimOwnershipModal = ({ open, onClose, productName, productImage, onSuccess }: ClaimOwnershipModalProps) => {
+  const { settings } = usePlatformSettingsContext();
+  const brandName = settings.brand_name || 'the brand';
   const [visible, setVisible] = useState(false);
   const [animating, setAnimating] = useState(false);
   const [digits, setDigits] = useState<string[]>(Array(9).fill(''));
@@ -215,7 +218,7 @@ const ClaimOwnershipModal = ({ open, onClose, productName, productImage, onSucce
           </p>
 
           <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: '#999', textAlign: 'center', marginTop: 16, lineHeight: 1.6 }}>
-            We advise that once the above pin code is activated, the ownership of this product will be certified as a part of its traceability journey. As a result, Christian Louboutin will then no longer be able to accept returns or exchanges for this item.
+            We advise that once the above pin code is activated, the ownership of this product will be certified as a part of its traceability journey. As a result, {brandName} will then no longer be able to accept returns or exchanges for this item.
           </p>
         </div>
       </div>

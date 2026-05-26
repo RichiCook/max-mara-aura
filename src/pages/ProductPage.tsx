@@ -298,7 +298,7 @@ const ProductPage = () => {
               <img src={settings.logo_url} alt={settings.brand_name || 'Logo'} className="h-6 sm:h-8 w-auto object-contain" />
             ) : (
               <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 16, fontWeight: 700, color: '#1a1a1a' }}>
-                Christian Louboutin
+                {settings.brand_name || 'Studio'}
               </span>
             )}
           </Link>
@@ -402,7 +402,7 @@ const ProductPage = () => {
                   <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#C4A265" strokeWidth="1" style={{ margin: '0 auto 12px' }}>
                     <path d="M12 2L3 7v5c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
-                  <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 16, color: '#C4A265' }}>Christian Louboutin</p>
+                  <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 16, color: '#C4A265' }}>{settings.brand_name || 'Studio'}</p>
                   <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: '#999', marginTop: 4 }}>Product Image</p>
                 </div>
               </div>
@@ -612,10 +612,10 @@ const ProductPage = () => {
           <div className="flex items-center justify-between">
             <div className="min-w-0">
               <span className="font-serif text-[13px] font-semibold text-foreground opacity-40 block">
-                Louboutin × Aura Blockchain
+                {settings.brand_name || 'Studio'} × Aura Blockchain
               </span>
               <p className="font-sans text-[10px] text-muted-foreground mt-0.5">
-                Powered by Aitems · Product Intelligence
+                Product Intelligence
               </p>
             </div>
             <Button asChild variant="ghost" size="sm" className="text-xs shrink-0">
