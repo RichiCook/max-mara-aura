@@ -351,7 +351,7 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
           usedProductCodesRef.current.add(code);
         }
       }
-      return { look: data.look, products, lookImage: null, generatingImage: false };
+      return { look: data.look, products, lookImage: null, collageImage: null, generatingImage: false, generatingCollage: false };
     } catch {
       return null;
     }
