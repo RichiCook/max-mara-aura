@@ -1,11 +1,13 @@
-import { useState, useEffect } from 'react';
-import { ExternalLink, Trash2, Save, Loader2 } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { ExternalLink, Trash2, Save, Loader2, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { getFlatLayImage, parseImages, filterImagesBySku } from '@/utils/imageUtils';
 import { useImageClassification } from '@/hooks/useImageClassification';
+import { supabase } from '@/integrations/supabase/client';
+import { fetchLookModeRules, resolveLookMode, type LookMode, type LookModeRules, DEFAULT_LOOK_MODE_RULES } from '@/lib/lookMode';
 import type { Look, Product } from '@/hooks/useLooks';
 
 interface LookCardProps {
@@ -89,6 +91,59 @@ export const LookCard = ({ look, onSave, onDelete, isSaved = false }: LookCardPr
   const products = look.products || [];
   const { isModelLoading, isModelReady, loadProgress, classifyProductImages, getCached } = useImageClassification();
 
+  // Photo / Collage mode state
+  const [rules, setRules] = useState<LookModeRules>(DEFAULT_LOOK_MODE_RULES);
+  const [mode, setMode] = useState<LookMode>('photo');
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [collageUrl, setCollageUrl] = useState<string | null>(null);
+  const [genPhoto, setGenPhoto] = useState(false);
+  const [genCollage, setGenCollage] = useState(false);
+
+  useEffect(() => {
+    fetchLookModeRules().then(r => {
+      setRules(r);
+      setMode(resolveLookMode(products, r));
+    });
+  }, [look.id]);
+
+  const productPayload = useMemo(() => products.map(p => {
+    const imgs = parseImages(p.images);
+    return {
+      name: p.name,
+      color: p.color,
+      category: p.category,
+      image: getFlatLayImage(filterImagesBySku(imgs, null), p.category) || imgs[0],
+    };
+  }), [products]);
+
+  const generatePhoto = async () => {
+    if (genPhoto || products.length === 0) return;
+    setGenPhoto(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-look-image', {
+        body: { products: productPayload, lookName: look.name, lookDescription: look.description, lookStyle: 'elegant' }
+      });
+      if (!error && data?.image) setPhotoUrl(data.image);
+    } finally { setGenPhoto(false); }
+  };
+
+  const generateCollage = async () => {
+    if (genCollage || products.length === 0) return;
+    setGenCollage(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-look-collage', {
+        body: { products: productPayload }
+      });
+      if (!error && data?.image) setCollageUrl(data.image);
+    } finally { setGenCollage(false); }
+  };
+
+  const handleSwitch = (m: LookMode) => {
+    setMode(m);
+    if (m === 'photo' && !photoUrl && !genPhoto) generatePhoto();
+    if (m === 'collage' && !collageUrl && !genCollage) generateCollage();
+  };
+
   // Calculate total price
   const totalPrice = products.reduce((sum, product) => {
     if (product.price) {
@@ -99,6 +154,9 @@ export const LookCard = ({ look, onSave, onDelete, isSaved = false }: LookCardPr
     }
     return sum;
   }, 0);
+
+  const activeImage = mode === 'photo' ? photoUrl : collageUrl;
+  const activeGenerating = mode === 'photo' ? genPhoto : genCollage;
 
   return (
     <Card className="overflow-hidden">
@@ -130,6 +188,44 @@ export const LookCard = ({ look, onSave, onDelete, isSaved = false }: LookCardPr
             ))}
           </div>
         )}
+
+        {/* Photo / Collage preview */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="inline-flex rounded-md border bg-muted/40 p-0.5">
+              {(['photo', 'collage'] as const).map(m => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => handleSwitch(m)}
+                  className={`px-3 py-1 text-xs font-medium rounded transition-colors ${mode === m ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground'}`}
+                >
+                  {m === 'photo' ? 'Photo' : 'Collage'}
+                </button>
+              ))}
+            </div>
+            <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
+              Auto: {resolveLookMode(products, rules)}
+            </span>
+          </div>
+          <div className="aspect-[3/4] rounded-md border bg-muted/30 overflow-hidden flex items-center justify-center">
+            {activeGenerating ? (
+              <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span className="text-xs">Generating {mode}...</span>
+              </div>
+            ) : activeImage ? (
+              <img src={activeImage} alt={`${look.name} ${mode}`} className={`w-full h-full ${mode === 'collage' ? 'object-contain' : 'object-cover'}`} />
+            ) : (
+              <Button size="sm" variant="outline" onClick={mode === 'photo' ? generatePhoto : generateCollage} disabled={products.length === 0}>
+                <Sparkles className="w-4 h-4 mr-1" />
+                Generate {mode === 'photo' ? 'Photo' : 'Collage'}
+              </Button>
+            )}
+          </div>
+        </div>
+
+
 
         {/* Products grid */}
         <div className="grid grid-cols-2 gap-3">
