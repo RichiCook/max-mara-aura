@@ -117,6 +117,9 @@ const AIGenerationSettingsPage = () => {
             </CardContent>
           </Card>
 
+          {/* Look Mode Rules */}
+          <LookModeRulesSection />
+
           {/* Color Combinator Section */}
           <ColorCombinatorSection />
 
