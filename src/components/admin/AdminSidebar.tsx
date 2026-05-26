@@ -47,14 +47,18 @@ export const AdminSidebar = () => {
         borderRight: '1px solid var(--admin-ghost-border)',
       }}
     >
-      {/* Brand lockup — Aitemz */}
+      {/* Brand lockup */}
       <Link to="/" className="flex items-center gap-3 px-2 mb-1">
-        <img
-          src={aitemzMark}
-          alt="Aitemz"
-          className="w-9 h-6 shrink-0"
-          style={{ color: 'var(--admin-black)' }}
-        />
+        {settings.logo_url ? (
+          <img src={settings.logo_url} alt={brand} className="h-7 shrink-0 object-contain" />
+        ) : (
+          <img
+            src={aitemzMark}
+            alt={brand}
+            className="w-9 h-6 shrink-0"
+            style={{ color: 'var(--admin-black)' }}
+          />
+        )}
         <div className="leading-none">
           <div
             style={{
@@ -65,10 +69,23 @@ export const AdminSidebar = () => {
               color: 'var(--admin-black)',
             }}
           >
-            aitemz
+            {brand}
           </div>
         </div>
       </Link>
+      <div
+        className="px-2 mb-8"
+        style={{
+          fontFamily: 'var(--admin-font-mono)',
+          fontSize: '8px',
+          fontWeight: 500,
+          textTransform: 'uppercase',
+          letterSpacing: '0.18em',
+          color: 'var(--admin-grey)',
+        }}
+      >
+        Product Intelligence
+      </div>
       <div
         className="px-2 mb-8"
         style={{
