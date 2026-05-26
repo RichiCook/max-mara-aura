@@ -25,6 +25,7 @@ interface GeneratedLook {
   reasoning: string;
   generated_at: string;
   look_image?: string;
+  collage_image?: string;
   config?: LookConfig;
 }
 
@@ -44,7 +45,9 @@ interface LookWithProducts {
   look: GeneratedLook;
   products: LookProduct[];
   lookImage: string | null;
+  collageImage: string | null;
   generatingImage: boolean;
+  generatingCollage: boolean;
 }
 
 interface ProductGeneratedLookProps {
