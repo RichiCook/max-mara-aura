@@ -13,6 +13,7 @@ import {
   Bar,
 } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
+import { usePlatformSettingsContext } from '@/contexts/PlatformSettingsContext';
 
 interface Metric {
   label: string;
@@ -59,6 +60,8 @@ const SectionHeader = ({ title, action }: { title: string; action?: React.ReactN
 );
 
 export const AitemzDashboard = () => {
+  const { settings } = usePlatformSettingsContext();
+  const brand = settings.brand_name || 'Studio';
   const [scans, setScans] = useState(0);
   const [claims, setClaims] = useState(0);
   const [leads, setLeads] = useState(0);
