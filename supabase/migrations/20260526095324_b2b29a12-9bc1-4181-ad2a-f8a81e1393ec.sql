@@ -1,0 +1,1 @@
+UPDATE public.platform_settings SET brand_name='Max Mara', page_title='Max Mara', updated_at=now() WHERE id='default';

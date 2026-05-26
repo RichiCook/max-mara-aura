@@ -129,7 +129,7 @@ const ProductInfoBlock = ({ productCode, composition, sourceUrl, productName, pr
 
       {/* Footer */}
       <p className="font-sans text-[11px] text-muted-foreground text-center mt-3">
-        Powered by Aitems · Product Intelligence
+        Product Intelligence
       </p>
 
       {/* Repair Sheet */}

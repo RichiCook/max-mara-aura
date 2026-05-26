@@ -17,6 +17,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 import aitemzMark from '@/assets/aitemz-mark.svg';
+import { usePlatformSettingsContext } from '@/contexts/PlatformSettingsContext';
 
 const NAV = [
   { to: '/', label: 'Dashboard', Icon: LayoutDashboard },
@@ -35,6 +36,8 @@ const NAV = [
 export const AdminSidebar = () => {
   const { signOut } = useAuth();
   const { pathname } = useLocation();
+  const { settings } = usePlatformSettingsContext();
+  const brand = settings.brand_name || 'Studio';
 
   return (
     <aside
@@ -44,14 +47,18 @@ export const AdminSidebar = () => {
         borderRight: '1px solid var(--admin-ghost-border)',
       }}
     >
-      {/* Brand lockup — Aitemz */}
+      {/* Brand lockup */}
       <Link to="/" className="flex items-center gap-3 px-2 mb-1">
-        <img
-          src={aitemzMark}
-          alt="Aitemz"
-          className="w-9 h-6 shrink-0"
-          style={{ color: 'var(--admin-black)' }}
-        />
+        {settings.logo_url ? (
+          <img src={settings.logo_url} alt={brand} className="h-7 shrink-0 object-contain" />
+        ) : (
+          <img
+            src={aitemzMark}
+            alt={brand}
+            className="w-9 h-6 shrink-0"
+            style={{ color: 'var(--admin-black)' }}
+          />
+        )}
         <div className="leading-none">
           <div
             style={{
@@ -62,7 +69,7 @@ export const AdminSidebar = () => {
               color: 'var(--admin-black)',
             }}
           >
-            aitemz
+            {brand}
           </div>
         </div>
       </Link>
@@ -77,38 +84,10 @@ export const AdminSidebar = () => {
           color: 'var(--admin-grey)',
         }}
       >
-        Amplifying products
+        Product Intelligence
       </div>
+      <div className="mb-6 pb-4" style={{ borderBottom: '1px solid var(--admin-ghost-border)' }} />
 
-      {/* Client context */}
-      <div
-        className="px-2 mb-6 pb-4"
-        style={{ borderBottom: '1px solid var(--admin-ghost-border)' }}
-      >
-        <div
-          style={{
-            fontFamily: 'var(--admin-font-mono)',
-            fontSize: '9px',
-            fontWeight: 500,
-            textTransform: 'uppercase',
-            letterSpacing: '0.1em',
-            color: 'var(--admin-text-tertiary)',
-            marginBottom: 4,
-          }}
-        >
-          Client
-        </div>
-        <div
-          style={{
-            fontFamily: 'var(--admin-font-display)',
-            fontSize: '13px',
-            fontWeight: 500,
-            color: 'var(--admin-text-primary)',
-          }}
-        >
-          Christian Louboutin
-        </div>
-      </div>
 
       {/* Nav */}
       <nav className="flex-1 flex flex-col gap-0.5 overflow-y-auto -mx-1 px-1">
