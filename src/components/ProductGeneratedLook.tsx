@@ -439,7 +439,13 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
         setLooks(prev => {
           const newLooks = [...prev, newLook];
           const newIdx = newLooks.length - 1;
-          generateLookImage(newLook.products, newLook.look, newIdx);
+          const mode = resolveLookMode(newLook.products, modeRules);
+          setInitialModes(m => ({ ...m, [newIdx]: mode }));
+          if (mode === 'collage') {
+            generateCollageImage(newLook.products, newLook.look, newIdx);
+          } else {
+            generateLookImage(newLook.products, newLook.look, newIdx);
+          }
           return newLooks;
         });
       }
