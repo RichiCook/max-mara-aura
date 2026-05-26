@@ -15,6 +15,7 @@ import { ColorCombinatorSection } from '@/components/ai-settings/ColorCombinator
 import { ModelReferencesSection } from '@/components/ai-settings/ModelReferencesSection';
 import { StyleReferencesSection } from '@/components/ai-settings/StyleReferencesSection';
 import { AnimationControls } from '@/components/ai-settings/AnimationControls';
+import { LookModeRulesSection } from '@/components/ai-settings/LookModeRulesSection';
 import logo from '@/assets/logo.png';
 
 const AIGenerationSettingsPage = () => {
