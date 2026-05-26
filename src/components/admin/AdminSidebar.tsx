@@ -86,49 +86,8 @@ export const AdminSidebar = () => {
       >
         Product Intelligence
       </div>
-      <div
-        className="px-2 mb-8"
-        style={{
-          fontFamily: 'var(--admin-font-mono)',
-          fontSize: '8px',
-          fontWeight: 500,
-          textTransform: 'uppercase',
-          letterSpacing: '0.18em',
-          color: 'var(--admin-grey)',
-        }}
-      >
-        Amplifying products
-      </div>
+      <div className="mb-6 pb-4" style={{ borderBottom: '1px solid var(--admin-ghost-border)' }} />
 
-      {/* Client context */}
-      <div
-        className="px-2 mb-6 pb-4"
-        style={{ borderBottom: '1px solid var(--admin-ghost-border)' }}
-      >
-        <div
-          style={{
-            fontFamily: 'var(--admin-font-mono)',
-            fontSize: '9px',
-            fontWeight: 500,
-            textTransform: 'uppercase',
-            letterSpacing: '0.1em',
-            color: 'var(--admin-text-tertiary)',
-            marginBottom: 4,
-          }}
-        >
-          Client
-        </div>
-        <div
-          style={{
-            fontFamily: 'var(--admin-font-display)',
-            fontSize: '13px',
-            fontWeight: 500,
-            color: 'var(--admin-text-primary)',
-          }}
-        >
-          Christian Louboutin
-        </div>
-      </div>
 
       {/* Nav */}
       <nav className="flex-1 flex flex-col gap-0.5 overflow-y-auto -mx-1 px-1">
