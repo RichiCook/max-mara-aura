@@ -10,25 +10,27 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
-// All available category keywords — sportswear
+// All available category keywords — luxury womenswear (Max Mara taxonomy)
 const ALL_CATEGORIES = [
-  { id: 'tshirt', label: 'T-Shirt', keywords: ['t-shirt', 't-shirts', 'tshirt'] },
-  { id: 'felpa', label: 'Felpe/Hoodies', keywords: ['felpa', 'felpe', 'hoodie', 'hoodies', 'felpe con cappuccio', 'felpe con zip'] },
-  { id: 'giacca', label: 'Giacche/Jacket', keywords: ['giacca', 'giacche', 'jacket', 'jackets'] },
-  { id: 'pantalone', label: 'Pantaloni/Joggers', keywords: ['pantaloni', 'pantalone', 'jogger', 'joggers', 'cargo', 'pantaloni tuta', 'pantaloni con polsini'] },
-  { id: 'pantaloncini', label: 'Pantaloncini/Shorts', keywords: ['pantaloncini', 'shorts', 'short'] },
-  { id: 'leggings', label: 'Leggings', keywords: ['leggings', 'legging'] },
-  { id: 'reggiseno_sportivo', label: 'Reggiseni Sportivi', keywords: ['reggiseni sportivi', 'reggiseno sportivo', 'sports bra', 'reggiseni', 'bra'] },
-  { id: 'top', label: 'Top/Canotte', keywords: ['top', 'canotta', 'canotte', 'tank'] },
-  { id: 'tuta', label: 'Tute/Tracksuit', keywords: ['tuta', 'tute', 'tracksuit'] },
-  { id: 'polo', label: 'Polo', keywords: ['polo'] },
-  { id: 'pile', label: 'Pile/Fleece', keywords: ['pile', 'fleece'] },
-  { id: 'maglione', label: 'Maglioni', keywords: ['maglione', 'maglioni', 'sweater', 'sweaters'] },
-  { id: 'camicia', label: 'Camicie', keywords: ['camicia', 'camicie', 'shirt'] },
-  { id: 'performance', label: 'Performance/Activewear', keywords: ['performance', 'activewear'] },
-  { id: 'accessori', label: 'Accessori', keywords: ['accessori', 'cappelli', 'berretti', 'borse', 'zaini', 'borsoni', 'sacca', 'borsa', 'zaino', 'cappello', 'berretto'] },
-  { id: 'intimo', label: 'Calze e Intimo', keywords: ['calze', 'intimo', 'underwear', 'socks'] },
-  { id: 'mare', label: 'Mare/Beachwear', keywords: ['mare', 'beachwear', 'pantaloncini da mare', 'swim'] },
+  { id: 'abito', label: 'Abiti', keywords: ['abiti', 'abito', 'vestito', 'vestiti', 'dress', 'dresses'] },
+  { id: 'tailleur', label: 'Tailleur', keywords: ['tailleur', 'completo', 'suit'] },
+  { id: 'tuta', label: 'Tute / Jumpsuit', keywords: ['tute donna', 'jumpsuit', 'tuta intera'] },
+  { id: 'cappotto', label: 'Cappotti / Trench / Piumini', keywords: ['cappotti', 'cappotto', 'cappa', 'cappe', 'trench', 'piumini', 'piumino', 'imbottiti', 'coat', 'puffer'] },
+  { id: 'giacca', label: 'Giacche / Blazer', keywords: ['giacche e blazer', 'giacche in pelle', 'giacca', 'giacche', 'blazer', 'jacket'] },
+  { id: 'maglieria', label: 'Maglieria / Felpe', keywords: ['maglieria', 'felpe', 'maglione', 'maglioni', 'cardigan', 'pullover', 'felpa', 'knitwear', 'sweater'] },
+  { id: 'camicia', label: 'Camicie / Bluse', keywords: ['bluse', 'camicie', 'camicia', 'blusa', 'shirt', 'blouse'] },
+  { id: 'tshirt', label: 'T-Shirt / Top', keywords: ['t-shirt', 'tshirt', 'top donna', 'canotta', 'canotte', 'tank'] },
+  { id: 'pantalone', label: 'Pantaloni / Jeans', keywords: ['pantaloni', 'pantalone', 'jeans', 'denim', 'trousers', 'pants'] },
+  { id: 'gonna', label: 'Gonne', keywords: ['gonne', 'gonna', 'skirt'] },
+  { id: 'scarpe', label: 'Scarpe', keywords: ['scarpe', 'sneaker', 'shoes', 'sandali', 'décolleté', 'mocassini', 'stivali', 'boots', 'pumps', 'calzature'] },
+  { id: 'borsa', label: 'Borse / Pelletteria', keywords: ['borse', 'borsa', 'bag', 'handbag', 'pochette', 'clutch', 'tote', 'shopper', 'pelletteria', 'portafogli', 'wallet'] },
+  { id: 'cintura', label: 'Cinture', keywords: ['cinture', 'cintura', 'belt'] },
+  { id: 'sciarpa', label: 'Sciarpe / Foulard', keywords: ['sciarpe', 'sciarpa', 'foulard', 'scarf', 'stola'] },
+  { id: 'cappello', label: 'Cappelli', keywords: ['cappelli', 'cappello', 'berretti', 'hat', 'beanie'] },
+  { id: 'guanti', label: 'Guanti', keywords: ['guanti', 'guanto', 'gloves'] },
+  { id: 'occhiali', label: 'Occhiali', keywords: ['occhiali', 'sunglasses', 'eyewear'] },
+  { id: 'bijoux', label: 'Bijoux / Gioielli', keywords: ['bijoux', 'gioielli', 'jewellery', 'jewelry', 'collane', 'orecchini', 'bracciali', 'anelli'] },
+  { id: 'mare', label: 'Beachwear', keywords: ['costumi da bagno', 'beachwear', 'costume', 'bikini', 'swimwear', 'mare'] },
 ];
 
 // Types
@@ -43,29 +45,28 @@ export interface ExclusionRule {
   reason?: string;
 }
 
-// Default category pairings — sportswear outfit logic
+// Default category pairings — luxury womenswear outfit logic
+const ACCESSORIES = ['scarpe', 'borsa', 'cintura', 'sciarpa', 'cappello', 'guanti', 'occhiali', 'bijoux'];
 const DEFAULT_PAIRINGS: CategoryPairing[] = [
-  { category: 'tshirt', allowedWith: ['pantalone', 'pantaloncini', 'leggings', 'giacca', 'felpa', 'accessori'] },
-  { category: 'felpa', allowedWith: ['pantalone', 'pantaloncini', 'leggings', 'tshirt', 'top', 'accessori'] },
-  { category: 'giacca', allowedWith: ['tshirt', 'polo', 'felpa', 'top', 'pantalone', 'pantaloncini', 'leggings', 'accessori'] },
-  { category: 'pantalone', allowedWith: ['tshirt', 'felpa', 'giacca', 'polo', 'top', 'pile', 'maglione', 'camicia', 'accessori'] },
-  { category: 'pantaloncini', allowedWith: ['tshirt', 'felpa', 'top', 'polo', 'reggiseno_sportivo', 'accessori'] },
-  { category: 'leggings', allowedWith: ['tshirt', 'felpa', 'top', 'reggiseno_sportivo', 'giacca', 'accessori'] },
-  { category: 'reggiseno_sportivo', allowedWith: ['leggings', 'pantaloncini', 'top', 'felpa', 'giacca'] },
-  { category: 'top', allowedWith: ['pantalone', 'pantaloncini', 'leggings', 'giacca', 'felpa', 'accessori'] },
-  { category: 'tuta', allowedWith: ['tshirt', 'top', 'accessori'] },
-  { category: 'polo', allowedWith: ['pantalone', 'pantaloncini', 'giacca', 'accessori'] },
-  { category: 'pile', allowedWith: ['tshirt', 'pantalone', 'pantaloncini', 'accessori'] },
-  { category: 'maglione', allowedWith: ['pantalone', 'camicia', 'giacca', 'accessori'] },
-  { category: 'camicia', allowedWith: ['pantalone', 'maglione', 'giacca', 'accessori'] },
-  { category: 'performance', allowedWith: ['leggings', 'pantaloncini', 'reggiseno_sportivo', 'top', 'accessori'] },
-  { category: 'accessori', allowedWith: ['tshirt', 'felpa', 'giacca', 'pantalone', 'pantaloncini', 'top', 'polo', 'pile'] },
-  { category: 'mare', allowedWith: ['mare', 'accessori'] },
+  { category: 'abito', allowedWith: [...ACCESSORIES, 'cappotto', 'giacca'] },
+  { category: 'tailleur', allowedWith: ['camicia', 'tshirt', 'maglieria', ...ACCESSORIES] },
+  { category: 'tuta', allowedWith: [...ACCESSORIES, 'cappotto', 'giacca'] },
+  { category: 'cappotto', allowedWith: ['abito', 'tuta', 'maglieria', 'camicia', 'tshirt', 'pantalone', 'gonna', ...ACCESSORIES] },
+  { category: 'giacca', allowedWith: ['maglieria', 'camicia', 'tshirt', 'pantalone', 'gonna', ...ACCESSORIES] },
+  { category: 'maglieria', allowedWith: ['pantalone', 'gonna', 'cappotto', 'giacca', ...ACCESSORIES] },
+  { category: 'camicia', allowedWith: ['pantalone', 'gonna', 'maglieria', 'giacca', 'cappotto', 'tailleur', ...ACCESSORIES] },
+  { category: 'tshirt', allowedWith: ['pantalone', 'gonna', 'giacca', 'cappotto', ...ACCESSORIES] },
+  { category: 'pantalone', allowedWith: ['maglieria', 'camicia', 'tshirt', 'giacca', 'cappotto', ...ACCESSORIES] },
+  { category: 'gonna', allowedWith: ['maglieria', 'camicia', 'tshirt', 'giacca', 'cappotto', ...ACCESSORIES] },
+  { category: 'mare', allowedWith: ['mare', 'sciarpa', 'cappello', 'occhiali', 'borsa', 'sandali', 'scarpe'] },
 ];
 
-// Default exclusion rules — sportswear
+// Default exclusion rules — luxury womenswear
 const DEFAULT_EXCLUSIONS: ExclusionRule[] = [
-  { category: 'mare', excludes: ['tshirt', 'felpa', 'giacca', 'pantalone', 'leggings', 'reggiseno_sportivo', 'tuta', 'polo', 'pile', 'maglione', 'camicia', 'performance', 'intimo'], reason: 'I prodotti mare si abbinano solo tra loro e con accessori' },
+  { category: 'abito', excludes: ['pantalone', 'gonna', 'tuta', 'tailleur'], reason: "L'abito non si abbina a pantaloni, gonne, tute o tailleur" },
+  { category: 'tuta', excludes: ['pantalone', 'gonna', 'abito', 'tailleur', 'camicia', 'maglieria'], reason: 'La tuta intera è un capo total look' },
+  { category: 'tailleur', excludes: ['abito', 'tuta', 'giacca', 'cappotto'], reason: 'Il tailleur è già un completo' },
+  { category: 'mare', excludes: ['abito', 'cappotto', 'giacca', 'maglieria', 'camicia', 'tshirt', 'pantalone', 'gonna', 'tuta', 'tailleur'], reason: 'I prodotti beachwear si abbinano solo tra loro e con accessori' },
 ];
 
 interface LookGroupsManagerProps {
