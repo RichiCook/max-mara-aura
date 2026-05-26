@@ -413,13 +413,19 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
     setLooks(results);
     setLoading(false);
 
-    // Generate images for all looks
+    // Generate images for all looks using auto-resolved mode
+    const newModes: Record<number, LookMode> = {};
     results.forEach((r, idx) => {
-      if (!r.lookImage && r.products.length > 0) {
-        // Stagger image generation to avoid rate limits
+      const mode = resolveLookMode(r.products, modeRules);
+      newModes[idx] = mode;
+      if (r.products.length === 0) return;
+      if (mode === 'collage' && !r.collageImage) {
+        setTimeout(() => generateCollageImage(r.products, r.look, idx), idx * 500);
+      } else if (mode === 'photo' && !r.lookImage) {
         setTimeout(() => generateLookImage(r.products, r.look, idx), idx * 500);
       }
     });
+    setInitialModes(prev => ({ ...prev, ...newModes }));
   };
 
   const loadMoreLooks = useCallback(async () => {
