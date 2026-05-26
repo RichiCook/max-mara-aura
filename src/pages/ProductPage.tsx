@@ -612,7 +612,7 @@ const ProductPage = () => {
           <div className="flex items-center justify-between">
             <div className="min-w-0">
               <span className="font-serif text-[13px] font-semibold text-foreground opacity-40 block">
-                {settings.brand_name || 'Studio'} × Aura Blockchain
+                {settings.brand_name || 'Studio'}
               </span>
               <p className="font-sans text-[10px] text-muted-foreground mt-0.5">
                 Product Intelligence

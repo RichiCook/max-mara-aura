@@ -579,7 +579,7 @@ const ProductPageEditorial = () => {
       <footer style={{ background: ED.dark, color: ED.darkText, padding: '32px 0', marginTop: 48 }}>
         <div className="max-w-6xl mx-auto px-5 flex items-center justify-between flex-wrap gap-3">
           <span style={{ fontFamily: fontMono, fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', opacity: 0.8 }}>
-            {settings.brand_name || 'Studio'} × Aura Blockchain
+            {settings.brand_name || 'Studio'}
           </span>
           <span style={{ fontFamily: fontMono, fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', opacity: 0.5 }}>
             Product Intelligence
