@@ -189,6 +189,44 @@ export const LookCard = ({ look, onSave, onDelete, isSaved = false }: LookCardPr
           </div>
         )}
 
+        {/* Photo / Collage preview */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="inline-flex rounded-md border bg-muted/40 p-0.5">
+              {(['photo', 'collage'] as const).map(m => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => handleSwitch(m)}
+                  className={`px-3 py-1 text-xs font-medium rounded transition-colors ${mode === m ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground'}`}
+                >
+                  {m === 'photo' ? 'Photo' : 'Collage'}
+                </button>
+              ))}
+            </div>
+            <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
+              Auto: {resolveLookMode(products, rules)}
+            </span>
+          </div>
+          <div className="aspect-[3/4] rounded-md border bg-muted/30 overflow-hidden flex items-center justify-center">
+            {activeGenerating ? (
+              <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span className="text-xs">Generating {mode}...</span>
+              </div>
+            ) : activeImage ? (
+              <img src={activeImage} alt={`${look.name} ${mode}`} className={`w-full h-full ${mode === 'collage' ? 'object-contain' : 'object-cover'}`} />
+            ) : (
+              <Button size="sm" variant="outline" onClick={mode === 'photo' ? generatePhoto : generateCollage} disabled={products.length === 0}>
+                <Sparkles className="w-4 h-4 mr-1" />
+                Generate {mode === 'photo' ? 'Photo' : 'Collage'}
+              </Button>
+            )}
+          </div>
+        </div>
+
+
+
         {/* Products grid */}
         <div className="grid grid-cols-2 gap-3">
           {products.map(product => (
