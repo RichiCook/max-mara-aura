@@ -529,6 +529,11 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
           const l = looks[idx];
           if (l && !l.generatingCollage) generateCollageImage(l.products, l.look, idx);
         }}
+        onGeneratePhoto={(idx) => {
+          const l = looks[idx];
+          if (l && !l.generatingImage) generateLookImage(l.products, l.look, idx);
+        }}
+        initialModes={initialModes}
       />
     );
   }
