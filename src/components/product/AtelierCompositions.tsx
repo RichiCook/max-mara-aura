@@ -7,6 +7,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Sparkles, RefreshCw, X, ChevronRight, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { usePlatformSettingsContext } from '@/contexts/PlatformSettingsContext';
 import ProductPreviewSheet from './ProductPreviewSheet';
 import { normalizeImages } from '@/hooks/useProducts';
 import { toast } from 'sonner';
@@ -183,6 +184,8 @@ async function preloadCachedImages(compositions: Composition[]): Promise<Composi
 // ── Component ────────────────────────────────────────────────
 
 const AtelierCompositions = ({ currentProduct }: AtelierCompositionsProps) => {
+  const { settings } = usePlatformSettingsContext();
+  const brandName = settings.brand_name || 'Studio';
   const [compositions, setCompositions] = useState<Composition[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [quickViewProduct, setQuickViewProduct] = useState<any>(null);
@@ -579,7 +582,7 @@ const AtelierCompositions = ({ currentProduct }: AtelierCompositionsProps) => {
                         {p.name}
                       </h4>
                       <p style={{ fontSize: 11, color: '#8A8178', margin: '0 0 6px' }}>
-                        Christian Louboutin
+                        {brandName}
                       </p>
                       {p.price && (
                         <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 15, fontWeight: 500, color: '#1A1A1A' }}>

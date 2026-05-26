@@ -275,7 +275,7 @@ const ProductPageEditorial = () => {
       {/* Top marquee */}
       <div style={{ borderBottom: `1px solid ${ED.rule}`, background: ED.bg }}>
         <div className="max-w-6xl mx-auto px-5 py-2 text-center" style={{ fontFamily: fontMono, fontSize: 10, letterSpacing: '0.24em', color: ED.muted, textTransform: 'uppercase' }}>
-          AITEMZ · {product.name.toUpperCase()}
+          {(settings.brand_name || 'Studio').toUpperCase()} · {product.name.toUpperCase()}
         </div>
       </div>
 
@@ -292,7 +292,7 @@ const ProductPageEditorial = () => {
               <img src={settings.logo_url} alt={settings.brand_name || 'Logo'} style={{ height: 22, width: 'auto', objectFit: 'contain', margin: '0 auto' }} />
             ) : (
               <span style={{ fontFamily: fontSerif, fontSize: 18, fontWeight: 500, color: ED.ink }}>
-                {settings.brand_name || 'Christian Louboutin'}
+                {settings.brand_name || 'Studio'}
               </span>
             )}
           </div>
@@ -579,10 +579,10 @@ const ProductPageEditorial = () => {
       <footer style={{ background: ED.dark, color: ED.darkText, padding: '32px 0', marginTop: 48 }}>
         <div className="max-w-6xl mx-auto px-5 flex items-center justify-between flex-wrap gap-3">
           <span style={{ fontFamily: fontMono, fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', opacity: 0.8 }}>
-            Louboutin × Aura Blockchain
+            {settings.brand_name || 'Studio'} × Aura Blockchain
           </span>
           <span style={{ fontFamily: fontMono, fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', opacity: 0.5 }}>
-            Powered by Aitems · Product Intelligence
+            Product Intelligence
           </span>
         </div>
       </footer>
