@@ -34,71 +34,76 @@ interface StyleReference {
   styleDominantCategories?: string[];
 }
 
-// Category detection based on sportswear categories (order matters — more specific first)
+// Category detection — Max Mara luxury womenswear taxonomy (order matters — more specific first)
 const CATEGORY_KEYWORDS: Record<string, string[]> = {
-  'mare': ['mare', 'beachwear', 'pantaloncini da mare', 'swim'],
-  'reggiseno_sportivo': ['reggiseni sportivi', 'reggiseno sportivo', 'sports bra', 'reggiseni', 'bra'],
-  'leggings': ['leggings', 'legging'],
-  'pantaloncini': ['pantaloncini', 'shorts', 'short'],
-  'tuta': ['tuta', 'tute', 'tracksuit'],
-  'polo': ['polo'],
-  'pile': ['pile', 'fleece'],
-  'maglione': ['maglione', 'maglioni', 'sweater', 'sweaters'],
-  'giacca': ['giacca', 'giacche', 'jacket', 'jackets'],
-  'felpa': ['felpa', 'felpe', 'hoodie', 'hoodies', 'felpe con cappuccio', 'felpe con zip'],
-  'camicia': ['camicia', 'camicie', 'shirt'],
-  'tshirt': ['t-shirt', 't-shirts', 'tshirt'],
-  'scarpe': ['scarpe', 'scarpa', 'sneaker', 'sneakers', 'shoes', 'shoe', 'ciabatte', 'ciabatta', 'sandali', 'sandalo', 'slide', 'slides', 'calzature', 'trainers', 'trainer'],
-  'top': ['top', 'canotta', 'canotte', 'tank'],
-  'pantalone': ['pantaloni', 'pantalone', 'jogger', 'joggers', 'cargo', 'pantaloni tuta', 'pantaloni con polsini'],
-  'performance': ['performance', 'activewear'],
-  'accessori': ['accessori', 'cappelli', 'berretti', 'borse', 'zaini', 'borsoni', 'sacca', 'borsa', 'zaino', 'cappello', 'berretto', 'fascia', 'polsini', 'cintura'],
-  'intimo': ['calze', 'intimo', 'underwear', 'socks'],
+  'mare': ['costumi da bagno', 'beachwear', 'costume', 'bikini', 'swimwear', 'mare'],
+  'abito': ['abiti', 'abito', 'vestito', 'vestiti', 'dress', 'dresses'],
+  'tailleur': ['tailleur', 'completo', 'suit'],
+  'tuta': ['tute donna', 'jumpsuit', 'tuta intera'],
+  'cappotto': ['cappotti', 'cappotto', 'cappa', 'cappe', 'trench', 'piumini', 'piumino', 'imbottiti', 'coat', 'puffer', 'down jacket'],
+  'giacca': ['giacche e blazer', 'giacche in pelle', 'giacca', 'giacche', 'blazer', 'jacket', 'jackets'],
+  'maglieria': ['maglieria', 'felpe', 'maglione', 'maglioni', 'cardigan', 'pullover', 'felpa', 'knitwear', 'sweater', 'jumper'],
+  'camicia': ['bluse', 'camicie', 'camicia', 'blusa', 'shirt', 'blouse'],
+  'tshirt': ['t-shirt', 't-shirts', 'tshirt', 'top donna', 'canotta', 'canotte', 'tank'],
+  'pantalone': ['pantaloni', 'pantalone', 'jeans', 'denim', 'trousers', 'pants'],
+  'gonna': ['gonne', 'gonna', 'skirt', 'skirts'],
+  'scarpe': ['scarpe', 'scarpa', 'sneaker', 'sneakers', 'shoes', 'shoe', 'ciabatte', 'sandali', 'sandalo', 'décolleté', 'decollete', 'mocassini', 'stivali', 'stivale', 'boots', 'pumps', 'calzature'],
+  'borsa': ['borse', 'borsa', 'bag', 'bags', 'handbag', 'pochette', 'clutch', 'tote', 'shopper', 'piccola pelletteria', 'portafogli', 'portafoglio', 'wallet'],
+  'cintura': ['cinture', 'cintura', 'belt', 'belts'],
+  'sciarpa': ['sciarpe', 'sciarpa', 'foulard', 'scarves', 'scarf', 'stola'],
+  'cappello': ['cappelli', 'cappello', 'berretti', 'berretto', 'hats', 'hat', 'beanie'],
+  'guanti': ['guanti', 'guanto', 'gloves', 'glove'],
+  'occhiali': ['occhiali', 'sunglasses', 'eyewear'],
+  'bijoux': ['bijoux', 'gioielli', 'gioiello', 'jewellery', 'jewelry', 'collane', 'orecchini', 'bracciali', 'anelli'],
 };
 
-// Sportswear outfit templates
+// Max Mara outfit templates — luxury womenswear
 const OUTFIT_TEMPLATES: Record<string, { name: string; required: string[][]; description: string }> = {
-  'casual_top_bottom': {
-    name: 'T-Shirt/Polo + Pantaloni/Shorts',
-    required: [['tshirt', 'polo', 'top'], ['pantalone', 'pantaloncini']],
-    description: 'Classic casual sportswear combination'
+  'dress_look': {
+    name: 'Abito + Scarpe + Borsa',
+    required: [['abito'], ['scarpe'], ['borsa']],
+    description: 'Elegant dress look with shoes and bag'
   },
-  'layered_sport': {
-    name: 'Felpa/Giacca + T-Shirt + Pantaloni',
-    required: [['felpa', 'giacca', 'pile'], ['tshirt', 'top'], ['pantalone', 'pantaloncini', 'leggings']],
-    description: 'Layered sportswear look with outerwear'
+  'coat_layer': {
+    name: 'Cappotto + Top + Pantalone/Gonna + Scarpe',
+    required: [['cappotto'], ['maglieria', 'camicia', 'tshirt'], ['pantalone', 'gonna'], ['scarpe']],
+    description: 'Outerwear layered tailoring'
   },
-  'activewear': {
-    name: 'Reggiseno Sportivo + Leggings/Shorts + Top',
-    required: [['reggiseno_sportivo'], ['leggings', 'pantaloncini'], ['top', 'tshirt']],
-    description: 'Active workout outfit'
+  'jacket_layer': {
+    name: 'Giacca/Blazer + Top + Pantalone/Gonna + Scarpe',
+    required: [['giacca'], ['maglieria', 'camicia', 'tshirt'], ['pantalone', 'gonna'], ['scarpe']],
+    description: 'Blazer-led tailored look'
   },
-  'full_tracksuit': {
-    name: 'Tuta + T-Shirt/Top',
-    required: [['tuta'], ['tshirt', 'top']],
-    description: 'Full tracksuit with underlayer'
+  'top_bottom': {
+    name: 'Top + Pantalone/Gonna + Scarpe + Borsa',
+    required: [['maglieria', 'camicia', 'tshirt'], ['pantalone', 'gonna'], ['scarpe'], ['borsa']],
+    description: 'Top and bottom essentials'
   },
-  'performance_set': {
-    name: 'Performance Top + Leggings/Shorts',
-    required: [['performance', 'tshirt', 'top'], ['leggings', 'pantaloncini']],
-    description: 'Performance workout set'
+  'tailleur_look': {
+    name: 'Tailleur + Camicia + Scarpe',
+    required: [['tailleur'], ['camicia', 'tshirt'], ['scarpe']],
+    description: 'Matching suit'
   },
-  'outerwear_combo': {
-    name: 'Giacca/Pile + T-Shirt + Pantaloni',
-    required: [['giacca', 'pile', 'maglione'], ['tshirt', 'polo', 'camicia'], ['pantalone']],
-    description: 'Outerwear layered look'
+  'jumpsuit_look': {
+    name: 'Tuta + Scarpe + Borsa',
+    required: [['tuta'], ['scarpe'], ['borsa']],
+    description: 'Jumpsuit styled with shoes and bag'
   },
   'mare': {
-    name: 'Mare (Beachwear)',
+    name: 'Beachwear',
     required: [['mare']],
-    description: 'Beachwear - only matches with other mare/beach products'
+    description: 'Beachwear — only matches with other beachwear products'
   }
 };
 
-// Exclusion rules for sportswear
+// Exclusion rules — categories that should not appear together
 const EXCLUSION_RULES: Record<string, string[]> = {
-  'mare': ['tshirt', 'felpa', 'giacca', 'pantalone', 'leggings', 'reggiseno_sportivo', 'tuta', 'polo', 'pile', 'maglione', 'camicia', 'performance', 'intimo'],
+  'abito': ['pantalone', 'gonna', 'tuta', 'tailleur'],
+  'tuta': ['pantalone', 'gonna', 'abito', 'tailleur', 'camicia', 'maglieria'],
+  'tailleur': ['abito', 'tuta', 'giacca', 'cappotto'],
+  'mare': ['abito', 'cappotto', 'giacca', 'maglieria', 'camicia', 'tshirt', 'pantalone', 'gonna', 'tuta', 'tailleur'],
 };
+
 
 // Fisher-Yates shuffle to randomize product selection
 function shuffleArray<T>(arr: T[]): T[] {
@@ -230,30 +235,35 @@ function filterMareCompatibility(products: any[], heroIsMare: boolean): any[] {
 // Determine the best matching template based on hero product category
 function getBestTemplateForCategory(heroCategory: string): string {
   switch (heroCategory) {
-    case 'tshirt':
-    case 'polo':
-    case 'top':
-      return 'casual_top_bottom';
-    case 'felpa':
+    case 'abito':
+      return 'dress_look';
+    case 'cappotto':
+      return 'coat_layer';
     case 'giacca':
-    case 'pile':
-    case 'maglione':
-      return 'layered_sport';
-    case 'reggiseno_sportivo':
-    case 'performance':
-      return 'activewear';
+      return 'jacket_layer';
+    case 'tailleur':
+      return 'tailleur_look';
     case 'tuta':
-      return 'full_tracksuit';
-    case 'pantalone':
-    case 'pantaloncini':
-    case 'leggings':
-      return 'casual_top_bottom';
+      return 'jumpsuit_look';
+    case 'maglieria':
     case 'camicia':
-      return 'outerwear_combo';
+    case 'tshirt':
+    case 'pantalone':
+    case 'gonna':
+      return 'top_bottom';
     case 'mare':
       return 'mare';
+    case 'scarpe':
+    case 'borsa':
+    case 'cintura':
+    case 'sciarpa':
+    case 'cappello':
+    case 'guanti':
+    case 'occhiali':
+    case 'bijoux':
+      return 'top_bottom';
     default:
-      return 'casual_top_bottom'; // Default fallback for sportswear
+      return 'top_bottom';
   }
 }
 
@@ -467,7 +477,7 @@ serve(async (req) => {
     }
 
     // Get the template to use (for naming only)
-    const templateKey = heroCategory ? getBestTemplateForCategory(heroCategory) : 'casual_top_bottom';
+    const templateKey = heroCategory ? getBestTemplateForCategory(heroCategory) : 'top_bottom';
     const template = OUTFIT_TEMPLATES[templateKey];
     console.log(`Using template: ${templateKey} - ${template?.name}`);
 
@@ -588,7 +598,7 @@ serve(async (req) => {
 EXCLUSION RULES (MUST FOLLOW):
 - Mare/beachwear products ONLY go with other mare products and accessories
 - The hero product is: ${heroCategory || 'unknown category'}
-- Respect style coherence: keep the look within a consistent sportswear aesthetic (casual, performance, or streetwear)
+- Respect style coherence: keep the look within a consistent luxury womenswear aesthetic
 - GENDER RULE: NEVER mix "Donna" (women), "Uomo" (men), and "Bambini" (children) products. Each look must be for ONE audience only.${heroGender ? ` The hero product is ${heroGender === 'bambini' ? 'CHILDREN\'S' : heroGender === 'donna' ? 'WOMEN\'S' : 'MEN\'S'} — only select ${heroGender === 'bambini' ? 'children\'s' : heroGender === 'donna' ? 'women\'s' : 'men\'s'} or unisex items.` : ''}`;
 
     // Build configuration context from settings
@@ -637,7 +647,7 @@ EXCLUSION RULES (MUST FOLLOW):
       );
     }
 
-    const prompt = `You are a professional luxury fashion stylist creating a complete outfit look for the Christian Louboutin brand.
+    const prompt = `You are a professional luxury fashion stylist creating a complete outfit look.
 
 HERO PRODUCT (the centerpiece of this outfit - MUST be included):
 - Name: ${heroProduct.name}
@@ -658,8 +668,8 @@ AVAILABLE PRODUCTS TO COMPLETE THE LOOK:
 ${JSON.stringify(productOptions, null, 2)}
 
 YOUR TASK:
-Select ONE product from each available category slot to create a cohesive, stylish sportswear outfit that complements the hero product.
-Consider color harmony, style consistency, and overall athletic/streetwear aesthetic.
+Select ONE product from each available category slot to create a cohesive, refined luxury outfit that complements the hero product.
+Consider color harmony, style consistency, and overall elegant aesthetic.
 
 IMPORTANT: You MUST select a shoe (scarpe) and an accessory (accessori) if they are listed in the available products. These complete the total look.
 CRITICAL: Select EXACTLY ONE shoe. Never select two shoes. Select EXACTLY ONE accessory. Never select two accessories. Each category slot must have EXACTLY ONE product.
@@ -669,7 +679,7 @@ RULES:
 2. Items should match in style (${effectiveStyle}) and work together aesthetically
 3. Colors should be harmonious - consider matching or complementary colors
 4. STRICTLY follow the exclusion rules above
-5. Consider the overall vibe: casual, performance, or streetwear
+5. Consider the overall vibe: refined luxury womenswear
 6. Gender/age consistency: NEVER mix "Donna" (women), "Uomo" (men), and "Bambini" (children) products. All items must be for the same audience.
 7. ALWAYS include exactly ONE shoe and exactly ONE accessory to complete the total look
 
@@ -695,7 +705,7 @@ RESPOND WITH ONLY A JSON OBJECT (no markdown, no explanation):
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
         messages: [
-          { role: 'system', content: 'You are a professional luxury fashion stylist for the Christian Louboutin brand. You create cohesive luxury outfits that work well together in terms of color, style, and elegance. Always respond with valid JSON only. STRICTLY follow exclusion rules.' },
+          { role: 'system', content: 'You are a professional luxury fashion stylist. You create cohesive luxury outfits that work well together in terms of color, style, and elegance. Always respond with valid JSON only. STRICTLY follow exclusion rules.' },
           { role: 'user', content: prompt }
         ],
         temperature: 0.7,
