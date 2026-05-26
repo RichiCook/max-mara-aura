@@ -50,9 +50,11 @@ interface LookCardV2Props {
   calculateTotal: (products: LookProduct[]) => string | null;
   variant?: 'refined' | 'editorial';
   onGenerateCollage?: (lookIndex: number) => void;
+  onGeneratePhoto?: (lookIndex: number) => void;
+  initialModes?: Record<number, 'photo' | 'collage'>;
 }
 
-const LookCardV2 = ({ looks, productCode, loading, loadingMore, onTrackEvent, onScroll, calculateTotal, variant = 'refined', onGenerateCollage }: LookCardV2Props) => {
+const LookCardV2 = ({ looks, productCode, loading, loadingMore, onTrackEvent, onScroll, calculateTotal, variant = 'refined', onGenerateCollage, onGeneratePhoto, initialModes }: LookCardV2Props) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [expandedNotes, setExpandedNotes] = useState<Set<number>>(new Set());
   const [previewProduct, setPreviewProduct] = useState<LookProduct | null>(null);
@@ -60,14 +62,15 @@ const LookCardV2 = ({ looks, productCode, loading, loadingMore, onTrackEvent, on
   const scrollRef = useRef<HTMLDivElement>(null);
   const { isReady: shopifyReady, handleCheckout, loading: shopifyLoading, checkoutUrl, closeCheckout } = useShopifyCheckout();
 
-  const getMode = (idx: number): 'photo' | 'collage' => modes[idx] || 'photo';
+  const getMode = (idx: number): 'photo' | 'collage' => modes[idx] || initialModes?.[idx] || 'photo';
   const setMode = (idx: number, mode: 'photo' | 'collage') => {
     setModes(prev => ({ ...prev, [idx]: mode }));
-    if (mode === 'collage') {
-      const l = looks[idx];
-      if (l && !l.collageImage && !l.generatingCollage && onGenerateCollage) {
-        onGenerateCollage(idx);
-      }
+    const l = looks[idx];
+    if (!l) return;
+    if (mode === 'collage' && !l.collageImage && !l.generatingCollage) {
+      onGenerateCollage?.(idx);
+    } else if (mode === 'photo' && !l.lookImage && !l.generatingImage) {
+      onGeneratePhoto?.(idx);
     }
   };
 
