@@ -370,7 +370,7 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
     for (const cl of cachedLooks) {
       const products = await fetchLookProducts(cl.product_codes || []);
       if (products.length > 0) {
-        results.push({ look: cl, products, lookImage: cl.look_image || null, generatingImage: false });
+        results.push({ look: cl, products, lookImage: cl.look_image || null, collageImage: cl.collage_image || null, generatingImage: false, generatingCollage: false });
         for (const code of cl.product_codes || []) {
           if (code !== productCode) usedProductCodesRef.current.add(code);
         }
