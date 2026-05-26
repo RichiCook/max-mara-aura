@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { getFlatLayImage, filterImagesBySku } from '@/utils/imageUtils';
 import LookCardV2 from '@/components/product/LookCardV2';
+import { fetchLookModeRules, resolveLookMode, type LookMode, type LookModeRules, DEFAULT_LOOK_MODE_RULES } from '@/lib/lookMode';
 
 interface LookConfig {
   modelReference?: string | null;
@@ -112,6 +113,10 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
   const generatingRef = useRef(false);
   const usedProductCodesRef = useRef<Set<string>>(new Set());
   const [layoutVersion, setLayoutVersion] = useState<'v1' | 'v2' | 'v2.1'>('v2');
+  const [modeRules, setModeRules] = useState<LookModeRules>(DEFAULT_LOOK_MODE_RULES);
+  const [initialModes, setInitialModes] = useState<Record<number, LookMode>>({});
+
+  useEffect(() => { fetchLookModeRules().then(setModeRules); }, []);
 
   // Fetch layout version preference
   useEffect(() => {
@@ -408,13 +413,19 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
     setLooks(results);
     setLoading(false);
 
-    // Generate images for all looks
+    // Generate images for all looks using auto-resolved mode
+    const newModes: Record<number, LookMode> = {};
     results.forEach((r, idx) => {
-      if (!r.lookImage && r.products.length > 0) {
-        // Stagger image generation to avoid rate limits
+      const mode = resolveLookMode(r.products, modeRules);
+      newModes[idx] = mode;
+      if (r.products.length === 0) return;
+      if (mode === 'collage' && !r.collageImage) {
+        setTimeout(() => generateCollageImage(r.products, r.look, idx), idx * 500);
+      } else if (mode === 'photo' && !r.lookImage) {
         setTimeout(() => generateLookImage(r.products, r.look, idx), idx * 500);
       }
     });
+    setInitialModes(prev => ({ ...prev, ...newModes }));
   };
 
   const loadMoreLooks = useCallback(async () => {
@@ -428,7 +439,13 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
         setLooks(prev => {
           const newLooks = [...prev, newLook];
           const newIdx = newLooks.length - 1;
-          generateLookImage(newLook.products, newLook.look, newIdx);
+          const mode = resolveLookMode(newLook.products, modeRules);
+          setInitialModes(m => ({ ...m, [newIdx]: mode }));
+          if (mode === 'collage') {
+            generateCollageImage(newLook.products, newLook.look, newIdx);
+          } else {
+            generateLookImage(newLook.products, newLook.look, newIdx);
+          }
           return newLooks;
         });
       }
@@ -512,6 +529,11 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
           const l = looks[idx];
           if (l && !l.generatingCollage) generateCollageImage(l.products, l.look, idx);
         }}
+        onGeneratePhoto={(idx) => {
+          const l = looks[idx];
+          if (l && !l.generatingImage) generateLookImage(l.products, l.look, idx);
+        }}
+        initialModes={initialModes}
       />
     );
   }

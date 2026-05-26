@@ -1,52 +1,37 @@
-# Add Collage Mode to Total Look Generation
+# Smart Photo/Collage Mode for Total Looks
 
-Today the Total Look generator produces a single AI photoshoot image (model wearing the products) via the `generate-look-image` edge function. We'll add a second visual mode: a **product cut-out collage** like the reference image — packshots of each item arranged together on a soft neutral background, no model.
+## Behavior
+- **Auto-default**: When a look is generated, the system picks Photo or Collage based on admin-configurable rules (no manual choice needed up front).
+- **Always switchable**: Once a look exists in either mode, the user can switch via the toggle. If the other mode hasn't been generated yet, clicking it triggers generation on demand. So a Collage look can always have its Photo generated, and vice versa.
 
-The user keeps the existing photoshoot option AND gets a new collage option. Both modes coexist per look.
+## Admin-configurable rule (app_settings)
+New `app_settings` row `id = 'look_mode_rules'` with JSON value:
+```json
+{
+  "default_mode": "auto",            // "auto" | "photo" | "collage"
+  "rule": "category_mix",            // "category_mix" | "product_count" | "fixed"
+  "apparel_categories": ["dress","coat","top","skirt","pants","suit","jacket"],
+  "count_threshold": 4                // <threshold => collage, >=threshold => photo
+}
+```
 
-## UX
+Logic per look at generation time:
+- `fixed` → always use `default_mode`.
+- `category_mix` → if any product category is in `apparel_categories` → Photo; else Collage.
+- `product_count` → `productIds.length >= count_threshold` → Photo, else Collage.
 
-In the Total Look generator panel (`LookGeneratorPanel.tsx`) and on each generated/saved look card (`ProductGeneratedLook.tsx` / `LookCardV2.tsx`), add a mode toggle:
-
-- **Photoshoot** (existing) — AI-rendered model wearing the look
-- **Collage** (new) — composed packshots of each product on a neutral backdrop
-
-When a user clicks "Generate image" they pick the mode (or generate both). The result is displayed in the same image slot. They can switch between the two if both exist.
-
-## How the collage is built
-
-The collage is composed deterministically from existing product packshot images — no model, no AI hallucination of garments. Two-step pipeline inside a new edge function `generate-look-collage`:
-
-1. **Pick best packshot per product** — reuse the existing flat-lay / SKU-filter logic (`getFlatLayImage`, `filterImagesBySku`, optional `classify-shoes`-style classification) so we pick the cleanest cut-out-style image per product.
-2. **Compose the collage** — call Lovable AI Gateway (`google/gemini-3.1-flash-image-preview`, the editing model) with all product packshots attached and a prompt that:
-   - Cuts out each garment from its background
-   - Arranges them in an editorial flat-lay collage (coat as anchor, knit + jeans layered, accessories floating around — matching the Max Mara luxury aesthetic)
-   - Uses a soft warm-neutral backdrop (palette token `--background` / Warm Naturals `#f0ece7`)
-   - No model, no mannequin, no text
-
-This matches our existing pattern for `generate-look-image` (image-editing gateway calls with multiple image refs) and stays within the Lovable AI Gateway — no new secrets.
-
-## Data
-
-Add a second nullable column to the `looks` table so we can store both renders without losing the existing one:
-
-- `image_url TEXT` (already there, used by photoshoot)
-- `collage_url TEXT` (new)
-
-A `mode` field is not needed — the UI just shows whichever the user is viewing.
+## UI changes
+- **Admin Settings page** (existing settings area): new "Total Look Mode" panel — pick rule, edit apparel category list, edit count threshold. Saved into `app_settings`.
+- **LookCardV2**: Photo/Collage toggle always visible. If selected mode not yet generated → show inline "Generate" CTA + spinner; otherwise render image. Photo uses `object-cover`, Collage uses `object-contain`.
+- **ProductGeneratedLook / generation flow**: on initial generate, call the auto-selected edge function (`generate-look-image` or `generate-look-collage`) based on the rule. The other one stays available on-demand.
 
 ## Files to change
+- `supabase/migrations/<new>.sql` — insert default `look_mode_rules` row in `app_settings`.
+- `src/lib/lookMode.ts` (new) — `resolveLookMode(products, settings)` helper.
+- `src/hooks/useAppSettings.ts` (or equivalent) — read `look_mode_rules`.
+- `src/components/ProductGeneratedLook.tsx` — call resolver, route to correct generator, allow on-demand generation of the other mode.
+- `src/components/product/LookCardV2.tsx` — toggle always shown; lazy-generate missing mode.
+- `src/components/admin/LookModeSettings.tsx` (new) + wire into existing admin settings page.
 
-- `supabase/migrations/<new>.sql` — add `collage_url` column to `public.looks`.
-- `supabase/functions/generate-look-collage/index.ts` — new edge function (mirrors `generate-look-image` structure, different prompt + no model/style/env references).
-- `supabase/config.toml` — register the new function with `verify_jwt = false`.
-- `src/hooks/useLooks.ts` — expose `collage_url`, add `generateCollage(lookId)` helper.
-- `src/components/ProductGeneratedLook.tsx` — add mode toggle (Photoshoot / Collage), wire new function, show whichever image the user selects.
-- `src/components/looks/LookCard.tsx` and `src/components/product/LookCardV2.tsx` — render the toggle + the selected image.
-- `src/components/looks/LookGeneratorPanel.tsx` — add a default-mode selector for new generations (Photoshoot, Collage, or Both).
-
-## Out of scope
-
-- No changes to the AI styling / pairing logic (categories, exclusions, prompts for `generate-looks`) — that work was done in earlier turns.
-- No new third-party image services; we stay on Lovable AI Gateway.
-- No changes to QR codes, scan page, or product page hardcoded naming.
+## Data
+No schema change beyond seeding `app_settings`. `generated_look` JSONB already holds both `look_image` and `collage_image`.
