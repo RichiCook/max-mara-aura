@@ -1,11 +1,13 @@
-import { useState, useEffect } from 'react';
-import { ExternalLink, Trash2, Save, Loader2 } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { ExternalLink, Trash2, Save, Loader2, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { getFlatLayImage, parseImages, filterImagesBySku } from '@/utils/imageUtils';
 import { useImageClassification } from '@/hooks/useImageClassification';
+import { supabase } from '@/integrations/supabase/client';
+import { fetchLookModeRules, resolveLookMode, type LookMode, type LookModeRules, DEFAULT_LOOK_MODE_RULES } from '@/lib/lookMode';
 import type { Look, Product } from '@/hooks/useLooks';
 
 interface LookCardProps {
