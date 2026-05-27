@@ -1,33 +1,51 @@
 ## Goal
-Make the selected product images render correctly in the Look Generator and make Photo/Collage generation complete successfully instead of hanging.
+Make **Collage** non-generative: for each selected product, use its real flat-lay image, cut the product out, and compose the final collage without inventing garments, colors, or shapes.
 
-## What I’ll change
-1. Normalize product image data everywhere this flow reads it
-- Update the admin Look Generator data flow so `products.images` is always converted into a clean array of individual URLs.
-- Reuse the same normalization already used elsewhere in the project so newline-joined image strings no longer become one broken `img src`.
-- Make the preview cards consistently pick a single valid product image for each selected item.
+## What I’ll build
+1. **Replace the collage backend with deterministic composition**
+- Remove the current AI-image step from `generate-look-collage`.
+- Fetch each product’s chosen flat-lay source image server-side.
+- Extract the garment from its background and place the real cutout onto a fixed portrait canvas.
+- Return the composed collage image directly.
 
-2. Proxy external product images before sending them to AI generation
-- Route Max Mara CDN product images through the existing backend image proxy before passing them to the image-generation functions.
-- Keep direct URLs when they are already safe, but proxy hotlink-protected URLs so the AI service can actually fetch them.
-- Apply this to both the photo generator and the collage generator path.
+2. **Use the existing flat-lay image selection rules**
+- Keep using the already-established logic that picks the best flat-lay/product-only image per item.
+- Ensure the collage pipeline receives only those resolved product packshots, not lifestyle or model shots.
+- Preserve exact product appearance by never asking a model to redraw anything.
 
-3. Tighten the generator UI state handling
-- Ensure the loading state ends cleanly when generation fails.
-- Surface a visible error toast when the backend rejects an image URL or generation fails, instead of silently staying on “Generating…”.
-- Keep the Photo/Collage toggle working, but only auto-trigger generation when the image payload is valid.
+3. **Create a stable collage layout system**
+- Add deterministic placement rules by category:
+  - outerwear / dresses as anchors
+  - tops and knitwear near the upper-middle
+  - bottoms below anchors
+  - shoes near the bottom
+  - bags and accessories around the sides
+- Add subtle shadows and consistent spacing so the result still feels editorial, but remains faithful to the real source images.
+- Keep the output in the existing portrait ratio used by the UI.
 
-4. Validate the end-to-end flow
-- Test that selected product thumbnails render.
-- Test that collage generation returns an image instead of stalling.
-- Test that photo generation still works with the proxied references.
+4. **Improve failure handling in the UI**
+- Update collage loading/error copy so it no longer implies AI generation.
+- Surface clear errors when a product has no usable flat-lay source or background extraction fails.
+- Keep **Photo** as generative, but make **Collage** explicitly real-product composition.
 
-## Root cause
-Two things are breaking the flow:
-- Some product `images` values are stored as newline-joined URLs, but parts of the admin look flow are treating them as a ready-to-use string array. That makes product thumbnails invalid.
-- The AI image service cannot fetch certain external Max Mara image URLs directly because the upstream CDN blocks them, so generation fails before an image is produced.
+5. **Validate the output**
+- Test with real multi-product looks from your catalog.
+- Confirm that the collage only contains exact product cutouts from the selected items.
+- Verify no hallucinated garments appear and that the existing preview/storage flow still works.
 
-## Technical notes
-- Frontend files likely involved: `src/components/looks/LookGeneratorPanel.tsx`, `src/components/looks/LookCard.tsx`, and shared image helpers.
-- Backend/files likely involved: `supabase/functions/generate-look-image/index.ts`, `supabase/functions/generate-look-collage/index.ts`.
-- I’ll reuse the existing `export-image-proxy` pattern already stored in the project memory instead of inventing a new backend route.
+## Files likely affected
+- `supabase/functions/generate-look-collage/index.ts`
+- `src/components/ProductGeneratedLook.tsx`
+- `src/components/product/LookCardV2.tsx`
+- possibly shared image helpers if I need one small utility for resolved collage-safe source images
+
+## Technical details
+- I’ll use a **server-side image composition pipeline**, not AI generation.
+- The cutout step will use the real product image and remove the background before compositing.
+- The final collage will be assembled into one raster image and stored through the existing look-image flow.
+- This keeps collage deterministic and visually accurate while leaving **Photo** mode unchanged.
+
+## Result
+- **Collage = exact cut-and-paste of real flat-lay product images**
+- **Photo = generated editorial image**
+- No more hallucinated collage items
