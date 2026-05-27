@@ -197,23 +197,32 @@ export const getWornImage = (images: string[] | null | undefined): string | null
  */
 export const parseImages = (images: unknown): string[] => {
   if (!images) return [];
-  
+
+  const splitAndClean = (value: string): string[] =>
+    value
+      .split(/\r?\n/)
+      .map((img) => img.trim())
+      .filter((img) => img.length > 0);
+
   if (Array.isArray(images)) {
-    return images.filter((img): img is string => typeof img === 'string');
+    return images.flatMap((img) =>
+      typeof img === 'string' ? splitAndClean(img) : []
+    );
   }
-  
+
   if (typeof images === 'string') {
     try {
       const parsed = JSON.parse(images);
       if (Array.isArray(parsed)) {
-        return parsed.filter((img): img is string => typeof img === 'string');
+        return parsed.flatMap((img) =>
+          typeof img === 'string' ? splitAndClean(img) : []
+        );
       }
     } catch {
-      // If it's not valid JSON, return as single-item array
-      return [images];
+      return splitAndClean(images);
     }
   }
-  
+
   return [];
 };
 
