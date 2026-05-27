@@ -440,7 +440,16 @@ function applyDropShadow(canvas: Image, cutout: Image, dx: number, dy: number, o
 
 interface Cutout { slot: string; img: Image; productIndex: number }
 
-async function buildCollage(products: ProductInfo[]): Promise<string> {
+interface CollageDebugItem {
+  name: string;
+  category: string | null;
+  status: 'used' | 'no_valid_packshot' | 'fetch_failed' | 'decode_failed' | 'skipped';
+  used_url?: string;
+  considered: string[];
+  rejected: string[];
+}
+
+async function buildCollage(products: ProductInfo[]): Promise<{ image: string; debug: CollageDebugItem[] }> {
   const CANVAS_W = 900;
   const CANVAS_H = 1200;
   const BG = 0xefeae3ff; // warm neutral
@@ -450,15 +459,40 @@ async function buildCollage(products: ProductInfo[]): Promise<string> {
 
   // Decode all products in parallel
   const decoded: Cutout[] = [];
+  const debug: CollageDebugItem[] = products.map((p) => ({
+    name: p.name,
+    category: p.category,
+    status: 'skipped',
+    considered: [],
+    rejected: [],
+  }));
+
   await Promise.all(products.map(async (p, idx) => {
-    if (!p.image) return;
-      const bytes = await fetchImageBytes(p.image, p.category);
-    if (!bytes) return;
+    if (!p.image) {
+      debug[idx].status = 'skipped';
+      return;
+    }
+    const { bytes, usedUrl, selection } = await fetchImageBytes(p.image, p.category);
+    debug[idx].considered = selection.considered;
+    debug[idx].rejected = selection.rejected;
+    if (!selection.url) {
+      debug[idx].status = 'no_valid_packshot';
+      console.warn(`No allowed packshot for "${p.name}" (${p.category}). Considered:`, selection.considered);
+      return;
+    }
+    if (!bytes) {
+      debug[idx].status = 'fetch_failed';
+      console.warn(`Packshot selected but unfetchable for "${p.name}":`, selection.url);
+      return;
+    }
+    debug[idx].used_url = usedUrl ?? selection.url;
     try {
       const decodedImg = await decode(bytes);
-      if (!(decodedImg instanceof Image)) return;
+      if (!(decodedImg instanceof Image)) {
+        debug[idx].status = 'decode_failed';
+        return;
+      }
       let img = decodedImg as Image;
-      // Downscale very large source images to keep processing snappy
       const maxSide = Math.max(img.width, img.height);
       if (maxSide > 900) {
         const scale = 900 / maxSide;
@@ -466,15 +500,21 @@ async function buildCollage(products: ProductInfo[]): Promise<string> {
       }
       img = removeBackground(img);
       img = trimTransparent(img);
-      if (img.width < 8 || img.height < 8) return;
+      if (img.width < 8 || img.height < 8) {
+        debug[idx].status = 'decode_failed';
+        return;
+      }
       decoded.push({ slot: classifySlot(p.category, p.name), img, productIndex: idx });
+      debug[idx].status = 'used';
     } catch (err) {
-      console.warn(`Decode failed for product ${idx}:`, err);
+      debug[idx].status = 'decode_failed';
+      console.warn(`Decode failed for "${p.name}":`, err);
     }
   }));
 
   if (decoded.length === 0) {
-    throw new Error('Could not prepare any product cutouts from the provided images');
+    const reason = debug.map((d) => `${d.name}: ${d.status}`).join('; ');
+    throw new Error(`Could not prepare any product cutouts. ${reason}`);
   }
 
   // Group by slot and order by priority
