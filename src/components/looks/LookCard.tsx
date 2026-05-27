@@ -90,6 +90,10 @@ const ProductImage = ({ product, isModelReady, classifyProductImages, getCached 
 export const LookCard = ({ look, onSave, onDelete, isSaved = false }: LookCardProps) => {
   const products = look.products || [];
   const { isModelLoading, isModelReady, loadProgress, classifyProductImages, getCached } = useImageClassification();
+  const productSignature = useMemo(
+    () => products.map((p) => `${p.id}:${p.name}:${p.category ?? ''}:${parseImages(p.images).join('|')}`).join('||'),
+    [products]
+  );
 
   // Photo / Collage mode state
   const [rules, setRules] = useState<LookModeRules>(DEFAULT_LOOK_MODE_RULES);
@@ -98,6 +102,13 @@ export const LookCard = ({ look, onSave, onDelete, isSaved = false }: LookCardPr
   const [collageUrl, setCollageUrl] = useState<string | null>(null);
   const [genPhoto, setGenPhoto] = useState(false);
   const [genCollage, setGenCollage] = useState(false);
+
+  useEffect(() => {
+    setPhotoUrl(null);
+    setCollageUrl(null);
+    setGenPhoto(false);
+    setGenCollage(false);
+  }, [look.id, look.name, productSignature]);
 
   useEffect(() => {
     fetchLookModeRules().then(r => {
