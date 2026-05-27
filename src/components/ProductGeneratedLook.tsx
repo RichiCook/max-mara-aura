@@ -448,16 +448,13 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
     setLooks(results);
     setLoading(false);
 
-    // Generate images for all looks using auto-resolved mode
+    // Always generate the collage first. The photo is opt-in via the CTA on the card.
     const newModes: Record<number, LookMode> = {};
     results.forEach((r, idx) => {
-      const mode = resolveLookMode(r.products, modeRules);
-      newModes[idx] = mode;
+      newModes[idx] = 'collage';
       if (r.products.length === 0) return;
-      if (mode === 'collage' && !r.collageImage) {
+      if (!r.collageImage) {
         setTimeout(() => generateCollageImage(r.products, r.look, idx), idx * 500);
-      } else if (mode === 'photo' && !r.lookImage) {
-        setTimeout(() => generateLookImage(r.products, r.look, idx), idx * 500);
       }
     });
     setInitialModes(prev => ({ ...prev, ...newModes }));
@@ -474,13 +471,8 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
         setLooks(prev => {
           const newLooks = [...prev, newLook];
           const newIdx = newLooks.length - 1;
-          const mode = resolveLookMode(newLook.products, modeRules);
-          setInitialModes(m => ({ ...m, [newIdx]: mode }));
-          if (mode === 'collage') {
-            generateCollageImage(newLook.products, newLook.look, newIdx);
-          } else {
-            generateLookImage(newLook.products, newLook.look, newIdx);
-          }
+          setInitialModes(m => ({ ...m, [newIdx]: 'collage' }));
+          generateCollageImage(newLook.products, newLook.look, newIdx);
           return newLooks;
         });
       }
