@@ -114,9 +114,15 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
   const usedProductCodesRef = useRef<Set<string>>(new Set());
   const [layoutVersion, setLayoutVersion] = useState<'v1' | 'v2' | 'v2.1'>('v2');
   const [modeRules, setModeRules] = useState<LookModeRules>(DEFAULT_LOOK_MODE_RULES);
+  const [modeRulesReady, setModeRulesReady] = useState(false);
   const [initialModes, setInitialModes] = useState<Record<number, LookMode>>({});
 
-  useEffect(() => { fetchLookModeRules().then(setModeRules); }, []);
+  useEffect(() => {
+    fetchLookModeRules().then((rules) => {
+      setModeRules(rules);
+      setModeRulesReady(true);
+    });
+  }, []);
 
   // Fetch layout version preference
   useEffect(() => {
@@ -455,7 +461,7 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
       setLoadingMore(false);
       generatingRef.current = false;
     }
-  }, [productCode]);
+  }, [productCode, modeRules]);
 
   // Emit first look's palette
   const firstPalette = useMemo(() => {
@@ -468,8 +474,9 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
   }, [firstPalette]);
 
   useEffect(() => {
+    if (!modeRulesReady) return;
     loadInitialLooks();
-  }, [productCode]);
+  }, [productCode, modeRulesReady]);
 
   // Handle scroll to detect reaching end for infinite loading
   const handleScroll = useCallback(() => {
