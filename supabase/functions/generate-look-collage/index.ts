@@ -285,7 +285,7 @@ async function buildCollage(products: ProductInfo[]): Promise<string> {
       const dy = Math.round(cy - targetH / 2);
 
       // Soft drop shadow then the cutout
-      applyDropShadow(canvas, placed, dx + 6, dy + 10, 8, 0.35);
+      applyDropShadow(canvas, placed, dx + 6, dy + 10, 0.6);
       canvas.composite(placed, dx, dy);
     });
   }
