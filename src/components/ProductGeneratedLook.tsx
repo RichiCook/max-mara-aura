@@ -98,6 +98,10 @@ const resolveColorToHex = (c: string): string | null => {
 };
 
 const INITIAL_LOOKS = 3;
+// Bump this whenever the collage source-selection logic changes so cached
+// collage images generated from the wrong source get regenerated automatically.
+const COLLAGE_CACHE_VERSION = 2;
+
 
 export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, onColorPaletteReady }: ProductGeneratedLookProps) => {
   const { toast } = useToast();
