@@ -104,7 +104,19 @@ export const LookCard = ({ look, onSave, onDelete, isSaved = false }: LookCardPr
       setRules(r);
       setMode(resolveLookMode(products, r));
     });
-  }, [look.id]);
+  }, [look.id, products]);
+
+  useEffect(() => {
+    if (products.length === 0) return;
+
+    if (mode === 'photo' && !photoUrl && !genPhoto) {
+      void generatePhoto();
+    }
+
+    if (mode === 'collage' && !collageUrl && !genCollage) {
+      void generateCollage();
+    }
+  }, [mode, products, photoUrl, collageUrl, genPhoto, genCollage]);
 
   const productPayload = useMemo(() => products.map(p => {
     const imgs = parseImages(p.images);
@@ -208,7 +220,7 @@ export const LookCard = ({ look, onSave, onDelete, isSaved = false }: LookCardPr
               Auto: {resolveLookMode(products, rules)}
             </span>
           </div>
-          <div className="aspect-[3/4] rounded-md border bg-muted/30 overflow-hidden flex items-center justify-center">
+          <div className="relative aspect-[3/4] rounded-md border bg-muted/30 overflow-hidden flex items-center justify-center">
             {activeGenerating ? (
               <div className="flex flex-col items-center gap-2 text-muted-foreground">
                 <Loader2 className="w-5 h-5 animate-spin" />
