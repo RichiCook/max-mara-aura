@@ -66,20 +66,30 @@ const isMaxMaraMasterPackshot = (url: string): boolean => {
   return lower.includes('/s3master/') && lower.includes('_normal.') && !lower.includes('/s3swatch/');
 };
 
-const isMaxMaraWornOrDetailVariant = (url: string): boolean => {
+const isMaxMaraAllowedPackshotVariant = (url: string, category?: string | null): boolean => {
   const lower = url.toLowerCase();
   if (!lower.includes('maxmara.com')) return false;
   const variant = getMaxMaraVariantCode(lower);
-  return variant !== null && variant !== 'a';
+  if (!variant) return false;
+  if (variant === 'a') return true;
+  return variant === 'w' && isShoeCategory(category);
 };
 
-const toMaxMaraMasterPackshot = (url: string): string =>
-  url
+const isMaxMaraWornOrDetailVariant = (url: string, category?: string | null): boolean => {
+  const lower = url.toLowerCase();
+  if (!lower.includes('maxmara.com')) return false;
+  return !isMaxMaraAllowedPackshotVariant(lower, category);
+};
+
+const toMaxMaraMasterPackshot = (url: string, category?: string | null): string => {
+  const preferredVariant = isShoeCategory(category) ? 'w' : 'a';
+  return url
     .replace('/s3details/', '/s3master/')
     .replace('/s3swatch/', '/s3master/')
-    .replace(/-([a-z])-([^/_?#]+_normal\.)/i, '-a-$2');
+    .replace(/-([a-z])-([^/_?#]+_normal\.)/i, `-${preferredVariant}-$2`);
+};
 
-const isFlatLayUrl = (url: string): boolean => {
+const isFlatLayUrl = (url: string, category?: string | null): boolean => {
   const lower = url.toLowerCase();
   const isMasterPackshot = isMaxMaraMasterPackshot(lower);
   
@@ -95,10 +105,10 @@ const isFlatLayUrl = (url: string): boolean => {
   if (lower.includes('_full_front.')) return true;
 
   // Max Mara master packshots are the clean product-only source.
-  if (isMasterPackshot) return true;
+  if (isMasterPackshot && isMaxMaraAllowedPackshotVariant(lower, category)) return true;
   
   // Max Mara flat lay patterns
-  if (lower.includes('-a-') && lower.includes('_normal.jpg')) return true;
+  if (lower.includes('_normal.jpg') && isMaxMaraAllowedPackshotVariant(lower, category)) return true;
   
   return false;
 };
@@ -106,14 +116,14 @@ const isFlatLayUrl = (url: string): boolean => {
 /**
  * Check if a URL looks like a close-up, crop, or detail shot
  */
-const isCloseUpOrDetail = (url: string): boolean => {
+const isCloseUpOrDetail = (url: string, category?: string | null): boolean => {
   const lower = url.toLowerCase();
   return lower.includes('_crop') || 
          lower.includes('_detail') || 
          lower.includes('_closeup') ||
          lower.includes('_close_up') ||
          lower.includes('_zoom') ||
-         isMaxMaraWornOrDetailVariant(lower);
+         isMaxMaraWornOrDetailVariant(lower, category);
 };
 
 /**
@@ -124,13 +134,13 @@ const isBackView = (url: string): boolean => {
   return lower.includes('_back') || lower.includes('_rear');
 };
 
-const isWornOrAlternate = (url: string): boolean => {
+const isWornOrAlternate = (url: string, category?: string | null): boolean => {
   const lower = url.toLowerCase();
   return lower.includes('_alt') || 
          lower.includes('_model') || 
          lower.includes('_worn') || 
           lower.includes('_lifestyle') ||
-          isMaxMaraWornOrDetailVariant(lower);
+           isMaxMaraWornOrDetailVariant(lower, category);
 };
 
 /**
@@ -154,12 +164,12 @@ export const getFlatLayImage = (images: string[] | null | undefined, category?: 
   // Priority 0: explicit master packshot folders beat everything else.
   // This fixes Max Mara sets where the s3master image is the clean flat-lay,
   // while s3details contains on-body/detail variants that create bad cutouts.
-  const masterPrimary = normalizedImages.find(img => isMaxMaraMasterPackshot(img));
+  const masterPrimary = normalizedImages.find(img => isMaxMaraMasterPackshot(img) && isMaxMaraAllowedPackshotVariant(img, category));
   if (masterPrimary) return masterPrimary;
 
   const masterAny = normalizedImages.find(img => {
     const lower = img.toLowerCase();
-    return isMaxMaraMasterPackshot(lower);
+    return isMaxMaraMasterPackshot(lower) && isMaxMaraAllowedPackshotVariant(lower, category);
   });
   if (masterAny) return masterAny;
 
@@ -171,12 +181,12 @@ export const getFlatLayImage = (images: string[] | null | undefined, category?: 
   if (plainFull) return plainFull;
 
   // Priority 3: Any clean flat-lay image
-  const flatLay = normalizedImages.find(img => isFlatLayUrl(img) && !isCloseUpOrDetail(img) && !isWornOrAlternate(img));
+  const flatLay = normalizedImages.find(img => isFlatLayUrl(img, category) && !isCloseUpOrDetail(img, category) && !isWornOrAlternate(img, category));
   if (flatLay) return flatLay;
 
   // Priority 4: Any image that's NOT a close-up AND NOT a worn/alternate shot
   const cleanImage = normalizedImages.find(img => 
-    !isCloseUpOrDetail(img) && !isWornOrAlternate(img) && !isBackView(img) && !img.includes('#thumbnail')
+    !isCloseUpOrDetail(img, category) && !isWornOrAlternate(img, category) && !isBackView(img) && !img.includes('#thumbnail')
   );
   if (cleanImage) return cleanImage;
 
@@ -297,7 +307,7 @@ export const getCollageSourceImage = (
       // 3. If the flat-lay we found is a Max Mara s3details URL, try the
       //    matching s3master URL first — it's usually the clean packshot.
       if (lf.includes('maxmara.com') && (lf.includes('/s3details/') || lf.includes('/s3swatch/'))) {
-        const masterAttempt = toMaxMaraMasterPackshot(flat);
+        const masterAttempt = toMaxMaraMasterPackshot(flat, category);
         return masterAttempt;
       }
       return flat;
@@ -307,7 +317,7 @@ export const getCollageSourceImage = (
   // 4. As a last resort, try to derive a master URL from any Max Mara URL.
   const anyMM = skuFiltered.find(img => img.includes('maxmara.com'));
   if (anyMM) {
-    return toMaxMaraMasterPackshot(anyMM);
+    return toMaxMaraMasterPackshot(anyMM, category);
   }
 
   return null;
