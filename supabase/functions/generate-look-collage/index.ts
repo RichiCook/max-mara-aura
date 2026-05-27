@@ -15,23 +15,43 @@ interface ProductInfo {
 
 // ---------- Image fetching ----------
 
-function normalizeMaxMaraCandidate(url: string): string {
+function isShoeCategory(category: string | null | undefined): boolean {
+  if (!category) return false;
+  const lowerCategory = category.toLowerCase();
+  return lowerCategory.includes('shoe') || 
+         lowerCategory.includes('scarpe') || 
+         lowerCategory.includes('boot') || 
+         lowerCategory.includes('stival') ||
+         lowerCategory.includes('sandal') ||
+         lowerCategory.includes('sneaker') ||
+         lowerCategory.includes('mocassin') ||
+         lowerCategory.includes('loafer') ||
+         lowerCategory.includes('décolleté') ||
+         lowerCategory.includes('decollete') ||
+         lowerCategory.includes('pump') ||
+         lowerCategory.includes('heel') ||
+         lowerCategory.includes('ciabatt') ||
+         lowerCategory.includes('slide');
+}
+
+function normalizeMaxMaraCandidate(url: string, category?: string | null): string {
   const lower = url.toLowerCase();
   if (!lower.includes('maxmara.com')) return url;
+  const preferredVariant = isShoeCategory(category) ? 'w' : 'a';
 
   return url
     .replace('/s3details/', '/s3master/')
     .replace('/s3swatch/', '/s3master/')
-    .replace(/-([a-z])-([^/_?#]+_normal\.)/i, '-a-$2');
+    .replace(/-([a-z])-([^/_?#]+_normal\.)/i, `-${preferredVariant}-$2`);
 }
 
-async function fetchImageBytes(rawUrl: string): Promise<Uint8Array | null> {
+async function fetchImageBytes(rawUrl: string, category?: string | null): Promise<Uint8Array | null> {
   const candidates = rawUrl
     .split(/\r?\n/)
     .map((url) => url.split('#')[0].trim())
     .filter(Boolean)
     .flatMap((url) => {
-      const normalized = normalizeMaxMaraCandidate(url);
+      const normalized = normalizeMaxMaraCandidate(url, category);
       return normalized !== url ? [normalized, url] : [url];
     });
 
@@ -346,7 +366,7 @@ async function buildCollage(products: ProductInfo[]): Promise<string> {
   const decoded: Cutout[] = [];
   await Promise.all(products.map(async (p, idx) => {
     if (!p.image) return;
-    const bytes = await fetchImageBytes(p.image);
+      const bytes = await fetchImageBytes(p.image, p.category);
     if (!bytes) return;
     try {
       const decodedImg = await decode(bytes);
