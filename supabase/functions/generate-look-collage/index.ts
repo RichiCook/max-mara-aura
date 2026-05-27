@@ -63,6 +63,40 @@ ABSOLUTE RULES:
 Aspect ratio: tall portrait (3:4).`;
 }
 
+// Fetch a remote image and return a base64 data URL, bypassing hotlink protection
+// by spoofing browser-like headers. Returns null if the fetch fails.
+async function fetchImageAsDataUrl(rawUrl: string): Promise<string | null> {
+  try {
+    // Strip fragment identifiers like "#product" or "#thumbnail"
+    const cleanUrl = rawUrl.split('#')[0].trim();
+    if (!cleanUrl) return null;
+    const parsed = new URL(cleanUrl);
+    const upstream = await fetch(parsed.toString(), {
+      headers: {
+        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+        'referer': `${parsed.origin}/`,
+      },
+    });
+    if (!upstream.ok) {
+      console.warn(`Image fetch failed (${upstream.status}): ${cleanUrl}`);
+      return null;
+    }
+    const contentType = upstream.headers.get('content-type') || 'image/jpeg';
+    const buf = new Uint8Array(await upstream.arrayBuffer());
+    // Base64 encode in chunks to avoid stack overflow on large images
+    let binary = '';
+    const chunkSize = 0x8000;
+    for (let i = 0; i < buf.length; i += chunkSize) {
+      binary += String.fromCharCode(...buf.subarray(i, i + chunkSize));
+    }
+    return `data:${contentType};base64,${btoa(binary)}`;
+  } catch (err) {
+    console.warn(`Image fetch error for ${rawUrl}:`, err);
+    return null;
+  }
+}
+
 async function generateCollageWithLovableAI(
   prompt: string,
   productImages: string[],
@@ -73,12 +107,21 @@ async function generateCollageWithLovableAI(
   // Allow up to 6 product images for the collage.
   const limited = productImages.filter(Boolean).slice(0, 6);
 
+  // Pre-fetch each image and inline as base64 data URL so the AI gateway never
+  // has to fetch hotlink-protected CDNs itself.
+  const inlined = await Promise.all(limited.map(fetchImageAsDataUrl));
+  const usable = inlined.filter((u): u is string => !!u);
+
+  if (usable.length === 0) {
+    throw new Error('Could not fetch any product reference images');
+  }
+
   const messageContent: any[] = [{ type: 'text', text: prompt }];
-  for (const url of limited) {
+  for (const url of usable) {
     messageContent.push({ type: 'image_url', image_url: { url } });
   }
 
-  console.log(`Collage: sending ${limited.length} product images to Lovable AI`);
+  console.log(`Collage: sending ${usable.length}/${limited.length} product images to Lovable AI (inlined)`);
 
   const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
     method: 'POST',
