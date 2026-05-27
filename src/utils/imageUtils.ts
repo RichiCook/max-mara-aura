@@ -159,7 +159,6 @@ export const getFlatLayImage = (images: string[] | null | undefined, category?: 
     const lower = img.toLowerCase();
     return lower.includes(primarySuffix) && lower.includes('_normal.') && !lower.includes('/s3details/');
   });
-  );
   if (primaryNormal) return primaryNormal;
 
   // Priority 4: Max Mara secondary suffix with normal size
@@ -167,7 +166,6 @@ export const getFlatLayImage = (images: string[] | null | undefined, category?: 
     const lower = img.toLowerCase();
     return lower.includes(secondarySuffix) && lower.includes('_normal.') && !lower.includes('/s3details/');
   });
-  );
   if (secondaryNormal) return secondaryNormal;
 
   // Priority 5: Any clean flat-lay image
