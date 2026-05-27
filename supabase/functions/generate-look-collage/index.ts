@@ -15,11 +15,25 @@ interface ProductInfo {
 
 // ---------- Image fetching ----------
 
+function normalizeMaxMaraCandidate(url: string): string {
+  const lower = url.toLowerCase();
+  if (!lower.includes('maxmara.com')) return url;
+
+  return url
+    .replace('/s3details/', '/s3master/')
+    .replace('/s3swatch/', '/s3master/')
+    .replace(/-([a-z])-([^/_?#]+_normal\.)/i, '-a-$2');
+}
+
 async function fetchImageBytes(rawUrl: string): Promise<Uint8Array | null> {
   const candidates = rawUrl
     .split(/\r?\n/)
     .map((url) => url.split('#')[0].trim())
-    .filter(Boolean);
+    .filter(Boolean)
+    .flatMap((url) => {
+      const normalized = normalizeMaxMaraCandidate(url);
+      return normalized !== url ? [normalized, url] : [url];
+    });
 
   for (const cleanUrl of candidates) {
     try {
