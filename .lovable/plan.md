@@ -1,37 +1,33 @@
-# Smart Photo/Collage Mode for Total Looks
+## Goal
+Make the selected product images render correctly in the Look Generator and make Photo/Collage generation complete successfully instead of hanging.
 
-## Behavior
-- **Auto-default**: When a look is generated, the system picks Photo or Collage based on admin-configurable rules (no manual choice needed up front).
-- **Always switchable**: Once a look exists in either mode, the user can switch via the toggle. If the other mode hasn't been generated yet, clicking it triggers generation on demand. So a Collage look can always have its Photo generated, and vice versa.
+## What I’ll change
+1. Normalize product image data everywhere this flow reads it
+- Update the admin Look Generator data flow so `products.images` is always converted into a clean array of individual URLs.
+- Reuse the same normalization already used elsewhere in the project so newline-joined image strings no longer become one broken `img src`.
+- Make the preview cards consistently pick a single valid product image for each selected item.
 
-## Admin-configurable rule (app_settings)
-New `app_settings` row `id = 'look_mode_rules'` with JSON value:
-```json
-{
-  "default_mode": "auto",            // "auto" | "photo" | "collage"
-  "rule": "category_mix",            // "category_mix" | "product_count" | "fixed"
-  "apparel_categories": ["dress","coat","top","skirt","pants","suit","jacket"],
-  "count_threshold": 4                // <threshold => collage, >=threshold => photo
-}
-```
+2. Proxy external product images before sending them to AI generation
+- Route Max Mara CDN product images through the existing backend image proxy before passing them to the image-generation functions.
+- Keep direct URLs when they are already safe, but proxy hotlink-protected URLs so the AI service can actually fetch them.
+- Apply this to both the photo generator and the collage generator path.
 
-Logic per look at generation time:
-- `fixed` → always use `default_mode`.
-- `category_mix` → if any product category is in `apparel_categories` → Photo; else Collage.
-- `product_count` → `productIds.length >= count_threshold` → Photo, else Collage.
+3. Tighten the generator UI state handling
+- Ensure the loading state ends cleanly when generation fails.
+- Surface a visible error toast when the backend rejects an image URL or generation fails, instead of silently staying on “Generating…”.
+- Keep the Photo/Collage toggle working, but only auto-trigger generation when the image payload is valid.
 
-## UI changes
-- **Admin Settings page** (existing settings area): new "Total Look Mode" panel — pick rule, edit apparel category list, edit count threshold. Saved into `app_settings`.
-- **LookCardV2**: Photo/Collage toggle always visible. If selected mode not yet generated → show inline "Generate" CTA + spinner; otherwise render image. Photo uses `object-cover`, Collage uses `object-contain`.
-- **ProductGeneratedLook / generation flow**: on initial generate, call the auto-selected edge function (`generate-look-image` or `generate-look-collage`) based on the rule. The other one stays available on-demand.
+4. Validate the end-to-end flow
+- Test that selected product thumbnails render.
+- Test that collage generation returns an image instead of stalling.
+- Test that photo generation still works with the proxied references.
 
-## Files to change
-- `supabase/migrations/<new>.sql` — insert default `look_mode_rules` row in `app_settings`.
-- `src/lib/lookMode.ts` (new) — `resolveLookMode(products, settings)` helper.
-- `src/hooks/useAppSettings.ts` (or equivalent) — read `look_mode_rules`.
-- `src/components/ProductGeneratedLook.tsx` — call resolver, route to correct generator, allow on-demand generation of the other mode.
-- `src/components/product/LookCardV2.tsx` — toggle always shown; lazy-generate missing mode.
-- `src/components/admin/LookModeSettings.tsx` (new) + wire into existing admin settings page.
+## Root cause
+Two things are breaking the flow:
+- Some product `images` values are stored as newline-joined URLs, but parts of the admin look flow are treating them as a ready-to-use string array. That makes product thumbnails invalid.
+- The AI image service cannot fetch certain external Max Mara image URLs directly because the upstream CDN blocks them, so generation fails before an image is produced.
 
-## Data
-No schema change beyond seeding `app_settings`. `generated_look` JSONB already holds both `look_image` and `collage_image`.
+## Technical notes
+- Frontend files likely involved: `src/components/looks/LookGeneratorPanel.tsx`, `src/components/looks/LookCard.tsx`, and shared image helpers.
+- Backend/files likely involved: `supabase/functions/generate-look-image/index.ts`, `supabase/functions/generate-look-collage/index.ts`.
+- I’ll reuse the existing `export-image-proxy` pattern already stored in the project memory instead of inventing a new backend route.
