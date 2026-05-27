@@ -1,32 +1,28 @@
 ## Plan
 
-1. Preserve the original Max Mara image variants during scraping.
-   - Stop rewriting valid Max Mara URLs into `/s3details/` paths.
-   - Keep the original folder and filename signals (`/s3master/`, `-a-`, `-w-`, `_normal`) so clean packshots survive into the product record.
+1. Tighten the Total Looks collage input
+- Update the `/looks` flow so collage generation uses the same strict lay-flat-only selector already added to the product-page look generator.
+- Remove the current fallback that can still pass worn/editorial shots into the collage function.
 
-2. Make collage generation fail-safe for lay-flat-only inputs.
-   - Tighten the source-image selection so the collage pipeline only uses master packshots / lay-flat images for cutout generation.
-   - Explicitly reject worn/editorial/detail candidates before background removal runs.
-   - If a product has no acceptable lay-flat source, skip that item instead of cutting out a model shot.
+2. Add a hard rejection layer for worn/detail images
+- Centralize the “allowed for collage” rules in the image utility layer.
+- Ensure obvious worn, alt, detail, crop, lifestyle, and similar variants return no collage source instead of falling back to a bad image.
 
-3. Bust stale cached collage results.
-   - Add a lightweight source signature to each generated collage based on the selected lay-flat URLs.
-   - On load, if the cached collage was built from older/wrong sources, ignore it and regenerate automatically.
-   - This prevents previously bad collages from continuing to show after the fix.
+3. Invalidate stale collage results in Total Looks
+- Add cache/version handling for generated collages on the `/looks` cards so previously bad collages don’t keep rendering after the fix.
+- Regenerate only when the old collage was built from older selection rules.
 
-4. Verify against the failing Max Mara case.
-   - Confirm the `lega-cristallo` product resolves to the master lay-flat image instead of the worn shot.
-   - Recheck the collage path so the cutout is produced from the lay-flat image only.
+4. Verify the failing route and visual outcome
+- Re-check the `/looks` card flow shown in your screenshot, not just the product page flow.
+- Confirm the collage pipeline now receives packshot / lay-flat URLs only.
 
 ## Technical details
-
-- Files to update:
-  - `src/utils/FirecrawlService.ts`
+- Files likely to update:
+  - `src/components/looks/LookCard.tsx`
   - `src/utils/imageUtils.ts`
-  - `src/components/ProductGeneratedLook.tsx`
-  - possibly `supabase/functions/generate-look-collage/index.ts` for an extra lay-flat guard
-
-- Expected behavior after the fix:
-  - The collage system removes background from real lay-flat product images.
-  - It no longer cuts out people/editorial shots when Max Mara provides both types.
-  - Old cached bad collages get replaced automatically.
+  - possibly `supabase/functions/generate-look-collage/index.ts` for an extra defensive guard
+- Root cause found during review:
+  - `ProductGeneratedLook.tsx` already uses `getCollageSourceImage(...)`
+  - `src/components/looks/LookCard.tsx` still uses `getFlatLayImage(...) || imgs[0]`, which can pass a worn image into `generate-look-collage`
+- Expected result:
+  - Total Looks collages stop cutting out worn/model photos and only use lay-flat/packshot sources.

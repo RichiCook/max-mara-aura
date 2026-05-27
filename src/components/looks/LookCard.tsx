@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { getFlatLayImage, parseImages, filterImagesBySku } from '@/utils/imageUtils';
+import { getFlatLayImage, parseImages, filterImagesBySku, getCollageSourceImage } from '@/utils/imageUtils';
 import { useImageClassification } from '@/hooks/useImageClassification';
 import { supabase } from '@/integrations/supabase/client';
 import { fetchLookModeRules, resolveLookMode, type LookMode, type LookModeRules, DEFAULT_LOOK_MODE_RULES } from '@/lib/lookMode';
@@ -118,7 +118,7 @@ export const LookCard = ({ look, onSave, onDelete, isSaved = false }: LookCardPr
     }
   }, [mode, products, photoUrl, collageUrl, genPhoto, genCollage]);
 
-  const productPayload = useMemo(() => products.map(p => {
+  const photoPayload = useMemo(() => products.map(p => {
     const imgs = parseImages(p.images);
     return {
       name: p.name,
@@ -128,12 +128,28 @@ export const LookCard = ({ look, onSave, onDelete, isSaved = false }: LookCardPr
     };
   }), [products]);
 
+  // Strict lay-flat candidates for the collage pipeline. Falls back through
+  // a list (joined by newlines) so the edge function tries each until one
+  // returns bytes. Worn/editorial images are filtered out by getCollageSourceImage.
+  const collagePayload = useMemo(() => products.map(p => {
+    const imgs = parseImages(p.images);
+    const strict = getCollageSourceImage(imgs, null, p.category);
+    const flat = getFlatLayImage(filterImagesBySku(imgs, null), p.category);
+    const candidates = Array.from(new Set([strict, flat].filter(Boolean) as string[]));
+    return {
+      name: p.name,
+      color: p.color,
+      category: p.category,
+      image: candidates.join('\n'),
+    };
+  }).filter(p => p.image.length > 0), [products]);
+
   const generatePhoto = async () => {
     if (genPhoto || products.length === 0) return;
     setGenPhoto(true);
     try {
       const { data, error } = await supabase.functions.invoke('generate-look-image', {
-        body: { products: productPayload, lookName: look.name, lookDescription: look.description, lookStyle: 'elegant' }
+        body: { products: photoPayload, lookName: look.name, lookDescription: look.description, lookStyle: 'elegant' }
       });
       if (!error && data?.image) setPhotoUrl(data.image);
     } finally { setGenPhoto(false); }
@@ -143,8 +159,9 @@ export const LookCard = ({ look, onSave, onDelete, isSaved = false }: LookCardPr
     if (genCollage || products.length === 0) return;
     setGenCollage(true);
     try {
+      if (collagePayload.length === 0) return;
       const { data, error } = await supabase.functions.invoke('generate-look-collage', {
-        body: { products: productPayload }
+        body: { products: collagePayload }
       });
       if (!error && data?.image) setCollageUrl(data.image);
     } finally { setGenCollage(false); }
