@@ -66,35 +66,43 @@ Aspect ratio: tall portrait (3:4).`;
 // Fetch a remote image and return a base64 data URL, bypassing hotlink protection
 // by spoofing browser-like headers. Returns null if the fetch fails.
 async function fetchImageAsDataUrl(rawUrl: string): Promise<string | null> {
-  try {
-    // Strip fragment identifiers like "#product" or "#thumbnail"
-    const cleanUrl = rawUrl.split('#')[0].trim();
-    if (!cleanUrl) return null;
-    const parsed = new URL(cleanUrl);
-    const upstream = await fetch(parsed.toString(), {
-      headers: {
-        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
-        'referer': `${parsed.origin}/`,
-      },
-    });
-    if (!upstream.ok) {
-      console.warn(`Image fetch failed (${upstream.status}): ${cleanUrl}`);
-      return null;
+  const candidates = rawUrl
+    .split(/\r?\n/)
+    .map((url) => url.split('#')[0].trim())
+    .filter(Boolean);
+
+  for (const cleanUrl of candidates) {
+    try {
+      if (cleanUrl.startsWith('data:')) return cleanUrl;
+
+      const parsed = new URL(cleanUrl);
+      const upstream = await fetch(parsed.toString(), {
+        headers: {
+          'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+          'referer': `${parsed.origin}/`,
+        },
+      });
+
+      if (!upstream.ok) {
+        console.warn(`Image fetch failed (${upstream.status}): ${cleanUrl}`);
+        continue;
+      }
+
+      const contentType = upstream.headers.get('content-type') || 'image/jpeg';
+      const buf = new Uint8Array(await upstream.arrayBuffer());
+      let binary = '';
+      const chunkSize = 0x8000;
+      for (let i = 0; i < buf.length; i += chunkSize) {
+        binary += String.fromCharCode(...buf.subarray(i, i + chunkSize));
+      }
+      return `data:${contentType};base64,${btoa(binary)}`;
+    } catch (err) {
+      console.warn(`Image fetch error for ${cleanUrl}:`, err);
     }
-    const contentType = upstream.headers.get('content-type') || 'image/jpeg';
-    const buf = new Uint8Array(await upstream.arrayBuffer());
-    // Base64 encode in chunks to avoid stack overflow on large images
-    let binary = '';
-    const chunkSize = 0x8000;
-    for (let i = 0; i < buf.length; i += chunkSize) {
-      binary += String.fromCharCode(...buf.subarray(i, i + chunkSize));
-    }
-    return `data:${contentType};base64,${btoa(binary)}`;
-  } catch (err) {
-    console.warn(`Image fetch error for ${rawUrl}:`, err);
-    return null;
   }
+
+  return null;
 }
 
 async function generateCollageWithLovableAI(
