@@ -265,18 +265,28 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
 
   const generateCollageImage = async (products: LookProduct[], lookData: GeneratedLook, lookIndex: number, retryCount = 0) => {
     const productRefs = products
-      .map((p) => ({
-        name: p.name,
-        color: p.color,
-        category: p.category,
-        image: getPrimaryProductImage(p),
-      }))
-      .filter((p): p is { name: string; color: string | null; category: string | null; image: string } => Boolean(p.image));
+      .map((p) => {
+        // Build a candidate list for the cutout source: strict lay-flat first,
+        // then any other flat-lay, then a generic fallback. Edge function will
+        // try each URL until one returns bytes (joined with newlines).
+        const strict = getCollageSourceImage(p.images, p.product_code, p.category);
+        const flat = getFlatLayImage(filterImagesBySku(p.images, p.product_code), p.category);
+        const candidates = Array.from(new Set([strict, flat].filter(Boolean) as string[]));
+        if (candidates.length === 0) return null;
+        return {
+          name: p.name,
+          color: p.color,
+          category: p.category,
+          image: candidates.join('\n'),
+        };
+      })
+      .filter((p): p is { name: string; color: string | null; category: string | null; image: string } => Boolean(p && p.image));
 
     if (productRefs.length === 0) {
-      toast({ title: 'Collage failed', description: 'The selected products do not have usable images yet.', variant: 'destructive' });
+      toast({ title: 'Collage failed', description: 'The selected products do not have usable lay-flat images yet.', variant: 'destructive' });
       return;
     }
+
 
     setLooks(prev => prev.map((l, i) => i === lookIndex ? { ...l, generatingCollage: true } : l));
     try {
