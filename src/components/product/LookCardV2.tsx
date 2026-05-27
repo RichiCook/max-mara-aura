@@ -216,8 +216,8 @@ const LookCardV2 = ({ looks, productCode, loading, loadingMore, onTrackEvent, on
                   const isCollage = mode === 'collage';
                   const activeImage = isCollage ? lookItem.collageImage : lookItem.lookImage;
                   const isGenerating = isCollage ? lookItem.generatingCollage : lookItem.generatingImage;
-                  const label = isCollage ? 'GENERATING COLLAGE' : 'GENERATING LOOK';
-                  const badge = isCollage ? '✦ AI Collage' : '✦ AI Generated';
+                  const label = isCollage ? 'COMPOSING COLLAGE' : 'GENERATING LOOK';
+                  const badge = isCollage ? '✦ Real Product Cutouts' : '✦ AI Generated';
                   return (
                 <>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 10px 8px', background: '#fff', borderBottom: '1px solid #f0ece7' }}>
