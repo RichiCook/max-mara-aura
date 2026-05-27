@@ -172,22 +172,32 @@ const SLOT_PRIORITY = ['outerwear', 'dress', 'jacket', 'top', 'bottom', 'shoes',
 
 // ---------- Drop shadow ----------
 
-function applyDropShadow(canvas: Image, cutout: Image, dx: number, dy: number, blurPx: number, opacity: number) {
+function applyDropShadow(canvas: Image, cutout: Image, dx: number, dy: number, opacity: number) {
   // Build a soft, dark silhouette from the cutout's alpha channel.
+  // imagescript has no built-in gaussian blur, so we approximate softness by
+  // stamping the shadow at several sub-offsets with reduced opacity.
   const w = cutout.width;
   const h = cutout.height;
-  const shadow = new Image(w, h);
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      const a = cutout.getPixelAt(x + 1, y + 1) & 0xff;
-      if (a > 0) {
-        const newA = Math.round((a / 255) * opacity * 255);
-        shadow.setPixelAt(x + 1, y + 1, (0x14 << 24) | (0x14 << 16) | (0x14 << 8) | newA);
+  const offsets = [
+    [0, 0, 1.0],
+    [-2, 0, 0.5], [2, 0, 0.5], [0, -2, 0.5], [0, 2, 0.5],
+    [-3, -3, 0.3], [3, -3, 0.3], [-3, 3, 0.3], [3, 3, 0.3],
+  ];
+  for (const [ox, oy, mul] of offsets) {
+    const shadow = new Image(w, h);
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const a = cutout.getPixelAt(x + 1, y + 1) & 0xff;
+        if (a > 0) {
+          const newA = Math.round((a / 255) * opacity * (mul as number) * 0.35 * 255);
+          if (newA > 0) {
+            shadow.setPixelAt(x + 1, y + 1, (0x14 << 24) | (0x14 << 16) | (0x14 << 8) | newA);
+          }
+        }
       }
     }
+    canvas.composite(shadow, dx + (ox as number), dy + (oy as number));
   }
-  if (blurPx > 0) shadow.blur(blurPx);
-  canvas.composite(shadow, dx, dy);
 }
 
 // ---------- Main compositor ----------
