@@ -371,39 +371,49 @@ IMPORTANT: Copy ALL URLs exactly as they appear - do not shorten paths or remove
           }
         }
         
-        // Normalize MaxMara image URLs to the correct format:
-        // https://b2c-media.maxmara.com/sys-master/m0/MM/2025/2/5046045106/009/s3details/5046045106009-w-lamine_normal.jpg#product
+        // Normalize MaxMara image URLs. IMPORTANT: do NOT rewrite valid URLs
+        // that already point to /s3master/ (clean packshot / lay-flat) — only
+        // reconstruct a URL when the original is clearly malformed. Rewriting
+        // master packshots into /s3details/ used to cause the cutout pipeline
+        // to receive worn/editorial shots instead of flat-lay product images.
         const normalizeMaxMaraUrl = (url: string): string => {
           if (!url.includes('maxmara.com')) return url;
-          
+
+          // If the URL already looks well-formed (has a sys-master path and a
+          // recognizable folder + filename pattern), leave it alone so we
+          // preserve the original s3master / s3details signal.
+          const wellFormed = /sys-master\/[^/]+\/[^/]+\/\d{4}\/\d+\/\d{7}\/\d{3}\/(s3master|s3details|s3swatch)\/\d{10}-[a-z]-[^.]+\.(jpg|png|webp)/i;
+          if (wellFormed.test(url)) return url;
+
           // Extract the 10-digit product code from URL
           const codeMatch = url.match(/(\d{10})/);
           if (!codeMatch) return url;
-          
+
           const productCode = codeMatch[1];
-          const prefix = productCode.slice(0, 7); // e.g., "5046045106" -> "5046045"
-          const suffix = productCode.slice(7);    // e.g., "106" -> "009"
-          
-          // Try to extract the path components before the product code
-          // Format: /sys-master/m0/MM/{year}/{number}/{prefix}/{suffix}/s3details/
-          const pathMatch = url.match(/sys-master\/([^\/]+)\/([^\/]+)\/(\d{4})\/(\d+)/);
+          const prefix = productCode.slice(0, 7);
+          const suffix = productCode.slice(7);
+
+          const pathMatch = url.match(/sys-master\/([^/]+)\/([^/]+)\/(\d{4})\/(\d+)/);
           if (!pathMatch) return url;
-          
+
           const [, m0, mm, year, num] = pathMatch;
-          
-          // Extract image filename suffix (e.g., "-w-lamine_normal" or "-a-DEFILE_normal")
+
+          // Preserve original folder if present in the URL, otherwise default
+          // to s3master (clean packshot) rather than s3details (often worn).
+          const folderMatch = url.match(/\/(s3master|s3details|s3swatch)\//i);
+          const folder = folderMatch ? folderMatch[1] : 's3master';
+
+          // Preserve the original filename suffix so we keep -a- vs -w- etc.
           const filenameMatch = url.match(/\d{10}(-[a-z]-[^.]+)/i);
           const filenameSuffix = filenameMatch ? filenameMatch[1] : '-a-DEFILE_normal';
-          
-          // Construct the correct URL format
-          const correctUrl = `https://b2c-media.maxmara.com/sys-master/${m0}/${mm}/${year}/${num}/${prefix}/${suffix}/s3details/${productCode}${filenameSuffix}.jpg#product`;
-          
-          return correctUrl;
+
+          return `https://b2c-media.maxmara.com/sys-master/${m0}/${mm}/${year}/${num}/${prefix}/${suffix}/${folder}/${productCode}${filenameSuffix}.jpg#product`;
         };
-        
+
         // Deduplicate, normalize, and prefer longer URLs (usually more complete paths)
         const uniqueImages = [...new Set(images)].map(normalizeMaxMaraUrl);
         return uniqueImages.sort((a, b) => b.length - a.length);
+
       };
 
       // Note: extractRelatedProductImages removed - now using FreeScraperService.fetchHtmlAndExtractImages for reliable extraction
