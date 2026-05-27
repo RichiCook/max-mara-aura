@@ -50,30 +50,43 @@ async function fetchImageBytes(rawUrl: string): Promise<Uint8Array | null> {
 
 // ---------- Background removal (deterministic, no AI) ----------
 
-// Soft alpha background removal with edge feathering. Produces smooth
-// anti-aliased cutout edges instead of the jagged binary mask we got from
-// the previous threshold-only approach.
-//
-// Pipeline:
-//  1. Compute a per-pixel "background-ness" score (0..1) using luminance
-//     and chroma. Bright + low-chroma pixels score high.
-//  2. Flood-fill the score map from the border so only background regions
-//     connected to the edge are removed (keeps light interior garment areas).
-//  3. Erode the mask by 1px to pull the edge inside the silhouette and
-//     avoid white fringing around the product.
-//  4. Apply two 3x3 box blurs to the alpha channel so the edge becomes
-//     soft and anti-aliased.
-//  5. Premultiply: for boundary pixels, also pull RGB toward the
-//     foreground average to kill bright halo.
+// Background-aware cutout with edge decontamination.
+// Instead of a hard threshold mask, estimate the true studio backdrop color
+// from the image border, flood-fill only pixels that are close to that sampled
+// backdrop, then feather + decontaminate RGB along the edge so white halos do
+// not remain around garments and accessories.
 function removeBackground(img: Image): Image {
   const w = img.width;
   const h = img.height;
   const total = w * h;
 
-  // Step 1: bg score per pixel (0 = opaque foreground, 255 = pure background)
-  // Pixels with max >= 245 and chroma <= 8 are definitely background.
-  // Pixels with max <= 215 OR chroma >= 25 are definitely foreground.
-  // In between, score ramps smoothly.
+  let bgR = 0;
+  let bgG = 0;
+  let bgB = 0;
+  let bgSamples = 0;
+
+  const sampleBorderPixel = (x: number, y: number) => {
+    const px = img.getPixelAt(x + 1, y + 1);
+    bgR += (px >> 24) & 0xff;
+    bgG += (px >> 16) & 0xff;
+    bgB += (px >> 8) & 0xff;
+    bgSamples += 1;
+  };
+
+  for (let x = 0; x < w; x++) {
+    sampleBorderPixel(x, 0);
+    sampleBorderPixel(x, h - 1);
+  }
+  for (let y = 1; y < h - 1; y++) {
+    sampleBorderPixel(0, y);
+    sampleBorderPixel(w - 1, y);
+  }
+
+  const backdropR = bgSamples > 0 ? bgR / bgSamples : 238;
+  const backdropG = bgSamples > 0 ? bgG / bgSamples : 236;
+  const backdropB = bgSamples > 0 ? bgB / bgSamples : 232;
+
+  // Step 1: compute how close each pixel is to the sampled backdrop.
   const bgScore = new Uint8Array(total);
   const rCh = new Uint8Array(total);
   const gCh = new Uint8Array(total);
@@ -89,23 +102,26 @@ function removeBackground(img: Image): Image {
       const max = Math.max(r, g, b);
       const min = Math.min(r, g, b);
       const chroma = max - min;
-      // Luminance score: 0 at <=215, 1 at >=245
-      const lumScore = Math.max(0, Math.min(1, (max - 215) / 30));
-      // Chroma score: 1 at <=8, 0 at >=25
-      const chrScore = Math.max(0, Math.min(1, 1 - (chroma - 8) / 17));
-      bgScore[idx] = Math.round(lumScore * chrScore * 255);
+      const dist = Math.sqrt(
+        (r - backdropR) * (r - backdropR) +
+        (g - backdropG) * (g - backdropG) +
+        (b - backdropB) * (b - backdropB)
+      );
+      const backdropSimilarity = Math.max(0, Math.min(1, 1 - dist / 72));
+      const lightnessBias = Math.max(0, Math.min(1, (max - 185) / 70));
+      const chromaBias = Math.max(0, Math.min(1, 1 - chroma / 28));
+      bgScore[idx] = Math.round(backdropSimilarity * 0.65 * 255 + lightnessBias * chromaBias * 0.35 * 255);
     }
   }
 
-  // Step 2: flood-fill from borders; mark pixels reachable through "likely bg"
-  // (score >= 96). Build a binary mask: 1 = background, 0 = foreground.
+  // Step 2: flood-fill from borders through pixels that resemble the backdrop.
   const isBg = new Uint8Array(total);
   const stack: number[] = [];
   const tryPush = (x: number, y: number) => {
     if (x < 0 || y < 0 || x >= w || y >= h) return;
     const idx = y * w + x;
     if (isBg[idx]) return;
-    if (bgScore[idx] >= 96) {
+    if (bgScore[idx] >= 132) {
       isBg[idx] = 1;
       stack.push(x, y);
     }
@@ -119,21 +135,18 @@ function removeBackground(img: Image): Image {
     tryPush(x, y + 1); tryPush(x, y - 1);
   }
 
-  // Step 3: build alpha map. Background = 0, foreground = 255.
-  // For foreground pixels near a strong bg-score, soften alpha proportionally
-  // to remove sub-pixel halo.
+  // Step 3: build a soft alpha ramp near the extracted edge.
   const alpha = new Uint8Array(total);
   for (let i = 0; i < total; i++) {
     if (isBg[i]) {
       alpha[i] = 0;
     } else {
-      // Soft fade where bg-score is mid (boundary anti-alias)
       const s = bgScore[i];
-      alpha[i] = s <= 96 ? 255 : Math.round(255 * (1 - (s - 96) / 159));
+      alpha[i] = s <= 84 ? 255 : Math.round(255 * (1 - (s - 84) / 171));
     }
   }
 
-  // Step 4: erode by 1px (min filter on alpha) to bite into edge halo.
+  // Step 4: erode by 1px to keep the edge slightly inside the object.
   const eroded = new Uint8Array(total);
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
@@ -147,7 +160,7 @@ function removeBackground(img: Image): Image {
     }
   }
 
-  // Step 5: two-pass 3x3 box blur on alpha for smooth feather.
+  // Step 5: blur alpha for anti-aliasing.
   const blur = (src: Uint8Array): Uint8Array => {
     const out = new Uint8Array(total);
     // horizontal
@@ -176,7 +189,16 @@ function removeBackground(img: Image): Image {
   let finalAlpha = blur(eroded);
   finalAlpha = blur(finalAlpha);
 
-  // Step 6: write back to image.
+  // Step 6: estimate nearby foreground colour so edge pixels are decontaminated
+  // from the sampled studio background rather than keeping a white fringe.
+  const decontaminate = (channel: number, backdrop: number, alphaValue: number) => {
+    if (alphaValue >= 250) return channel;
+    const a = Math.max(alphaValue / 255, 0.08);
+    const unmatted = Math.round((channel - backdrop * (1 - a)) / a);
+    return Math.max(0, Math.min(255, unmatted));
+  };
+
+  // Step 7: write back to image.
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       const idx = y * w + x;
@@ -184,10 +206,13 @@ function removeBackground(img: Image): Image {
       if (a === 0) {
         img.setPixelAt(x + 1, y + 1, 0);
       } else {
+        const r = decontaminate(rCh[idx], backdropR, a);
+        const g = decontaminate(gCh[idx], backdropG, a);
+        const b = decontaminate(bCh[idx], backdropB, a);
         img.setPixelAt(x + 1, y + 1,
-          ((rCh[idx] & 0xff) << 24) |
-          ((gCh[idx] & 0xff) << 16) |
-          ((bCh[idx] & 0xff) << 8)  |
+          ((r & 0xff) << 24) |
+          ((g & 0xff) << 16) |
+          ((b & 0xff) << 8)  |
           (a & 0xff)
         );
       }
