@@ -5,7 +5,7 @@ import { normalizeImages } from '@/hooks/useProducts';
 import { Sparkles, RefreshCw, Loader2, ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { getFlatLayImage, filterImagesBySku } from '@/utils/imageUtils';
+import { getFlatLayImage, filterImagesBySku, getCollageSourceImage } from '@/utils/imageUtils';
 import LookCardV2 from '@/components/product/LookCardV2';
 import { fetchLookModeRules, resolveLookMode, type LookMode, type LookModeRules, DEFAULT_LOOK_MODE_RULES } from '@/lib/lookMode';
 
@@ -98,6 +98,10 @@ const resolveColorToHex = (c: string): string | null => {
 };
 
 const INITIAL_LOOKS = 3;
+// Bump this whenever the collage source-selection logic changes so cached
+// collage images generated from the wrong source get regenerated automatically.
+const COLLAGE_CACHE_VERSION = 2;
+
 
 export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, onColorPaletteReady }: ProductGeneratedLookProps) => {
   const { toast } = useToast();
@@ -254,29 +258,40 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
           ...l.look,
           look_image: l.lookImage || l.look.look_image,
           collage_image: l.collageImage || l.look.collage_image,
+          collage_cache_version: l.collageImage ? COLLAGE_CACHE_VERSION : (l.look as any).collage_cache_version,
         }));
       if (looksToCache.length === 0) return;
-      // Store as array in generated_look
       await supabase.from('products').update({ 
         generated_look: (looksToCache.length === 1 ? looksToCache[0] : looksToCache) as any 
       }).eq('product_code', productCode);
     } catch { /* silent */ }
   };
 
+
   const generateCollageImage = async (products: LookProduct[], lookData: GeneratedLook, lookIndex: number, retryCount = 0) => {
     const productRefs = products
-      .map((p) => ({
-        name: p.name,
-        color: p.color,
-        category: p.category,
-        image: getPrimaryProductImage(p),
-      }))
-      .filter((p): p is { name: string; color: string | null; category: string | null; image: string } => Boolean(p.image));
+      .map((p) => {
+        // Build a candidate list for the cutout source: strict lay-flat first,
+        // then any other flat-lay, then a generic fallback. Edge function will
+        // try each URL until one returns bytes (joined with newlines).
+        const strict = getCollageSourceImage(p.images, p.product_code, p.category);
+        const flat = getFlatLayImage(filterImagesBySku(p.images, p.product_code), p.category);
+        const candidates = Array.from(new Set([strict, flat].filter(Boolean) as string[]));
+        if (candidates.length === 0) return null;
+        return {
+          name: p.name,
+          color: p.color,
+          category: p.category,
+          image: candidates.join('\n'),
+        };
+      })
+      .filter((p): p is { name: string; color: string | null; category: string | null; image: string } => Boolean(p && p.image));
 
     if (productRefs.length === 0) {
-      toast({ title: 'Collage failed', description: 'The selected products do not have usable images yet.', variant: 'destructive' });
+      toast({ title: 'Collage failed', description: 'The selected products do not have usable lay-flat images yet.', variant: 'destructive' });
       return;
     }
+
 
     setLooks(prev => prev.map((l, i) => i === lookIndex ? { ...l, generatingCollage: true } : l));
     try {
@@ -410,12 +425,23 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
     for (const cl of cachedLooks) {
       const products = await fetchLookProducts(cl.product_codes || []);
       if (products.length > 0) {
-        results.push({ look: cl, products, lookImage: cl.look_image || null, collageImage: cl.collage_image || null, generatingImage: false, generatingCollage: false });
+        // Invalidate stale collages produced before the source-selection fix.
+        const cachedVersion = (cl as any).collage_cache_version ?? 0;
+        const collageStale = cachedVersion < COLLAGE_CACHE_VERSION;
+        results.push({
+          look: cl,
+          products,
+          lookImage: cl.look_image || null,
+          collageImage: collageStale ? null : (cl.collage_image || null),
+          generatingImage: false,
+          generatingCollage: false,
+        });
         for (const code of cl.product_codes || []) {
           if (code !== productCode) usedProductCodesRef.current.add(code);
         }
       }
     }
+
 
     if (results.length === 0) {
       // Generate first look (not forced, uses cache)

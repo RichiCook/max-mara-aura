@@ -267,3 +267,54 @@ export const getMainProductImage = (
   const skuFiltered = filterImagesBySku(parsed, productCode);
   return getFlatLayImage(skuFiltered, category) || skuFiltered[0] || parsed[0];
 };
+
+/**
+ * Strict lay-flat selector for the collage pipeline. Returns null when no
+ * acceptable flat-lay source exists so the caller can skip the product instead
+ * of cutting out a worn/editorial shot.
+ *
+ * For Max Mara URLs that only exist as /s3details/, we also derive the
+ * equivalent /s3master/ packshot URL as a defensive fallback — the master
+ * folder typically contains the clean product-only shot.
+ */
+export const getCollageSourceImage = (
+  images: unknown,
+  productCode?: string | null,
+  category?: string | null
+): string | null => {
+  const parsed = parseImages(images);
+  if (parsed.length === 0) return null;
+  const skuFiltered = filterImagesBySku(parsed, productCode);
+
+  // 1. Prefer an explicit master packshot.
+  const master = skuFiltered.find(img => {
+    const l = img.toLowerCase();
+    return l.includes('/s3master/') && l.includes('_normal.');
+  });
+  if (master) return master;
+
+  // 2. Try a regular flat-lay (champion _Full.jpg, max mara -a-/-w-_normal).
+  const flat = getFlatLayImage(skuFiltered, category);
+  if (flat) {
+    const lf = flat.toLowerCase();
+    const worn = lf.includes('_alt') || lf.includes('_model') || lf.includes('_worn') ||
+                 lf.includes('_lifestyle') || lf.includes('_crop') || lf.includes('_detail');
+    if (!worn) {
+      // 3. If the flat-lay we found is a Max Mara s3details URL, try the
+      //    matching s3master URL first — it's usually the clean packshot.
+      if (lf.includes('maxmara.com') && lf.includes('/s3details/')) {
+        const masterAttempt = flat.replace('/s3details/', '/s3master/');
+        return masterAttempt;
+      }
+      return flat;
+    }
+  }
+
+  // 4. As a last resort, try to derive a master URL from any Max Mara URL.
+  const anyMM = skuFiltered.find(img => img.includes('maxmara.com'));
+  if (anyMM) {
+    return anyMM.replace('/s3details/', '/s3master/').replace('/s3swatch/', '/s3master/');
+  }
+
+  return null;
+};

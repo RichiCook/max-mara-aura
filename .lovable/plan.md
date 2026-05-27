@@ -1,19 +1,32 @@
 ## Plan
 
-1. Tighten Max Mara URL normalization so it preserves the original gallery variant and folder (`s3master` vs `s3details`) instead of rewriting valid flat-lay URLs into detail/worn variants.
-2. Update image extraction ranking to explicitly favor `s3master` product-only images for accessories and other non-shoe categories before any `s3details` or worn/detail shots.
-3. Add a defensive fallback in the flat-lay selector so products like `1756035606001` always resolve to the `-a-`/`s3master` packshot when that URL exists in the image set.
-4. Verify against the `lega-cristallo` product signals from the live page and ensure the collage pipeline uses the corrected source image path.
+1. Preserve the original Max Mara image variants during scraping.
+   - Stop rewriting valid Max Mara URLs into `/s3details/` paths.
+   - Keep the original folder and filename signals (`/s3master/`, `-a-`, `-w-`, `_normal`) so clean packshots survive into the product record.
+
+2. Make collage generation fail-safe for lay-flat-only inputs.
+   - Tighten the source-image selection so the collage pipeline only uses master packshots / lay-flat images for cutout generation.
+   - Explicitly reject worn/editorial/detail candidates before background removal runs.
+   - If a product has no acceptable lay-flat source, skip that item instead of cutting out a model shot.
+
+3. Bust stale cached collage results.
+   - Add a lightweight source signature to each generated collage based on the selected lay-flat URLs.
+   - On load, if the cached collage was built from older/wrong sources, ignore it and regenerate automatically.
+   - This prevents previously bad collages from continuing to show after the fix.
+
+4. Verify against the failing Max Mara case.
+   - Confirm the `lega-cristallo` product resolves to the master lay-flat image instead of the worn shot.
+   - Recheck the collage path so the cutout is produced from the lay-flat image only.
 
 ## Technical details
 
-- Files likely involved:
+- Files to update:
   - `src/utils/FirecrawlService.ts`
-  - `src/utils/FreeScraperService.ts`
   - `src/utils/imageUtils.ts`
-- Root issue observed:
-  - The live product page exposes the correct flat-lay URL: `.../s3master/1756035606001-a-lega_normal.jpg`
-  - Current selection logic already prefers `s3master`, so the bad pick is likely caused earlier during scraping/normalization.
-- Scope:
-  - No UI redesign, no database changes, no image generation changes.
-  - Only fix deterministic source-image selection for collages and product thumbnails.
+  - `src/components/ProductGeneratedLook.tsx`
+  - possibly `supabase/functions/generate-look-collage/index.ts` for an extra lay-flat guard
+
+- Expected behavior after the fix:
+  - The collage system removes background from real lay-flat product images.
+  - It no longer cuts out people/editorial shots when Max Mara provides both types.
+  - Old cached bad collages get replaced automatically.
