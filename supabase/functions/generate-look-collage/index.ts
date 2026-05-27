@@ -572,7 +572,7 @@ async function buildCollage(products: ProductInfo[]): Promise<{ image: string; d
   for (let i = 0; i < png.length; i += chunkSize) {
     binary += String.fromCharCode(...png.subarray(i, i + chunkSize));
   }
-  return `data:image/png;base64,${btoa(binary)}`;
+  return { image: `data:image/png;base64,${btoa(binary)}`, debug };
 }
 
 // ---------- HTTP handler ----------
