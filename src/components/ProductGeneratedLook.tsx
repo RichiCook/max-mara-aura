@@ -5,7 +5,7 @@ import { normalizeImages } from '@/hooks/useProducts';
 import { Sparkles, RefreshCw, Loader2, ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { getFlatLayImage, filterImagesBySku } from '@/utils/imageUtils';
+import { getFlatLayImage, filterImagesBySku, getCollageSourceImage } from '@/utils/imageUtils';
 import LookCardV2 from '@/components/product/LookCardV2';
 import { fetchLookModeRules, resolveLookMode, type LookMode, type LookModeRules, DEFAULT_LOOK_MODE_RULES } from '@/lib/lookMode';
 
