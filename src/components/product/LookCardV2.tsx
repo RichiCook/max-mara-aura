@@ -219,6 +219,29 @@ const LookCardV2 = ({ looks, productCode, loading, loadingMore, onTrackEvent, on
                   const label = isCollage ? 'GENERATING COLLAGE' : 'GENERATING LOOK';
                   const badge = isCollage ? '✦ AI Collage' : '✦ AI Generated';
                   return (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 10px 8px', background: '#fff', borderBottom: '1px solid #f0ece7' }}>
+                    <div style={{ display: 'inline-flex', background: '#f7f3ee', border: '1px solid #e4e0db', borderRadius: 6, padding: 2 }}>
+                      {(['photo', 'collage'] as const).map(m => (
+                        <button
+                          key={m}
+                          onClick={() => setMode(lookIdx, m)}
+                          style={{
+                            padding: '5px 10px', border: 'none', cursor: 'pointer',
+                            background: mode === m ? '#1a1a1a' : 'transparent',
+                            color: mode === m ? '#fff' : '#6b6258',
+                            fontFamily: "'Inter', sans-serif", fontSize: 10, fontWeight: 600,
+                            letterSpacing: '0.05em', textTransform: 'uppercase' as const, borderRadius: 4,
+                          }}
+                        >
+                          {m === 'photo' ? 'Photo' : 'Collage'}
+                        </button>
+                      ))}
+                    </div>
+                    <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 10, color: '#8b7355', letterSpacing: '0.04em', textTransform: 'uppercase' as const }}>
+                      {isCollage ? 'Collage mode' : 'Photo mode'}
+                    </span>
+                  </div>
                 <div style={{ aspectRatio: '3/4', position: 'relative', overflow: 'hidden', background: isCollage ? '#efeae3' : '#f0ece7' }}>
                   {isGenerating ? (
                     <>
@@ -262,25 +285,6 @@ const LookCardV2 = ({ looks, productCode, loading, loadingMore, onTrackEvent, on
                     </div>
                   )}
 
-                  {/* Mode toggle (Photo / Collage) */}
-                  <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 5, display: 'inline-flex', background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(8px)', borderRadius: 5, padding: 2 }}>
-                    {(['photo', 'collage'] as const).map(m => (
-                      <button
-                        key={m}
-                        onClick={() => setMode(lookIdx, m)}
-                        style={{
-                          padding: '4px 9px', border: 'none', cursor: 'pointer',
-                          background: mode === m ? '#fff' : 'transparent',
-                          color: mode === m ? '#1a1a1a' : 'rgba(255,255,255,0.85)',
-                          fontFamily: "'Inter', sans-serif", fontSize: 9, fontWeight: 600,
-                          letterSpacing: '0.06em', textTransform: 'uppercase' as const, borderRadius: 4,
-                        }}
-                      >
-                        {m === 'photo' ? 'Photo' : 'Collage'}
-                      </button>
-                    ))}
-                  </div>
-
                   <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 4, background: 'linear-gradient(transparent, rgba(0,0,0,0.6))', padding: '40px 16px 14px' }}>
                     <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 600, color: '#fff', margin: 0 }}>{look.name}</h3>
                     {look.description && (
@@ -288,6 +292,7 @@ const LookCardV2 = ({ looks, productCode, loading, loadingMore, onTrackEvent, on
                     )}
                   </div>
                 </div>
+                </>
                   );
                 })()}
 
