@@ -13,54 +13,140 @@ interface ProductInfo {
   image: string | null;
 }
 
-// ---------- Image fetching ----------
+// ---------- Image source validation ----------
 
 function isShoeCategory(category: string | null | undefined): boolean {
   if (!category) return false;
-  const lowerCategory = category.toLowerCase();
-  return lowerCategory.includes('shoe') || 
-         lowerCategory.includes('scarpe') || 
-         lowerCategory.includes('boot') || 
-         lowerCategory.includes('stival') ||
-         lowerCategory.includes('sandal') ||
-         lowerCategory.includes('sneaker') ||
-         lowerCategory.includes('mocassin') ||
-         lowerCategory.includes('loafer') ||
-         lowerCategory.includes('décolleté') ||
-         lowerCategory.includes('decollete') ||
-         lowerCategory.includes('pump') ||
-         lowerCategory.includes('heel') ||
-         lowerCategory.includes('ciabatt') ||
-         lowerCategory.includes('slide');
+  const c = category.toLowerCase();
+  return c.includes('shoe') || c.includes('scarpe') || c.includes('boot') ||
+    c.includes('stival') || c.includes('sandal') || c.includes('sneaker') ||
+    c.includes('mocassin') || c.includes('loafer') || c.includes('décolleté') ||
+    c.includes('decollete') || c.includes('pump') || c.includes('heel') ||
+    c.includes('ciabatt') || c.includes('slide');
 }
 
-function normalizeMaxMaraCandidate(url: string, category?: string | null): string {
-  const lower = url.toLowerCase();
-  if (!lower.includes('maxmara.com')) return url;
-  const preferredVariant = isShoeCategory(category) ? 'w' : 'a';
+function isBagOrAccessory(category: string | null | undefined): boolean {
+  if (!category) return false;
+  const c = category.toLowerCase();
+  return c.includes('borsa') || c.includes('bag') || c.includes('pochette') ||
+    c.includes('clutch') || c.includes('tote') || c.includes('shopper') ||
+    c.includes('cintura') || c.includes('belt') || c.includes('foulard') ||
+    c.includes('sciarpa') || c.includes('scarf') || c.includes('cappello') ||
+    c.includes('hat') || c.includes('guant') || c.includes('glove') ||
+    c.includes('occhial') || c.includes('glasses') || c.includes('bijou') ||
+    c.includes('gioiell') || c.includes('jewel');
+}
 
-  return url
+// Returns true ONLY for clean flat-lay / packshot URLs that are safe to send to
+// the background-removal cutout pipeline. Anything else (worn, detail, lifestyle,
+// alt, crop, swatch, model) is rejected outright. This is the source of truth —
+// the backend never trusts the frontend's selection.
+function isAllowedPackshot(url: string, category: string | null | undefined): boolean {
+  const lower = url.toLowerCase();
+  if (!lower.startsWith('http') && !lower.startsWith('data:')) return false;
+
+  // Generic reject list — applies to all sources
+  if (lower.includes('_alt') || lower.includes('_model') || lower.includes('_worn') ||
+      lower.includes('_lifestyle') || lower.includes('_crop') || lower.includes('_detail') ||
+      lower.includes('_closeup') || lower.includes('_close_up') || lower.includes('_zoom') ||
+      lower.includes('#thumbnail')) {
+    return false;
+  }
+
+  // Max Mara: must be /s3master/ and the variant code must match category rules
+  if (lower.includes('maxmara.com')) {
+    if (lower.includes('/s3swatch/')) return false; // colour swatches
+    if (!lower.includes('/s3master/')) return false; // s3details = on-body
+    if (!lower.includes('_normal.')) return false;
+    const variantMatch = lower.match(/-([a-z])-[^/_?#]+_normal\./);
+    const variant = variantMatch?.[1] ?? null;
+    if (!variant) return false;
+    // 'a' = clean packshot for apparel/bags/accessories
+    // 'w' = additional packshot used for shoes
+    if (variant === 'a') return true;
+    if (variant === 'w' && isShoeCategory(category)) return true;
+    return false;
+  }
+
+  // Champion / generic patterns: only the plain _Full shot or _Full_Front
+  if (/_full\.(jpg|jpeg|png|webp)(\?.*)?$/.test(lower)) return true;
+  if (/_full_front\.(jpg|jpeg|png|webp)(\?.*)?$/.test(lower)) return true;
+
+  return false;
+}
+
+// Rewrite a Max Mara URL into its canonical /s3master/-a- (or -w- for shoes)
+// packshot. Returns null if the URL doesn't look like a Max Mara product image.
+function deriveMaxMaraPackshot(url: string, category: string | null | undefined): string | null {
+  if (!url.toLowerCase().includes('maxmara.com')) return null;
+  const preferred = isShoeCategory(category) ? 'w' : 'a';
+  const rewritten = url
     .replace('/s3details/', '/s3master/')
     .replace('/s3swatch/', '/s3master/')
-    .replace(/-([a-z])-([^/_?#]+_normal\.)/i, `-${preferredVariant}-$2`);
+    .replace(/-([a-z])-([^/_?#]+_normal\.)/i, `-${preferred}-$2`);
+  return rewritten !== url ? rewritten : null;
 }
 
-async function fetchImageBytes(rawUrl: string, category?: string | null): Promise<Uint8Array | null> {
-  const candidates = rawUrl
+interface PackshotSelection {
+  url: string | null;
+  considered: string[];
+  rejected: string[];
+}
+
+function selectPackshotCandidates(rawUrl: string, category: string | null | undefined): PackshotSelection {
+  const raw = rawUrl
     .split(/\r?\n/)
-    .map((url) => url.split('#')[0].trim())
-    .filter(Boolean)
-    .flatMap((url) => {
-      const normalized = normalizeMaxMaraCandidate(url, category);
-      return normalized !== url ? [normalized, url] : [url];
-    });
+    .map((u) => u.split('#')[0].trim())
+    .filter(Boolean);
+
+  const considered: string[] = [];
+  const rejected: string[] = [];
+  const allowed: string[] = [];
+
+  for (const candidate of raw) {
+    considered.push(candidate);
+    if (isAllowedPackshot(candidate, category)) {
+      allowed.push(candidate);
+      continue;
+    }
+    // Try to rewrite Max Mara URLs into their canonical packshot
+    const derived = deriveMaxMaraPackshot(candidate, category);
+    if (derived && isAllowedPackshot(derived, category)) {
+      allowed.push(derived);
+    } else {
+      rejected.push(candidate);
+    }
+  }
+
+  // Deduplicate while preserving order
+  const seen = new Set<string>();
+  const ordered = allowed.filter((u) => (seen.has(u) ? false : (seen.add(u), true)));
+
+  return { url: ordered[0] ?? null, considered, rejected };
+}
+
+// ---------- Image fetching ----------
+
+async function fetchImageBytes(rawUrl: string, category: string | null | undefined): Promise<{ bytes: Uint8Array | null; usedUrl: string | null; selection: PackshotSelection }> {
+  const selection = selectPackshotCandidates(rawUrl, category);
+  if (!selection.url) {
+    return { bytes: null, usedUrl: null, selection };
+  }
+
+  // Reorder so the canonical packshot is tried first, then any other allowed candidate
+  const candidates = [selection.url];
+  for (const c of rawUrl.split(/\r?\n/).map((u) => u.split('#')[0].trim()).filter(Boolean)) {
+    if (isAllowedPackshot(c, category) && !candidates.includes(c)) candidates.push(c);
+    const derived = deriveMaxMaraPackshot(c, category);
+    if (derived && isAllowedPackshot(derived, category) && !candidates.includes(derived)) candidates.push(derived);
+  }
 
   for (const cleanUrl of candidates) {
     try {
       if (cleanUrl.startsWith('data:')) {
         const [, b64] = cleanUrl.split(',');
         if (!b64) continue;
-        return Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+        return { bytes: Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)), usedUrl: cleanUrl, selection };
       }
       const parsed = new URL(cleanUrl);
       const upstream = await fetch(parsed.toString(), {
@@ -71,15 +157,15 @@ async function fetchImageBytes(rawUrl: string, category?: string | null): Promis
         },
       });
       if (!upstream.ok) {
-        console.warn(`Image fetch failed (${upstream.status}): ${cleanUrl}`);
+        console.warn(`Packshot fetch failed (${upstream.status}): ${cleanUrl}`);
         continue;
       }
-      return new Uint8Array(await upstream.arrayBuffer());
+      return { bytes: new Uint8Array(await upstream.arrayBuffer()), usedUrl: cleanUrl, selection };
     } catch (err) {
-      console.warn(`Image fetch error for ${cleanUrl}:`, err);
+      console.warn(`Packshot fetch error for ${cleanUrl}:`, err);
     }
   }
-  return null;
+  return { bytes: null, usedUrl: null, selection };
 }
 
 // ---------- Background removal (deterministic, no AI) ----------
