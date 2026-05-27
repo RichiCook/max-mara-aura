@@ -58,6 +58,7 @@ const isShoeCategory = (category: string | null | undefined): boolean => {
  */
 const isFlatLayUrl = (url: string): boolean => {
   const lower = url.toLowerCase();
+  const isMasterPackshot = lower.includes('/s3master/') && lower.includes('_normal.');
   
   // Champion patterns: _Full.jpg is the clean flat-lay (no suffix after _Full)
   // Match _Full.jpg but NOT _Full_Crop, _Full_Alt, etc.
@@ -69,6 +70,9 @@ const isFlatLayUrl = (url: string): boolean => {
   
   // Also match _Full_Front as a secondary flat-lay
   if (lower.includes('_full_front.')) return true;
+
+  // Max Mara master packshots are the clean product-only source.
+  if (isMasterPackshot) return true;
   
   // Max Mara flat lay patterns
   if (lower.includes('-w-') && lower.includes('_normal.jpg')) return true;
@@ -122,50 +126,72 @@ export const getFlatLayImage = (images: string[] | null | undefined, category?: 
   if (!images || images.length === 0) return null;
 
   const isShoe = isShoeCategory(category);
+  const normalizedImages = images.filter(Boolean);
   
   // For Max Mara compatibility: shoes use -a-, clothing uses -w-
   const primarySuffix = isShoe ? '-a-' : '-w-';
   const secondarySuffix = isShoe ? '-w-' : '-a-';
 
+  // Priority 0: explicit master packshot folders beat everything else.
+  // This fixes Max Mara sets where the s3master image is the clean flat-lay,
+  // while s3details contains on-body/detail variants that create bad cutouts.
+  const masterPrimary = normalizedImages.find(img => {
+    const lower = img.toLowerCase();
+    return lower.includes('/s3master/') && lower.includes('_normal.') && lower.includes(primarySuffix);
+  });
+  if (masterPrimary) return masterPrimary;
+
+  const masterAny = normalizedImages.find(img => {
+    const lower = img.toLowerCase();
+    return lower.includes('/s3master/') && lower.includes('_normal.') && !lower.includes('/s3swatch/');
+  });
+  if (masterAny) return masterAny;
+
   // Priority 1: Plain _Full.ext with NO suffix after "Full" (no _Alt1, _Front, _Back, _Crop, etc.)
-  const plainFull = images.find(img => {
+  const plainFull = normalizedImages.find(img => {
     const lower = img.toLowerCase();
     return /_full\.(jpg|png|webp|jpeg)(\?.*)?$/.test(lower);
   });
   if (plainFull) return plainFull;
 
   // Priority 3: Max Mara primary suffix with normal size
-  const primaryNormal = images.find(img => 
-    img.includes(primarySuffix) && img.includes('_normal.jpg')
-  );
+  const primaryNormal = normalizedImages.find(img => {
+    const lower = img.toLowerCase();
+    return lower.includes(primarySuffix) && lower.includes('_normal.') && !lower.includes('/s3details/');
+  });
   if (primaryNormal) return primaryNormal;
 
   // Priority 4: Max Mara secondary suffix with normal size
-  const secondaryNormal = images.find(img => 
-    img.includes(secondarySuffix) && img.includes('_normal.jpg')
-  );
+  const secondaryNormal = normalizedImages.find(img => {
+    const lower = img.toLowerCase();
+    return lower.includes(secondarySuffix) && lower.includes('_normal.') && !lower.includes('/s3details/');
+  });
   if (secondaryNormal) return secondaryNormal;
 
-  // Priority 5: Any Max Mara primary suffix image
-  const primaryAny = images.find(img => img.includes(primarySuffix));
+  // Priority 5: Any clean flat-lay image
+  const flatLay = normalizedImages.find(img => isFlatLayUrl(img) && !isCloseUpOrDetail(img) && !isWornOrAlternate(img));
+  if (flatLay) return flatLay;
+
+  // Priority 6: Any Max Mara primary suffix image
+  const primaryAny = normalizedImages.find(img => img.toLowerCase().includes(primarySuffix));
   if (primaryAny) return primaryAny;
 
-  // Priority 6: Any Max Mara secondary suffix image
-  const secondaryAny = images.find(img => img.includes(secondarySuffix));
+  // Priority 7: Any Max Mara secondary suffix image
+  const secondaryAny = normalizedImages.find(img => img.toLowerCase().includes(secondarySuffix));
   if (secondaryAny) return secondaryAny;
 
-  // Priority 7: Any image that's NOT a close-up AND NOT a worn/alternate shot
-  const cleanImage = images.find(img => 
+  // Priority 8: Any image that's NOT a close-up AND NOT a worn/alternate shot
+  const cleanImage = normalizedImages.find(img => 
     !isCloseUpOrDetail(img) && !isWornOrAlternate(img) && !isBackView(img) && !img.includes('#thumbnail')
   );
   if (cleanImage) return cleanImage;
 
-  // Priority 8: First image that's not a thumbnail
-  const firstNonThumb = images.find(img => !img.includes('#thumbnail'));
+  // Priority 9: First image that's not a thumbnail
+  const firstNonThumb = normalizedImages.find(img => !img.includes('#thumbnail'));
   if (firstNonThumb) return firstNonThumb;
 
   // Fallback: return first image
-  return images[0];
+  return normalizedImages[0];
 };
 
 /**
