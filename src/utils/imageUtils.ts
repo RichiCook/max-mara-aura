@@ -73,6 +73,12 @@ const isMaxMaraWornOrDetailVariant = (url: string): boolean => {
   return variant !== null && variant !== 'a';
 };
 
+const toMaxMaraMasterPackshot = (url: string): string =>
+  url
+    .replace('/s3details/', '/s3master/')
+    .replace('/s3swatch/', '/s3master/')
+    .replace(/-([a-z])-([^/_?#]+_normal\.)/i, '-a-$2');
+
 const isFlatLayUrl = (url: string): boolean => {
   const lower = url.toLowerCase();
   const isMasterPackshot = isMaxMaraMasterPackshot(lower);
@@ -290,8 +296,8 @@ export const getCollageSourceImage = (
     if (!worn) {
       // 3. If the flat-lay we found is a Max Mara s3details URL, try the
       //    matching s3master URL first — it's usually the clean packshot.
-      if (lf.includes('maxmara.com') && lf.includes('/s3details/')) {
-        const masterAttempt = flat.replace('/s3details/', '/s3master/');
+      if (lf.includes('maxmara.com') && (lf.includes('/s3details/') || lf.includes('/s3swatch/'))) {
+        const masterAttempt = toMaxMaraMasterPackshot(flat);
         return masterAttempt;
       }
       return flat;
@@ -301,7 +307,7 @@ export const getCollageSourceImage = (
   // 4. As a last resort, try to derive a master URL from any Max Mara URL.
   const anyMM = skuFiltered.find(img => img.includes('maxmara.com'));
   if (anyMM) {
-    return anyMM.replace('/s3details/', '/s3master/').replace('/s3swatch/', '/s3master/');
+    return toMaxMaraMasterPackshot(anyMM);
   }
 
   return null;
