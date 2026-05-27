@@ -83,6 +83,40 @@ function sortByLayerOrder(products: ProductInfo[]): ProductInfo[] {
   });
 }
 
+// Fetch a remote image and return a base64 data URL, bypassing hotlink protection
+// by spoofing browser-like headers. Returns null if the fetch fails.
+async function fetchImageAsDataUrl(rawUrl: string): Promise<string | null> {
+  try {
+    const cleanUrl = rawUrl.split('#')[0].trim();
+    if (!cleanUrl) return null;
+    // Already a data URL — pass through
+    if (cleanUrl.startsWith('data:')) return cleanUrl;
+    const parsed = new URL(cleanUrl);
+    const upstream = await fetch(parsed.toString(), {
+      headers: {
+        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+        'referer': `${parsed.origin}/`,
+      },
+    });
+    if (!upstream.ok) {
+      console.warn(`Image fetch failed (${upstream.status}): ${cleanUrl}`);
+      return null;
+    }
+    const contentType = upstream.headers.get('content-type') || 'image/jpeg';
+    const buf = new Uint8Array(await upstream.arrayBuffer());
+    let binary = '';
+    const chunkSize = 0x8000;
+    for (let i = 0; i < buf.length; i += chunkSize) {
+      binary += String.fromCharCode(...buf.subarray(i, i + chunkSize));
+    }
+    return `data:${contentType};base64,${btoa(binary)}`;
+  } catch (err) {
+    console.warn(`Image fetch error for ${rawUrl}:`, err);
+    return null;
+  }
+}
+
 // Generate with Lovable AI using product images and configuration references
 async function generateWithLovableAI(
   prompt: string, 
@@ -103,43 +137,28 @@ async function generateWithLovableAI(
   
   console.log(`Using ${limitedProductImages.length} product refs, ${modelReferenceImage ? 1 : 0} model ref, ${environmentReferenceImage ? 1 : 0} env ref, ${limitedStyleRefs.length} style refs`);
 
+  // Pre-fetch all reference images and inline as base64 to bypass CDN hotlink protection
+  const [inlinedModel, inlinedEnv, inlinedStyles, inlinedProducts] = await Promise.all([
+    modelReferenceImage ? fetchImageAsDataUrl(modelReferenceImage) : Promise.resolve(null),
+    environmentReferenceImage ? fetchImageAsDataUrl(environmentReferenceImage) : Promise.resolve(null),
+    Promise.all(limitedStyleRefs.map(fetchImageAsDataUrl)),
+    Promise.all(limitedProductImages.map(fetchImageAsDataUrl)),
+  ]);
+
   // Build message content with text and images
   const messageContent: any[] = [{ type: 'text', text: prompt }];
-  
-  // Add model reference image first if provided
-  if (modelReferenceImage) {
-    messageContent.push({
-      type: 'image_url',
-      image_url: { url: modelReferenceImage }
-    });
-  }
 
-  // Add environment reference image if provided
-  if (environmentReferenceImage) {
-    messageContent.push({
-      type: 'image_url',
-      image_url: { url: environmentReferenceImage }
-    });
+  if (inlinedModel) {
+    messageContent.push({ type: 'image_url', image_url: { url: inlinedModel } });
   }
-  
-  // Add style reference images
-  for (const styleUrl of limitedStyleRefs) {
-    if (styleUrl) {
-      messageContent.push({
-        type: 'image_url',
-        image_url: { url: styleUrl }
-      });
-    }
+  if (inlinedEnv) {
+    messageContent.push({ type: 'image_url', image_url: { url: inlinedEnv } });
   }
-  
-  // Add product images as references
-  for (const imageUrl of limitedProductImages) {
-    if (imageUrl) {
-      messageContent.push({
-        type: 'image_url',
-        image_url: { url: imageUrl }
-      });
-    }
+  for (const styleUrl of inlinedStyles) {
+    if (styleUrl) messageContent.push({ type: 'image_url', image_url: { url: styleUrl } });
+  }
+  for (const imageUrl of inlinedProducts) {
+    if (imageUrl) messageContent.push({ type: 'image_url', image_url: { url: imageUrl } });
   }
 
   console.log(`Generating image with ${messageContent.length - 1} total reference images`);
