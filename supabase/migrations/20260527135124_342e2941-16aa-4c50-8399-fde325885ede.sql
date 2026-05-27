@@ -1,0 +1,1 @@
+INSERT INTO public.app_settings (id, value) VALUES ('ai_looks_enabled', '{"enabled": true}'::jsonb) ON CONFLICT (id) DO UPDATE SET value = '{"enabled": true}'::jsonb;
