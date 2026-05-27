@@ -600,13 +600,15 @@ serve(async (req) => {
       });
     }
 
-    const image = await buildCollage(withImages.slice(0, 8));
+    const { image, debug } = await buildCollage(withImages.slice(0, 8));
 
     return new Response(
       JSON.stringify({
         image,
-        items_used: withImages.length,
+        items_used: debug.filter((d) => d.status === 'used').length,
+        items_skipped: debug.filter((d) => d.status !== 'used').length,
         method: 'cutout_composition',
+        debug,
         generated_at: new Date().toISOString(),
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
