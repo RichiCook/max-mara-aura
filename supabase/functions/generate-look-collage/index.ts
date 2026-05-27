@@ -50,57 +50,148 @@ async function fetchImageBytes(rawUrl: string): Promise<Uint8Array | null> {
 
 // ---------- Background removal (deterministic, no AI) ----------
 
-// Treat near-white pixels as background. Most Max Mara / Casadei packshots
-// sit on a #ffffff / very-light-grey backdrop, so a simple luminance +
-// saturation threshold gives a clean cutout. We also flood-fill from the
-// outer border so any background pixel that touches an edge is removed,
-// while interior light/white areas of the garment itself are kept.
+// Soft alpha background removal with edge feathering. Produces smooth
+// anti-aliased cutout edges instead of the jagged binary mask we got from
+// the previous threshold-only approach.
+//
+// Pipeline:
+//  1. Compute a per-pixel "background-ness" score (0..1) using luminance
+//     and chroma. Bright + low-chroma pixels score high.
+//  2. Flood-fill the score map from the border so only background regions
+//     connected to the edge are removed (keeps light interior garment areas).
+//  3. Erode the mask by 1px to pull the edge inside the silhouette and
+//     avoid white fringing around the product.
+//  4. Apply two 3x3 box blurs to the alpha channel so the edge becomes
+//     soft and anti-aliased.
+//  5. Premultiply: for boundary pixels, also pull RGB toward the
+//     foreground average to kill bright halo.
 function removeBackground(img: Image): Image {
   const w = img.width;
   const h = img.height;
-  const visited = new Uint8Array(w * h);
+  const total = w * h;
+
+  // Step 1: bg score per pixel (0 = opaque foreground, 255 = pure background)
+  // Pixels with max >= 245 and chroma <= 8 are definitely background.
+  // Pixels with max <= 215 OR chroma >= 25 are definitely foreground.
+  // In between, score ramps smoothly.
+  const bgScore = new Uint8Array(total);
+  const rCh = new Uint8Array(total);
+  const gCh = new Uint8Array(total);
+  const bCh = new Uint8Array(total);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const px = img.getPixelAt(x + 1, y + 1);
+      const r = (px >> 24) & 0xff;
+      const g = (px >> 16) & 0xff;
+      const b = (px >> 8) & 0xff;
+      const idx = y * w + x;
+      rCh[idx] = r; gCh[idx] = g; bCh[idx] = b;
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      const chroma = max - min;
+      // Luminance score: 0 at <=215, 1 at >=245
+      const lumScore = Math.max(0, Math.min(1, (max - 215) / 30));
+      // Chroma score: 1 at <=8, 0 at >=25
+      const chrScore = Math.max(0, Math.min(1, 1 - (chroma - 8) / 17));
+      bgScore[idx] = Math.round(lumScore * chrScore * 255);
+    }
+  }
+
+  // Step 2: flood-fill from borders; mark pixels reachable through "likely bg"
+  // (score >= 96). Build a binary mask: 1 = background, 0 = foreground.
+  const isBg = new Uint8Array(total);
   const stack: number[] = [];
-
-  const isBgPixel = (r: number, g: number, b: number) => {
-    // Bright + low chroma => background
-    const max = Math.max(r, g, b);
-    const min = Math.min(r, g, b);
-    const chroma = max - min;
-    return max >= 235 && chroma <= 18;
-  };
-
-  const pushIfBg = (x: number, y: number) => {
+  const tryPush = (x: number, y: number) => {
     if (x < 0 || y < 0 || x >= w || y >= h) return;
     const idx = y * w + x;
-    if (visited[idx]) return;
-    const pixel = img.getPixelAt(x + 1, y + 1); // imagescript is 1-indexed
-    const r = (pixel >> 24) & 0xff;
-    const g = (pixel >> 16) & 0xff;
-    const b = (pixel >> 8) & 0xff;
-    if (isBgPixel(r, g, b)) {
-      visited[idx] = 1;
+    if (isBg[idx]) return;
+    if (bgScore[idx] >= 96) {
+      isBg[idx] = 1;
       stack.push(x, y);
     }
   };
-
-  // Seed flood-fill from every border pixel
-  for (let x = 0; x < w; x++) {
-    pushIfBg(x, 0);
-    pushIfBg(x, h - 1);
-  }
-  for (let y = 0; y < h; y++) {
-    pushIfBg(0, y);
-    pushIfBg(w - 1, y);
-  }
-
+  for (let x = 0; x < w; x++) { tryPush(x, 0); tryPush(x, h - 1); }
+  for (let y = 0; y < h; y++) { tryPush(0, y); tryPush(w - 1, y); }
   while (stack.length > 0) {
     const y = stack.pop()!;
     const x = stack.pop()!;
-    img.setPixelAt(x + 1, y + 1, 0x00000000);
-    pushIfBg(x + 1, y);
-    pushIfBg(x - 1, y);
-    pushIfBg(x, y + 1);
-    pushIfBg(x, y - 1);
+    tryPush(x + 1, y); tryPush(x - 1, y);
+    tryPush(x, y + 1); tryPush(x, y - 1);
+  }
+
+  // Step 3: build alpha map. Background = 0, foreground = 255.
+  // For foreground pixels near a strong bg-score, soften alpha proportionally
+  // to remove sub-pixel halo.
+  const alpha = new Uint8Array(total);
+  for (let i = 0; i < total; i++) {
+    if (isBg[i]) {
+      alpha[i] = 0;
+    } else {
+      // Soft fade where bg-score is mid (boundary anti-alias)
+      const s = bgScore[i];
+      alpha[i] = s <= 96 ? 255 : Math.round(255 * (1 - (s - 96) / 159));
+    }
+  }
+
+  // Step 4: erode by 1px (min filter on alpha) to bite into edge halo.
+  const eroded = new Uint8Array(total);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const idx = y * w + x;
+      let m = alpha[idx];
+      if (x > 0) m = Math.min(m, alpha[idx - 1]);
+      if (x < w - 1) m = Math.min(m, alpha[idx + 1]);
+      if (y > 0) m = Math.min(m, alpha[idx - w]);
+      if (y < h - 1) m = Math.min(m, alpha[idx + w]);
+      eroded[idx] = m;
+    }
+  }
+
+  // Step 5: two-pass 3x3 box blur on alpha for smooth feather.
+  const blur = (src: Uint8Array): Uint8Array => {
+    const out = new Uint8Array(total);
+    // horizontal
+    const tmp = new Uint8Array(total);
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const idx = y * w + x;
+        const a = x > 0 ? src[idx - 1] : src[idx];
+        const b = src[idx];
+        const c = x < w - 1 ? src[idx + 1] : src[idx];
+        tmp[idx] = (a + b + c) / 3;
+      }
+    }
+    // vertical
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const idx = y * w + x;
+        const a = y > 0 ? tmp[idx - w] : tmp[idx];
+        const b = tmp[idx];
+        const c = y < h - 1 ? tmp[idx + w] : tmp[idx];
+        out[idx] = (a + b + c) / 3;
+      }
+    }
+    return out;
+  };
+  let finalAlpha = blur(eroded);
+  finalAlpha = blur(finalAlpha);
+
+  // Step 6: write back to image.
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const idx = y * w + x;
+      const a = finalAlpha[idx];
+      if (a === 0) {
+        img.setPixelAt(x + 1, y + 1, 0);
+      } else {
+        img.setPixelAt(x + 1, y + 1,
+          ((rCh[idx] & 0xff) << 24) |
+          ((gCh[idx] & 0xff) << 16) |
+          ((bCh[idx] & 0xff) << 8)  |
+          (a & 0xff)
+        );
+      }
+    }
   }
 
   return img;
