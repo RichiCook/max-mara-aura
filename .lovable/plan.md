@@ -1,28 +1,51 @@
+## Goal
+Make Total Looks collages use only flat-lay / packshot product images and stop ever cutting out worn/editorial Max Mara images.
+
 ## Plan
+1. Tighten the collage source selector so it fails closed
+- Refactor the shared image selection rules to allow only verified collage-safe images.
+- For Max Mara apparel, accept only the clean packshot variant and reject worn/detail/editorial variants entirely.
+- For footwear, keep the valid shoe packshot variant if needed, but still reject non-packshot alternatives.
+- Remove any remaining fallback that can silently drop to a generic first image.
 
-1. Tighten the Total Looks collage input
-- Update the `/looks` flow so collage generation uses the same strict lay-flat-only selector already added to the product-page look generator.
-- Remove the current fallback that can still pass worn/editorial shots into the collage function.
+2. Add a backend whitelist in the collage function
+- Make the collage function independently validate each incoming image candidate instead of trusting the frontend.
+- Normalize Max Mara URLs only when the result is still an allowed packshot variant for that product category.
+- Skip products whose candidates are not collage-safe rather than cutting out the wrong image.
+- Return lightweight debug metadata in the response during testing so we can see which URLs were actually used.
 
-2. Add a hard rejection layer for worn/detail images
-- Centralize the “allowed for collage” rules in the image utility layer.
-- Ensure obvious worn, alt, detail, crop, lifestyle, and similar variants return no collage source instead of falling back to a bad image.
+3. Handle fetch failures separately from selection failures
+- Improve the collage function logs to distinguish:
+  - wrong image chosen
+  - correct packshot chosen but upstream returned 403
+  - no valid flat-lay source available
+- Add alternative fetch headers / candidate ordering where useful so valid packshots are tried first.
+- If a product has no fetchable flat-lay, omit it from the collage instead of falling back to a worn image.
 
-3. Invalidate stale collage results in Total Looks
-- Add cache/version handling for generated collages on the `/looks` cards so previously bad collages don’t keep rendering after the fix.
-- Regenerate only when the old collage was built from older selection rules.
+4. Remove stale card state and cached bad outputs on `/looks`
+- Ensure each look card fully resets generated collage state whenever the product set changes.
+- Add a simple collage source/version key so previously generated bad collages are not reused after the fix.
+- Make the generated tab regenerate from the new safe source list instead of showing an older in-memory result.
 
-4. Verify the failing route and visual outcome
-- Re-check the `/looks` card flow shown in your screenshot, not just the product page flow.
-- Confirm the collage pipeline now receives packshot / lay-flat URLs only.
+5. Validate against real failing products
+- Test with the exact Max Mara-style products currently failing in `/looks`.
+- Confirm the selected candidate URLs are packshot / flat-lay only.
+- Run the collage function with real product payloads and verify the response succeeds without using worn/editorial URLs.
+- Re-check the `/looks` route behavior specifically, not just the product page flow.
 
 ## Technical details
-- Files likely to update:
-  - `src/components/looks/LookCard.tsx`
+- Files likely involved:
   - `src/utils/imageUtils.ts`
-  - possibly `supabase/functions/generate-look-collage/index.ts` for an extra defensive guard
-- Root cause found during review:
-  - `ProductGeneratedLook.tsx` already uses `getCollageSourceImage(...)`
-  - `src/components/looks/LookCard.tsx` still uses `getFlatLayImage(...) || imgs[0]`, which can pass a worn image into `generate-look-collage`
-- Expected result:
-  - Total Looks collages stop cutting out worn/model photos and only use lay-flat/packshot sources.
+  - `src/components/looks/LookCard.tsx`
+  - `supabase/functions/generate-look-collage/index.ts`
+  - possibly `src/pages/LooksPage.tsx` for a version/reset key
+- Current evidence from debugging:
+  - product image rows contain both `s3master/...-a-...` and `s3details/...-w-...` variants
+  - the collage function logs still show 403s for some normalized packshot URLs
+  - this means we need both stricter source validation and better handling when the chosen packshot is temporarily unfetchable
+
+## Expected result
+- Apparel collages on `/looks` use only flat-lay / packshot sources.
+- Worn/model photos no longer appear in generated collages.
+- If a valid flat-lay cannot be fetched, the item is skipped rather than incorrectly cut out.
+- We can verify exactly which source URLs were used for each tested collage.
