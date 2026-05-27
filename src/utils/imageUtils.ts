@@ -89,7 +89,7 @@ const toMaxMaraMasterPackshot = (url: string, category?: string | null): string 
     .replace(/-([a-z])-([^/_?#]+_normal\.)/i, `-${preferredVariant}-$2`);
 };
 
-const isFlatLayUrl = (url: string): boolean => {
+const isFlatLayUrl = (url: string, category?: string | null): boolean => {
   const lower = url.toLowerCase();
   const isMasterPackshot = isMaxMaraMasterPackshot(lower);
   
@@ -116,7 +116,7 @@ const isFlatLayUrl = (url: string): boolean => {
 /**
  * Check if a URL looks like a close-up, crop, or detail shot
  */
-const isCloseUpOrDetail = (url: string): boolean => {
+const isCloseUpOrDetail = (url: string, category?: string | null): boolean => {
   const lower = url.toLowerCase();
   return lower.includes('_crop') || 
          lower.includes('_detail') || 
@@ -134,7 +134,7 @@ const isBackView = (url: string): boolean => {
   return lower.includes('_back') || lower.includes('_rear');
 };
 
-const isWornOrAlternate = (url: string): boolean => {
+const isWornOrAlternate = (url: string, category?: string | null): boolean => {
   const lower = url.toLowerCase();
   return lower.includes('_alt') || 
          lower.includes('_model') || 
@@ -181,12 +181,12 @@ export const getFlatLayImage = (images: string[] | null | undefined, category?: 
   if (plainFull) return plainFull;
 
   // Priority 3: Any clean flat-lay image
-  const flatLay = normalizedImages.find(img => isFlatLayUrl(img) && !isCloseUpOrDetail(img) && !isWornOrAlternate(img));
+  const flatLay = normalizedImages.find(img => isFlatLayUrl(img, category) && !isCloseUpOrDetail(img, category) && !isWornOrAlternate(img, category));
   if (flatLay) return flatLay;
 
   // Priority 4: Any image that's NOT a close-up AND NOT a worn/alternate shot
   const cleanImage = normalizedImages.find(img => 
-    !isCloseUpOrDetail(img) && !isWornOrAlternate(img) && !isBackView(img) && !img.includes('#thumbnail')
+    !isCloseUpOrDetail(img, category) && !isWornOrAlternate(img, category) && !isBackView(img) && !img.includes('#thumbnail')
   );
   if (cleanImage) return cleanImage;
 
