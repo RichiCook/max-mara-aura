@@ -117,6 +117,11 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
   const [modeRulesReady, setModeRulesReady] = useState(false);
   const [initialModes, setInitialModes] = useState<Record<number, LookMode>>({});
 
+  const getPrimaryProductImage = useCallback((product: LookProduct) => {
+    const flatLay = getFlatLayImage(filterImagesBySku(product.images, product.product_code), product.category);
+    return flatLay || product.images[0] || null;
+  }, []);
+
   useEffect(() => {
     fetchLookModeRules().then((rules) => {
       setModeRules(rules);
@@ -259,15 +264,25 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
   };
 
   const generateCollageImage = async (products: LookProduct[], lookData: GeneratedLook, lookIndex: number, retryCount = 0) => {
-    if (products.length === 0) return;
+    const productRefs = products
+      .map((p) => ({
+        name: p.name,
+        color: p.color,
+        category: p.category,
+        image: getPrimaryProductImage(p),
+      }))
+      .filter((p): p is { name: string; color: string | null; category: string | null; image: string } => Boolean(p.image));
+
+    if (productRefs.length === 0) {
+      toast({ title: 'Collage failed', description: 'The selected products do not have usable images yet.', variant: 'destructive' });
+      return;
+    }
+
     setLooks(prev => prev.map((l, i) => i === lookIndex ? { ...l, generatingCollage: true } : l));
     try {
       const { data, error } = await supabase.functions.invoke('generate-look-collage', {
         body: {
-          products: products.map(p => ({
-            name: p.name, color: p.color, category: p.category,
-            image: getFlatLayImage(filterImagesBySku(p.images, p.product_code), p.category) || p.images[0]
-          })),
+          products: productRefs,
         }
       });
       if (error) throw error;
@@ -276,6 +291,7 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
           setTimeout(() => generateCollageImage(products, lookData, lookIndex, retryCount + 1), 3000);
           return;
         }
+        toast({ title: 'Collage failed', description: data.error, variant: 'destructive' });
         return;
       }
       if (data?.image) {
@@ -292,6 +308,7 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
         setTimeout(() => generateCollageImage(products, lookData, lookIndex, retryCount + 1), 2000);
         return;
       }
+      toast({ title: 'Collage failed', description: err instanceof Error ? err.message : 'Please try again.', variant: 'destructive' });
     } finally {
       setLooks(prev => prev.map((l, i) => i === lookIndex ? { ...l, generatingCollage: false } : l));
     }
@@ -299,15 +316,25 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
 
 
   const generateLookImage = async (products: LookProduct[], lookData: GeneratedLook, lookIndex: number, retryCount = 0) => {
-    if (products.length === 0) return;
+    const productRefs = products
+      .map((p) => ({
+        name: p.name,
+        color: p.color,
+        category: p.category,
+        image: getPrimaryProductImage(p),
+      }))
+      .filter((p): p is { name: string; color: string | null; category: string | null; image: string } => Boolean(p.image));
+
+    if (productRefs.length === 0) {
+      toast({ title: 'Photo failed', description: 'The selected products do not have usable images yet.', variant: 'destructive' });
+      return;
+    }
+
     setLooks(prev => prev.map((l, i) => i === lookIndex ? { ...l, generatingImage: true } : l));
     try {
       const { data, error } = await supabase.functions.invoke('generate-look-image', {
         body: {
-          products: products.map(p => ({
-            name: p.name, color: p.color, category: p.category,
-            image: getFlatLayImage(filterImagesBySku(p.images, p.product_code), p.category) || p.images[0]
-          })),
+          products: productRefs,
           lookName: lookData.name,
           lookDescription: lookData.description,
           lookStyle: lookData.config ? undefined : 'elegant',
@@ -320,6 +347,7 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
           setTimeout(() => generateLookImage(products, lookData, lookIndex, retryCount + 1), 3000);
           return;
         }
+        toast({ title: 'Photo failed', description: data.error, variant: 'destructive' });
         return;
       }
       if (data?.image) {
@@ -338,6 +366,7 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
         setTimeout(() => generateLookImage(products, lookData, lookIndex, retryCount + 1), 2000);
         return;
       }
+      toast({ title: 'Photo failed', description: err instanceof Error ? err.message : 'Please try again.', variant: 'destructive' });
     } finally {
       setLooks(prev => prev.map((l, i) => i === lookIndex ? { ...l, generatingImage: false } : l));
     }
