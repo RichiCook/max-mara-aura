@@ -258,14 +258,15 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
           ...l.look,
           look_image: l.lookImage || l.look.look_image,
           collage_image: l.collageImage || l.look.collage_image,
+          collage_cache_version: l.collageImage ? COLLAGE_CACHE_VERSION : (l.look as any).collage_cache_version,
         }));
       if (looksToCache.length === 0) return;
-      // Store as array in generated_look
       await supabase.from('products').update({ 
         generated_look: (looksToCache.length === 1 ? looksToCache[0] : looksToCache) as any 
       }).eq('product_code', productCode);
     } catch { /* silent */ }
   };
+
 
   const generateCollageImage = async (products: LookProduct[], lookData: GeneratedLook, lookIndex: number, retryCount = 0) => {
     const productRefs = products
