@@ -25,12 +25,14 @@ export interface Product {
   color: string | null;
   source_url: string | null;
   slug: string;
+  approved_lay_flat_image_url?: string | null;
 }
 
 export interface LookGeneratorOptions {
   startingProductId?: string;
   count: number;
 }
+
 
 export const useLooks = () => {
   const [looks, setLooks] = useState<Look[]>([]);

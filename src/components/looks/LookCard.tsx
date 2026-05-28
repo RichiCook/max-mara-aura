@@ -143,17 +143,17 @@ export const LookCard = ({ look, onSave, onDelete, isSaved = false }: LookCardPr
   // a list (joined by newlines) so the edge function tries each until one
   // returns bytes. Worn/editorial images are filtered out by getCollageSourceImage.
   const collagePayload = useMemo(() => products.map(p => {
-    const imgs = parseImages(p.images);
-    const strict = getCollageSourceImage(imgs, null, p.category);
-    const flat = getFlatLayImage(filterImagesBySku(imgs, null), p.category);
-    const candidates = Array.from(new Set([strict, flat].filter(Boolean) as string[]));
+    const approved = p.approved_lay_flat_image_url || null;
+    if (!approved) return null;
     return {
       name: p.name,
       color: p.color,
       category: p.category,
-      image: candidates.join('\n'),
+      image: approved,
+      trusted_image: approved,
     };
-  }).filter(p => p.image.length > 0), [products]);
+  }).filter((p): p is { name: string; color: string | null; category: string | null; image: string; trusted_image: string } => p !== null), [products]);
+
 
   const generatePhoto = async () => {
     if (genPhoto || products.length === 0) return;

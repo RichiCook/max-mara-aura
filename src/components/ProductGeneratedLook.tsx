@@ -292,26 +292,24 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
     const productRefs = products
       .map((p) => {
         const approved = p.approved_lay_flat_image_url || null;
-        const strict = getCollageSourceImage(p.images, p.product_code, p.category);
-        const flat = getFlatLayImage(filterImagesBySku(p.images, p.product_code), p.category);
-        const candidates = Array.from(new Set([strict, flat].filter(Boolean) as string[]));
-        if (!approved && candidates.length === 0) return null;
+        if (!approved) return null;
         return {
           name: p.name,
           color: p.color,
           category: p.category,
-          image: candidates.join('\n'),
+          image: approved,
           trusted_image: approved,
         };
       })
-      .filter((p): p is { name: string; color: string | null; category: string | null; image: string; trusted_image: string | null } => Boolean(p && (p.image || p.trusted_image)));
+      .filter((p): p is { name: string; color: string | null; category: string | null; image: string; trusted_image: string } => p !== null);
 
 
 
     if (productRefs.length === 0) {
-      toast({ title: 'Collage failed', description: 'The selected products do not have usable lay-flat images yet.', variant: 'destructive' });
+      toast({ title: 'Collage failed', description: 'No products in this look have an approved lay-flat image yet. Approve images in Image Review first.', variant: 'destructive' });
       return;
     }
+
 
 
     setLooks(prev => prev.map((l, i) => i === lookIndex ? { ...l, generatingCollage: true } : l));
