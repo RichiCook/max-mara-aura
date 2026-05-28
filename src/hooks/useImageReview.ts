@@ -84,10 +84,17 @@ export function useImageReview(stateFilter?: string) {
   });
 
   const classify = useMutation({
-    mutationFn: async (opts: { all?: boolean; productIds?: string[] }) => {
-      const { data, error } = await supabase.functions.invoke('classify-product-images', { body: opts });
+  const classify = useMutation({
+    mutationFn: async (opts: { all?: boolean; productIds?: string[]; limit?: number }) => {
+      const { data, error } = await supabase.functions.invoke('classify-product-images', {
+        body: {
+          all: opts.all,
+          product_ids: opts.productIds,
+          limit: opts.limit ?? 200,
+        },
+      });
       if (error) throw error;
-      return data;
+      return data as { processed: number; approvedCount: number; suspiciousCount: number; missingCount: number; remaining: number; hasMore: boolean };
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['image-review-products'] });
