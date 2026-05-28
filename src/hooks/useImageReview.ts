@@ -25,8 +25,19 @@ export interface ProductWithCandidates {
   collection: string | null;
   approved_lay_flat_image_url: string | null;
   lay_flat_review_state: string;
+  raw_images: string[];
   candidates: ImageCandidate[];
 }
+
+function normalizeImages(images: unknown): string[] {
+  if (!images) return [];
+  const list = Array.isArray(images) ? images : typeof images === 'string' ? [images] : [];
+  return list
+    .flatMap((img) => (typeof img === 'string' ? img.split(/\r?\n/) : []))
+    .map((u) => String(u).trim())
+    .filter((u) => u.length > 0 && (u.startsWith('http') || u.startsWith('data:')));
+}
+
 
 export function useImageReview(stateFilter?: string) {
   const qc = useQueryClient();
