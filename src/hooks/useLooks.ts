@@ -18,8 +18,6 @@ export interface Look {
 
 export interface Product {
   id: string;
-export interface Product {
-  id: string;
   name: string;
   price: string | null;
   images: string[];
@@ -30,9 +28,11 @@ export interface Product {
   approved_lay_flat_image_url?: string | null;
 }
 
+export interface LookGeneratorOptions {
   startingProductId?: string;
   count: number;
 }
+
 
 export const useLooks = () => {
   const [looks, setLooks] = useState<Look[]>([]);
