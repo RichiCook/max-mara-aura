@@ -66,7 +66,9 @@ function ProductCard({ product, onApprove, onReject, onMarkSuspicious, onSetCust
           </div>
         </div>
       </CardHeader>
+      <CardContent className="space-y-3">
         {product.candidates.length === 0 ? (
+
           product.raw_images.length > 0 ? (
             <div className="space-y-2">
               <div className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
