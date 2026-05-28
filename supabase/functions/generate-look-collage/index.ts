@@ -371,51 +371,9 @@ function trimTransparent(img: Image): Image {
   return img.crop(minX, minY, cw, ch);
 }
 
-// ---------- Category-aware placement ----------
-
-const CATEGORY_PATTERNS: Array<{ slot: string; keywords: string[] }> = [
-  { slot: 'outerwear', keywords: ['coat', 'cappott', 'cappa', 'cape', 'trench', 'piumino', 'puffer', 'parka'] },
-  { slot: 'jacket', keywords: ['jacket', 'giacca', 'blazer', 'bomber'] },
-  { slot: 'dress', keywords: ['dress', 'abito', 'vestito', 'gown', 'jumpsuit', 'tuta'] },
-  { slot: 'top', keywords: ['shirt', 'camicia', 'blusa', 'blouse', 'top', 'maglia', 'maglion', 'sweater', 'knit', 'cardigan', 't-shirt', 'tshirt', 'felpa', 'pullover'] },
-  { slot: 'bottom', keywords: ['pant', 'pantalon', 'jeans', 'trouser', 'short', 'skirt', 'gonna', 'denim'] },
-  { slot: 'shoes', keywords: ['shoe', 'scarpa', 'sneaker', 'boot', 'stival', 'sandal', 'pump', 'décollet', 'decollet', 'mocassin', 'loafer', 'ciabatt', 'slide', 'heel'] },
-  { slot: 'bag', keywords: ['bag', 'borsa', 'pochette', 'clutch', 'tote', 'shopper', 'handbag', 'wallet', 'portafogli'] },
-  { slot: 'accessory', keywords: ['belt', 'cintura', 'scarf', 'sciarpa', 'foulard', 'hat', 'cappello', 'glove', 'guant', 'glasses', 'occhial', 'jewel', 'bijou', 'collana', 'orecchin', 'bracciale', 'anell'] },
-];
-
-function classifySlot(category: string | null, name: string | null): string {
-  const text = `${category || ''} ${name || ''}`.toLowerCase();
-  for (const { slot, keywords } of CATEGORY_PATTERNS) {
-    if (keywords.some((k) => text.includes(k))) return slot;
-  }
-  return 'top';
-}
-
-// Canvas geometry (3:4 portrait). Positions are relative (0..1) on the canvas.
-// Each slot describes its center point and the max width/height (also relative)
-// the cutout may occupy. Multiple items in the same slot fan out horizontally.
-interface SlotBox { cx: number; cy: number; maxW: number; maxH: number }
-
-const SLOT_LAYOUT: Record<string, SlotBox> = {
-  outerwear: { cx: 0.50, cy: 0.42, maxW: 0.62, maxH: 0.62 },
-  dress:     { cx: 0.50, cy: 0.45, maxW: 0.52, maxH: 0.65 },
-  jacket:    { cx: 0.50, cy: 0.40, maxW: 0.52, maxH: 0.50 },
-  top:       { cx: 0.30, cy: 0.30, maxW: 0.40, maxH: 0.36 },
-  bottom:    { cx: 0.70, cy: 0.55, maxW: 0.42, maxH: 0.48 },
-  shoes:     { cx: 0.35, cy: 0.82, maxW: 0.36, maxH: 0.20 },
-  bag:       { cx: 0.78, cy: 0.78, maxW: 0.30, maxH: 0.28 },
-  accessory: { cx: 0.20, cy: 0.78, maxW: 0.24, maxH: 0.20 },
-};
-
-const SLOT_PRIORITY = ['outerwear', 'dress', 'jacket', 'top', 'bottom', 'shoes', 'bag', 'accessory'];
-
 // ---------- Drop shadow ----------
 
 function applyDropShadow(canvas: Image, cutout: Image, dx: number, dy: number, opacity: number) {
-  // Build a soft, dark silhouette from the cutout's alpha channel.
-  // imagescript has no built-in gaussian blur, so we approximate softness by
-  // stamping the shadow at several sub-offsets with reduced opacity.
   const w = cutout.width;
   const h = cutout.height;
   const offsets = [
@@ -442,7 +400,7 @@ function applyDropShadow(canvas: Image, cutout: Image, dx: number, dy: number, o
 
 // ---------- Main compositor ----------
 
-interface Cutout { slot: string; img: Image; productIndex: number }
+interface Cutout { img: Image; productIndex: number }
 
 interface CollageDebugItem {
   name: string;
@@ -453,16 +411,130 @@ interface CollageDebugItem {
   rejected: string[];
 }
 
+async function decodeProduct(p: ProductInfo, idx: number, debug: CollageDebugItem[]): Promise<Cutout | null> {
+  if (!p.image && !p.trusted_image) {
+    debug[idx].status = 'skipped';
+    return null;
+  }
+  const tryDecode = async (bytes: Uint8Array): Promise<Image | null> => {
+    try {
+      const d = await decode(bytes);
+      if (!(d instanceof Image)) return null;
+      let img = d as Image;
+      const maxSide = Math.max(img.width, img.height);
+      if (maxSide > 900) {
+        const scale = 900 / maxSide;
+        img = img.resize(Math.round(img.width * scale), Math.round(img.height * scale));
+      }
+      img = removeBackground(img);
+      img = trimTransparent(img);
+      if (img.width < 8 || img.height < 8) return null;
+      return img;
+    } catch (err) {
+      console.warn('Decode failed:', err);
+      return null;
+    }
+  };
+
+  // Trusted (admin-approved) image first — no strict validation
+  if (p.trusted_image) {
+    try {
+      const parsed = new URL(p.trusted_image);
+      const upstream = await fetch(parsed.toString(), {
+        headers: {
+          'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36',
+          'accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+          'referer': `${parsed.origin}/`,
+        },
+      });
+      if (upstream.ok) {
+        const bytes = new Uint8Array(await upstream.arrayBuffer());
+        const img = await tryDecode(bytes);
+        if (img) {
+          debug[idx].used_url = p.trusted_image;
+          debug[idx].considered = [p.trusted_image];
+          debug[idx].status = 'used';
+          return { img, productIndex: idx };
+        }
+      }
+    } catch (err) {
+      console.warn(`Trusted image fetch failed for "${p.name}":`, err);
+    }
+  }
+
+  if (!p.image) {
+    debug[idx].status = 'no_valid_packshot';
+    return null;
+  }
+  const { bytes, usedUrl, selection } = await fetchImageBytes(p.image, p.category);
+  debug[idx].considered = selection.considered;
+  debug[idx].rejected = selection.rejected;
+  if (!selection.url) { debug[idx].status = 'no_valid_packshot'; return null; }
+  if (!bytes) { debug[idx].status = 'fetch_failed'; return null; }
+  debug[idx].used_url = usedUrl ?? selection.url;
+  const img = await tryDecode(bytes);
+  if (!img) { debug[idx].status = 'decode_failed'; return null; }
+  debug[idx].status = 'used';
+  return { img, productIndex: idx };
+}
+
+// Grid layout: returns [cx, cy, maxW, maxH] in pixels for each cell.
+function layoutCells(n: number, W: number, H: number): Array<[number, number, number, number]> {
+  const pad = 40;
+  const innerW = W - pad * 2;
+  const innerH = H - pad * 2;
+
+  if (n === 1) {
+    return [[W / 2, H / 2, innerW, innerH]];
+  }
+  if (n === 2) {
+    const cw = innerW / 2;
+    return [
+      [pad + cw / 2, H / 2, cw - 20, innerH],
+      [pad + cw + cw / 2, H / 2, cw - 20, innerH],
+    ];
+  }
+  if (n === 3) {
+    const topH = innerH * 0.55;
+    const botH = innerH * 0.45;
+    const botCw = innerW / 2;
+    return [
+      [W / 2, pad + topH / 2, innerW * 0.7, topH - 20],
+      [pad + botCw / 2, pad + topH + botH / 2, botCw - 20, botH - 20],
+      [pad + botCw + botCw / 2, pad + topH + botH / 2, botCw - 20, botH - 20],
+    ];
+  }
+  if (n === 4) {
+    const cw = innerW / 2;
+    const ch = innerH / 2;
+    return [
+      [pad + cw / 2, pad + ch / 2, cw - 20, ch - 20],
+      [pad + cw + cw / 2, pad + ch / 2, cw - 20, ch - 20],
+      [pad + cw / 2, pad + ch + ch / 2, cw - 20, ch - 20],
+      [pad + cw + cw / 2, pad + ch + ch / 2, cw - 20, ch - 20],
+    ];
+  }
+  // 5+: hero on left, stack on right
+  const heroW = innerW * 0.58;
+  const stackW = innerW * 0.42;
+  const stackN = n - 1;
+  const stackH = innerH / stackN;
+  const cells: Array<[number, number, number, number]> = [
+    [pad + heroW / 2, H / 2, heroW - 20, innerH],
+  ];
+  for (let i = 0; i < stackN; i++) {
+    cells.push([pad + heroW + stackW / 2, pad + stackH * i + stackH / 2, stackW - 20, stackH - 20]);
+  }
+  return cells;
+}
+
 async function buildCollage(products: ProductInfo[]): Promise<{ image: string; debug: CollageDebugItem[] }> {
   const CANVAS_W = 900;
   const CANVAS_H = 1200;
-  const BG = 0xefeae3ff; // warm neutral
+  const BG = 0xf0ece7ff; // warm naturals soft
 
-  // Background
   const canvas = new Image(CANVAS_W, CANVAS_H).fill(BG);
 
-  // Decode all products in parallel
-  const decoded: Cutout[] = [];
   const debug: CollageDebugItem[] = products.map((p) => ({
     name: p.name,
     category: p.category,
@@ -471,152 +543,30 @@ async function buildCollage(products: ProductInfo[]): Promise<{ image: string; d
     rejected: [],
   }));
 
-  await Promise.all(products.map(async (p, idx) => {
-    if (!p.image && !p.trusted_image) {
-      debug[idx].status = 'skipped';
-      return;
-    }
-    // If admin approved a trusted image, try it first without strict validation.
-    if (p.trusted_image) {
-      try {
-        const parsed = new URL(p.trusted_image);
-        const upstream = await fetch(parsed.toString(), {
-          headers: {
-            'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36',
-            'accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
-            'referer': `${parsed.origin}/`,
-          },
-        });
-        if (upstream.ok) {
-          const bytes = new Uint8Array(await upstream.arrayBuffer());
-          debug[idx].used_url = p.trusted_image;
-          debug[idx].considered = [p.trusted_image];
-          try {
-            const decodedImg = await decode(bytes);
-            if (decodedImg instanceof Image) {
-              let img = decodedImg as Image;
-              const maxSide = Math.max(img.width, img.height);
-              if (maxSide > 900) {
-                const scale = 900 / maxSide;
-                img = img.resize(Math.round(img.width * scale), Math.round(img.height * scale));
-              }
-              img = removeBackground(img);
-              img = trimTransparent(img);
-              if (img.width >= 8 && img.height >= 8) {
-                decoded.push({ slot: classifySlot(p.category, p.name), img, productIndex: idx });
-                debug[idx].status = 'used';
-                return;
-              }
-            }
-          } catch (err) {
-            console.warn(`Decode failed for trusted image "${p.name}":`, err);
-          }
-        }
-      } catch (err) {
-        console.warn(`Trusted image fetch failed for "${p.name}":`, err);
-      }
-      // Fall through to strict validation if trusted fetch/decode failed
-    }
-    if (!p.image) {
-      debug[idx].status = 'no_valid_packshot';
-      return;
-    }
-    const { bytes, usedUrl, selection } = await fetchImageBytes(p.image, p.category);
-    debug[idx].considered = selection.considered;
-    debug[idx].rejected = selection.rejected;
-    if (!selection.url) {
-      debug[idx].status = 'no_valid_packshot';
-      console.warn(`No allowed packshot for "${p.name}" (${p.category}). Considered:`, selection.considered);
-      return;
-    }
-    if (!bytes) {
-      debug[idx].status = 'fetch_failed';
-      console.warn(`Packshot selected but unfetchable for "${p.name}":`, selection.url);
-      return;
-    }
-    debug[idx].used_url = usedUrl ?? selection.url;
-
-    try {
-      const decodedImg = await decode(bytes);
-      if (!(decodedImg instanceof Image)) {
-        debug[idx].status = 'decode_failed';
-        return;
-      }
-      let img = decodedImg as Image;
-      const maxSide = Math.max(img.width, img.height);
-      if (maxSide > 900) {
-        const scale = 900 / maxSide;
-        img = img.resize(Math.round(img.width * scale), Math.round(img.height * scale));
-      }
-      img = removeBackground(img);
-      img = trimTransparent(img);
-      if (img.width < 8 || img.height < 8) {
-        debug[idx].status = 'decode_failed';
-        return;
-      }
-      decoded.push({ slot: classifySlot(p.category, p.name), img, productIndex: idx });
-      debug[idx].status = 'used';
-    } catch (err) {
-      debug[idx].status = 'decode_failed';
-      console.warn(`Decode failed for "${p.name}":`, err);
-    }
-  }));
+  const decoded = (await Promise.all(
+    products.map((p, idx) => decodeProduct(p, idx, debug))
+  )).filter((c): c is Cutout => c !== null);
 
   if (decoded.length === 0) {
     const reason = debug.map((d) => `${d.name}: ${d.status}`).join('; ');
     throw new Error(`Could not prepare any product cutouts. ${reason}`);
   }
 
-  // Group by slot and order by priority
-  const bySlot = new Map<string, Cutout[]>();
-  for (const c of decoded) {
-    if (!bySlot.has(c.slot)) bySlot.set(c.slot, []);
-    bySlot.get(c.slot)!.push(c);
-  }
+  const cells = layoutCells(decoded.length, CANVAS_W, CANVAS_H);
 
-  // If we have neither outerwear/dress nor jacket, promote the largest top as anchor
-  const hasAnchor = bySlot.has('outerwear') || bySlot.has('dress') || bySlot.has('jacket');
-  if (!hasAnchor && bySlot.has('top')) {
-    const tops = bySlot.get('top')!;
-    tops.sort((a, b) => (b.img.width * b.img.height) - (a.img.width * a.img.height));
-    const promoted = tops.shift()!;
-    promoted.slot = 'dress';
-    if (tops.length === 0) bySlot.delete('top');
-    bySlot.set('dress', [promoted]);
-  }
+  decoded.forEach((item, i) => {
+    const [cx, cy, maxW, maxH] = cells[i] ?? cells[cells.length - 1];
+    const scale = Math.min(maxW / item.img.width, maxH / item.img.height);
+    const targetW = Math.max(8, Math.round(item.img.width * scale));
+    const targetH = Math.max(8, Math.round(item.img.height * scale));
+    const placed = item.img.clone().resize(targetW, targetH);
+    const dx = Math.round(cx - targetW / 2);
+    const dy = Math.round(cy - targetH / 2);
+    applyDropShadow(canvas, placed, dx + 6, dy + 10, 0.5);
+    canvas.composite(placed, dx, dy);
+  });
 
-  // Place items per slot
-  for (const slot of SLOT_PRIORITY) {
-    const items = bySlot.get(slot);
-    if (!items || items.length === 0) continue;
-    const box = SLOT_LAYOUT[slot];
-
-    const boxW = box.maxW * CANVAS_W;
-    const boxH = box.maxH * CANVAS_H;
-    const cx = box.cx * CANVAS_W;
-    const cy = box.cy * CANVAS_H;
-
-    items.forEach((item, i) => {
-      // Fan multiple items horizontally within the slot
-      const fan = items.length === 1 ? 0 : (i - (items.length - 1) / 2);
-      const fanOffset = fan * boxW * 0.45;
-
-      // Fit cutout into the slot box while preserving aspect ratio
-      const scale = Math.min(boxW / item.img.width, boxH / item.img.height);
-      const targetW = Math.max(8, Math.round(item.img.width * scale));
-      const targetH = Math.max(8, Math.round(item.img.height * scale));
-      const placed = item.img.clone().resize(targetW, targetH);
-
-      const dx = Math.round(cx + fanOffset - targetW / 2);
-      const dy = Math.round(cy - targetH / 2);
-
-      // Soft drop shadow then the cutout
-      applyDropShadow(canvas, placed, dx + 6, dy + 10, 0.6);
-      canvas.composite(placed, dx, dy);
-    });
-  }
-
-  const png = await canvas.encode(1); // PNG, fastest compression
+  const png = await canvas.encode(1);
   let binary = '';
   const chunkSize = 0x8000;
   for (let i = 0; i < png.length; i += chunkSize) {
