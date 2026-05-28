@@ -1,57 +1,49 @@
 ## Problem
 
-The Max Mara lay-flat detector is inverted. The current rules in `classify-product-images` treat the `-a-` variant in `/s3master/` as the lay-flat packshot, but on Max Mara that file is actually the **worn / on-model front shot**.
+The Image Review screen looks like it's "missing" pictures (for example product `5366115106012 - ADDOTTO` shows only variants `a`, `b`, `d` and not the `-w-` flat lay), but the database actually has all the images and classifies them correctly — the `-w-` variant is stored as `likely_lay_flat` at 0.95 confidence and is the approved lay-flat URL.
 
-The real flat product picture (plain background, no model) lives in `/s3details/` with the `-w-` variant code, for example:
+The real issue is in `src/hooks/useImageReview.ts`. It loads up to 500 products and then runs a single query:
 
+```ts
+supabase
+  .from('product_image_candidates')
+  .select('*')
+  .in('product_id', ids)
+  .order('source_order', { ascending: true })
 ```
-.../5021056106/029/s3details/5021056106029-w-wkdbiglia_normal.jpg
-```
 
-Confirmed in the database for `5021056106029 - WKDBIGLIA`: the product image array contains `-a-` in `s3master/` (model shot) and `-w-` in `s3details/` (true flat lay), plus `-b/-d/-e/-f-` detail shots and `s3swatch/` color chips.
+Supabase caps results at 1000 rows by default. With ~9 candidates per product × 500 products = ~4500 rows, only the first 1000 come back. Because results are ordered by `source_order` ascending across all products, the early-index candidates (a, b, d, etc.) load for every product while the later ones (including the `-w-` flat lay at index 4–5 and the swatches) are silently dropped.
 
-That is why every Max Mara apparel product is being auto-approved with the wrong picture.
+That's why the UI looks broken even though the classifier is correct.
 
 ## Fix plan
 
-### 1. Rewrite the Max Mara variant rules in the classifier
+### 1. Paginate the candidate fetch in `useImageReview`
 
-In `supabase/functions/classify-product-images/index.ts`, replace the current Max Mara branch with rules that match the real URL convention:
+Replace the single `.in('product_id', ids)` call with a chunked fetch:
 
-- `/s3swatch/` → rejected (color chip)
-- `/s3master/` + `-a-` + `_normal` → reclassify as **worn / front model shot**, label `rejected` for collage use (or `suspicious` low-confidence fallback when no `-w-` exists)
-- `/s3details/` + `-w-` + `_normal` → **likely_lay_flat**, high confidence — this is the true flat product picture for apparel
-- `/s3details/` with `-b-`, `-d-`, `-e-`, `-f-` + `_normal` → rejected as detail/back/closeup
-- Shoes: keep `/s3master/` + `-a-` as lay-flat (shoes are already shot flat on white in master), and skip the apparel `-w-` rule
-- Anything else on `maxmara.com` with `_normal` but no clear pattern → `suspicious`
+- Split `ids` into batches of ~100 product IDs
+- For each batch, fetch candidates with an explicit `.range(0, 9999)` (or `.limit(10000)`) and order by `product_id` then `source_order`
+- Merge the results into the `byProduct` map
 
-### 2. Reset existing wrong approvals so the new pass can redo them
+This guarantees we never hit the 1000-row cap silently and we always get every candidate for every product on the page.
 
-Run a one-time database update for Max Mara apparel products that were auto-selected by the old rule:
+### 2. Trim the product page size to something the UI can actually render
 
-- Clear `approved_lay_flat_image_url` and reset `lay_flat_review_state` to `pending` only for rows where the current approved URL is `/s3master/...-a-..._normal...` AND the category is not a shoe category
-- Leave manually approved rows (`lay_flat_review_state = 'approved'` with `manual_override = true` candidates) untouched
-- Also wipe the stale `product_image_candidates` rows for those products so the rescan rebuilds them cleanly
+`limit(500)` is too many products to render at once anyway. Reduce to a reasonable page (for example 100) and surface the existing state filters more clearly so admins can step through buckets (`auto_selected`, `suspicious`, `missing`, `approved`) without overloading the page.
 
-### 3. Re-run the classifier and verify
+### 3. Verify on the ADDOTTO example
 
-- Trigger the "Scan unreviewed" button on `/admin/image-review`, which now chains batches
-- Confirm the example product `5021056106029 - WKDBIGLIA` ends with `approved_lay_flat_image_url` pointing at the `-w-` `s3details` URL
-- Spot-check 5–10 more apparel products and a couple of shoes to confirm shoes still pick the `-a-` `s3master` shot
-
-### 4. Keep collage selection in sync
-
-The collage edge function (`generate-look-collage`) already prefers `approved_lay_flat_image_url`. Once the database is corrected, no collage code change is required, but verify a generated total look uses the corrected images and no longer shows model crops.
+After the fix, the ADDOTTO card should show 5 product photos (a, b, d, e, w) plus 4 swatches, with the `-w-` card marked `likely_lay_flat` and visibly used as the approved lay flat.
 
 ## Technical details
 
-- File to change: `supabase/functions/classify-product-images/index.ts` (the `classifyUrl` Max Mara block, lines ~47–78)
-- Migration: a single SQL update to clear wrong approvals and stale candidates, scoped by URL pattern and non-shoe category
-- No frontend changes required — `ImageReviewPage` already surfaces reasons, candidates, and the "Scan unreviewed" action
-- No new tables, no schema changes
+- File to change: `src/hooks/useImageReview.ts` (the candidate fetch inside `queryFn`)
+- Optional: `src/pages/ImageReviewPage.tsx` only if we lower the product page size and want to expose pagination controls
+- No backend, schema, or classifier changes needed — the data in `product_image_candidates` is already correct
 
 ## Validation
 
-- Manually open `/admin/image-review`, filter by `auto_selected`, and confirm Max Mara apparel now shows `-w-` `s3details` packshots as the approved image
-- Open the affected product page on the live site and confirm the trusted image used by collages is the flat packshot, not the worn shot
-- Generate one total look and confirm the collage uses only flat packshots
+- Open `/admin/image-review`, scroll to product `5366115106012 - ADDOTTO`, confirm all 5 photo candidates appear and the `-w-` is the auto-selected lay flat
+- Spot-check 5 more Max Mara apparel products and confirm every product shows the full candidate set (no missing tail of candidates)
+- Reload with each state filter (`auto_selected`, `suspicious`, `missing`) and confirm no product is missing candidates that exist in the database

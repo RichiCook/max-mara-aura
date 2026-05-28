@@ -38,7 +38,7 @@ export function useImageReview(stateFilter?: string) {
         .from('products')
         .select('id, name, slug, product_code, category, collection, approved_lay_flat_image_url, lay_flat_review_state')
         .order('updated_at', { ascending: false })
-        .limit(500);
+        .limit(100);
       if (stateFilter && stateFilter !== 'all') {
         q = q.eq('lay_flat_review_state', stateFilter);
       }
@@ -47,18 +47,27 @@ export function useImageReview(stateFilter?: string) {
       const ids = (data || []).map((p) => p.id);
       if (ids.length === 0) return [] as ProductWithCandidates[];
 
-      const { data: cands } = await supabase
-        .from('product_image_candidates')
-        .select('*')
-        .in('product_id', ids)
-        .order('source_order', { ascending: true });
-
+      // Fetch candidates in chunks of product IDs to avoid Supabase's default
+      // 1000-row cap silently dropping the tail of each product's candidates.
       const byProduct = new Map<string, ImageCandidate[]>();
-      (cands || []).forEach((c: any) => {
-        const arr = byProduct.get(c.product_id) || [];
-        arr.push(c as ImageCandidate);
-        byProduct.set(c.product_id, arr);
-      });
+      const CHUNK = 50;
+      for (let i = 0; i < ids.length; i += CHUNK) {
+        const slice = ids.slice(i, i + CHUNK);
+        const { data: cands, error: candErr } = await supabase
+          .from('product_image_candidates')
+          .select('*')
+          .in('product_id', slice)
+          .order('product_id', { ascending: true })
+          .order('source_order', { ascending: true })
+          .range(0, 9999);
+        if (candErr) throw candErr;
+        (cands || []).forEach((c: any) => {
+          const arr = byProduct.get(c.product_id) || [];
+          arr.push(c as ImageCandidate);
+          byProduct.set(c.product_id, arr);
+        });
+      }
+
 
       return (data || []).map((p) => ({
         ...(p as any),
