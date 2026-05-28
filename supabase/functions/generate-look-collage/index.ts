@@ -1,10 +1,162 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { Image, decode } from "https://deno.land/x/imagescript@1.2.17/mod.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.87.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
+
+// ---------- AI composition pipeline (Atelier-style) ----------
+// Toggle: set COLLAGE_MODE=cutout in edge function secrets to fall back to the
+// legacy deterministic cutout grid below. Default is the AI still-life pipeline.
+
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  const chunkSize = 8192;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
+
+async function aiFetchImageAsBase64(url: string, supabaseUrl: string): Promise<string> {
+  const proxyUrl = `${supabaseUrl}/functions/v1/export-image-proxy?url=${encodeURIComponent(url)}`;
+  const resp = await fetch(proxyUrl, { headers: { Accept: 'image/*' } });
+  if (resp.ok) {
+    const buffer = await resp.arrayBuffer();
+    const contentType = resp.headers.get('content-type') || 'image/jpeg';
+    return `data:${contentType};base64,${arrayBufferToBase64(buffer)}`;
+  }
+  const direct = await fetch(url, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+      Accept: 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+      Referer: new URL(url).origin + '/',
+    },
+  });
+  if (!direct.ok) throw new Error(`Failed to fetch image: ${url}`);
+  const buffer = await direct.arrayBuffer();
+  const contentType = direct.headers.get('content-type') || 'image/jpeg';
+  return `data:${contentType};base64,${arrayBufferToBase64(buffer)}`;
+}
+
+async function hashCacheKey(urls: string[]): Promise<string> {
+  const joined = [...urls].sort().join('|');
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(joined));
+  const hex = Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
+  return hex.slice(0, 24);
+}
+
+function buildAiCollagePrompt(productNames: string, count: number): string {
+  return `You are given ${count} product photographs of fashion garments and accessories. Create a single elegant still-life flat-lay photograph that arranges ALL of these EXACT products together on a shared surface, as if styled for an editorial "look" feature.
+
+Background: warm soft neutral (#f0ece7), like a styled atelier surface.
+Style: Vogue / Harper's Bazaar editorial still life — refined, considered, luxurious.
+Layout: products arranged with breathing room, natural slight overlaps, gentle cast shadows from soft top light.
+Aspect ratio: square 1:1.
+
+ABSOLUTE RULES — VIOLATIONS WILL MAKE THE IMAGE UNUSABLE:
+1. Reproduce each product EXACTLY as it appears in the reference photos — same shape, same color, same fabric, same hardware, same design details. Do NOT invent, alter, or reimagine any product.
+2. Every single product must be FULLY visible — no cropping, no cutting off at the edges.
+3. Do NOT add any products that are not in the reference images.
+4. Do NOT change the color or design of any product.
+5. No text, no logos, no watermarks, no decorative props (no flowers, no jewelry, no perfume bottles unless they are in the references).
+6. Professional studio lighting, ultra-high quality, photorealistic.
+7. Products should have breathing room — don't push them to the edges of the frame.
+
+The products in the reference images are: ${productNames}.`;
+}
+
+async function runAiCollage(products: ProductInfo[]): Promise<{ image: string; debug: Array<Record<string, unknown>> }> {
+  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+  if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY is not configured');
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const supabase = createClient(supabaseUrl, supabaseKey);
+
+  const sources = products
+    .map((p) => ({ name: p.name, url: (p.trusted_image || p.image || '').trim() }))
+    .filter((p) => !!p.url);
+
+  if (sources.length < 2) {
+    throw new Error('AI collage needs at least 2 product images');
+  }
+
+  // Content-addressed cache: identical product set => same file
+  const cacheKey = await hashCacheKey(sources.map((s) => s.url));
+  const filePath = `looks/${cacheKey}.png`;
+  const { data: existing } = await supabase.storage
+    .from('look-images')
+    .list('looks', { search: `${cacheKey}.png` });
+  if (existing && existing.length > 0) {
+    const { data: pub } = supabase.storage.from('look-images').getPublicUrl(filePath);
+    return {
+      image: `${pub.publicUrl}?t=${Date.now()}`,
+      debug: [{ status: 'cache_hit', cache_key: cacheKey, products: sources.map((s) => s.name) }],
+    };
+  }
+
+  // Fetch all product images as base64
+  const imageContents: Array<{ type: 'image_url'; image_url: { url: string } }> = [];
+  const fetched: string[] = [];
+  for (const s of sources) {
+    try {
+      const b64 = await aiFetchImageAsBase64(s.url, supabaseUrl);
+      imageContents.push({ type: 'image_url', image_url: { url: b64 } });
+      fetched.push(s.name);
+    } catch (e) {
+      console.error(`AI collage: failed to fetch ${s.name}:`, e);
+    }
+  }
+  if (imageContents.length < 2) {
+    throw new Error('AI collage: could not fetch enough product images');
+  }
+
+  const prompt = buildAiCollagePrompt(fetched.join(', '), imageContents.length);
+
+  const aiResp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${LOVABLE_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'google/gemini-3.1-flash-image-preview',
+      messages: [{ role: 'user', content: [{ type: 'text', text: prompt }, ...imageContents] }],
+      modalities: ['image', 'text'],
+    }),
+  });
+
+  if (!aiResp.ok) {
+    const errText = await aiResp.text();
+    console.error('AI gateway error:', aiResp.status, errText);
+    if (aiResp.status === 429) throw new Error('Rate limit reached, please try again shortly.');
+    if (aiResp.status === 402) throw new Error('AI credits exhausted.');
+    throw new Error(`AI gateway error: ${aiResp.status}`);
+  }
+
+  const data = await aiResp.json();
+  const dataUrl: string | undefined = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+  if (!dataUrl) throw new Error('AI returned no image');
+
+  const base64Data = dataUrl.replace(/^data:image\/\w+;base64,/, '');
+  const raw = atob(base64Data);
+  const bytes = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+
+  const { error: uploadErr } = await supabase.storage
+    .from('look-images')
+    .upload(filePath, bytes, { contentType: 'image/png', upsert: true });
+  if (uploadErr) throw new Error(`Upload failed: ${uploadErr.message}`);
+
+  const { data: pub } = supabase.storage.from('look-images').getPublicUrl(filePath);
+  return {
+    image: `${pub.publicUrl}?t=${Date.now()}`,
+    debug: [{ status: 'ai_generated', cache_key: cacheKey, products: fetched }],
+  };
+}
 
 interface ProductInfo {
   name: string;
