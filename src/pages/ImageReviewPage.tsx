@@ -348,13 +348,12 @@ export default function ImageReviewPage() {
               onMarkSuspicious={(productId) => markSuspicious.mutate(productId)}
               onSetCustomUrl={(productId, url) => {
                 setApprovedImage.mutate({ productId, imageUrl: url });
-              onSetCustomUrl={(productId, url) => {
-                setApprovedImage.mutate({ productId, imageUrl: url });
                 toast.success('Custom URL set');
               }}
               onClassify={(productId) => classifyProducts([productId])}
               classifying={classifyingIds.has(p.id) || classify.isPending}
             />
+
 
           ))}
         </div>
