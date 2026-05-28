@@ -1,90 +1,57 @@
-# Plan: Database-first lay-flat review and suspicious-image approval
+## Problem
 
-## Outcome
-Create a reliable workflow that:
-- scans the scraped product images already stored in the database,
-- marks the most likely lay-flat image first,
-- flags uncertain cases as suspicious,
-- gives you an admin screen to approve, replace, or reject each choice,
-- makes collage generation use only approved lay-flat images.
+The Max Mara lay-flat detector is inverted. The current rules in `classify-product-images` treat the `-a-` variant in `/s3master/` as the lay-flat packshot, but on Max Mara that file is actually the **worn / on-model front shot**.
 
-## What already exists
-There is already a good foundation in place:
-- `products` has `approved_lay_flat_image_url` and `lay_flat_review_state`
-- `product_image_candidates` stores per-image machine labels, confidence, reasons, and review state
-- `/admin/image-review` already lists candidates and lets an admin approve, reject, or paste a replacement URL
-- `classify-product-images` already applies URL-based lay-flat rules for Max Mara and generic `_Full` image patterns
+The real flat product picture (plain background, no model) lives in `/s3details/` with the `-w-` variant code, for example:
 
-Current gap:
-- the review system is present, but the database is still effectively unprocessed right now (`products` are still in `pending`, and there are no candidate rows populated), so the pipeline is not yet reliably filling the review queue.
+```
+.../5021056106/029/s3details/5021056106029-w-wkdbiglia_normal.jpg
+```
 
-## Implementation plan
+Confirmed in the database for `5021056106029 - WKDBIGLIA`: the product image array contains `-a-` in `s3master/` (model shot) and `-w-` in `s3details/` (true flat lay), plus `-b/-d/-e/-f-` detail shots and `s3swatch/` color chips.
 
-### 1) Fix and harden the classifier pipeline
-Make the image classification pass dependable before changing the UI.
-- Ensure the classifier always reads the scraped image list from `products.images`
-- Normalize all image formats consistently before scoring
-- Align request payload naming between frontend and backend so targeted rescans work correctly
-- Preserve manual approvals and never overwrite `approved_lay_flat_image_url` when a human already approved an image
-- Record clear suspicion reasons for every non-confident candidate
+That is why every Max Mara apparel product is being auto-approved with the wrong picture.
 
-### 2) Make the database the source of truth for review state
-Use database fields to represent the full moderation workflow.
-- `approved_lay_flat_image_url` remains the only trusted image used downstream
-- `lay_flat_review_state` becomes the product-level status used by the admin queue
-- `product_image_candidates` remains the candidate ledger with labels, confidence, source order, and reasons
-- Add or tighten any missing indexes/constraints only if needed for queue performance and duplicate prevention
+## Fix plan
 
-### 3) Improve suspicious-case review UX
-Refine the existing Image Review screen instead of replacing it.
-- Keep product-level filters: pending, suspicious, missing, approved, auto-selected
-- Surface the machine-picked image first for each product
-- Make suspicion reasons more readable and prominent
-- Show which image is currently trusted for collage use
-- Add better admin actions for:
-  - approve this candidate
-  - reject this candidate
-  - flag the whole product as suspicious
-  - set a manual replacement URL
-  - jump to the product edit page when source data needs fixing
+### 1. Rewrite the Max Mara variant rules in the classifier
 
-### 4) Add review signals that help you trust the machine choice
-Make the screen explain why an image was picked or flagged.
-- Show confidence score in a human-readable way
-- Show detection reasons such as packshot folder, allowed variant, detail crop, worn/editorial variant, back view, or no safe pattern match
-- Separate “auto-selected and safe” from “candidate exists but needs approval”
-- Highlight products with no acceptable lay-flat at all
+In `supabase/functions/classify-product-images/index.ts`, replace the current Max Mara branch with rules that match the real URL convention:
 
-### 5) Connect collage generation to approved images only
-Use the review outcome to eliminate bad collage inputs.
-- For each product in a look, use `approved_lay_flat_image_url` first
-- Only fall back to strict lay-flat selection when there is no approved image and the rules are clearly safe
-- Skip products with no safe lay-flat instead of silently using editorial/worn shots
-- Return traceability data so the UI can show missing or skipped products
+- `/s3swatch/` → rejected (color chip)
+- `/s3master/` + `-a-` + `_normal` → reclassify as **worn / front model shot**, label `rejected` for collage use (or `suspicious` low-confidence fallback when no `-w-` exists)
+- `/s3details/` + `-w-` + `_normal` → **likely_lay_flat**, high confidence — this is the true flat product picture for apparel
+- `/s3details/` with `-b-`, `-d-`, `-e-`, `-f-` + `_normal` → rejected as detail/back/closeup
+- Shoes: keep `/s3master/` + `-a-` as lay-flat (shoes are already shot flat on white in master), and skip the apparel `-w-` rule
+- Anything else on `maxmara.com` with `_normal` but no clear pattern → `suspicious`
+
+### 2. Reset existing wrong approvals so the new pass can redo them
+
+Run a one-time database update for Max Mara apparel products that were auto-selected by the old rule:
+
+- Clear `approved_lay_flat_image_url` and reset `lay_flat_review_state` to `pending` only for rows where the current approved URL is `/s3master/...-a-..._normal...` AND the category is not a shoe category
+- Leave manually approved rows (`lay_flat_review_state = 'approved'` with `manual_override = true` candidates) untouched
+- Also wipe the stale `product_image_candidates` rows for those products so the rescan rebuilds them cleanly
+
+### 3. Re-run the classifier and verify
+
+- Trigger the "Scan unreviewed" button on `/admin/image-review`, which now chains batches
+- Confirm the example product `5021056106029 - WKDBIGLIA` ends with `approved_lay_flat_image_url` pointing at the `-w-` `s3details` URL
+- Spot-check 5–10 more apparel products and a couple of shoes to confirm shoes still pick the `-a-` `s3master` shot
+
+### 4. Keep collage selection in sync
+
+The collage edge function (`generate-look-collage`) already prefers `approved_lay_flat_image_url`. Once the database is corrected, no collage code change is required, but verify a generated total look uses the corrected images and no longer shows model crops.
 
 ## Technical details
-- **Frontend**
-  - `src/hooks/useImageReview.ts`: align rescan payloads, preserve queue behavior, improve invalidation
-  - `src/pages/ImageReviewPage.tsx`: surface confidence/reasons better, emphasize trusted selection, improve suspicious workflow
-- **Backend function**
-  - `supabase/functions/classify-product-images/index.ts`: harden normalization, scoring, payload handling, and manual-approval protection
-- **Utilities**
-  - keep lay-flat rules in sync with `src/utils/imageUtils.ts` and the collage selector
-- **Database**
-  - only add a migration if we discover a real schema gap; otherwise reuse the existing review schema and focus on making the classifier actually populate it
+
+- File to change: `supabase/functions/classify-product-images/index.ts` (the `classifyUrl` Max Mara block, lines ~47–78)
+- Migration: a single SQL update to clear wrong approvals and stale candidates, scoped by URL pattern and non-shoe category
+- No frontend changes required — `ImageReviewPage` already surfaces reasons, candidates, and the "Scan unreviewed" action
+- No new tables, no schema changes
 
 ## Validation
-After implementation, verify with real data:
-- run the classifier on unreviewed products
-- confirm candidate rows are created in the database
-- confirm products move from `pending` into `auto_selected`, `suspicious`, or `missing`
-- manually approve/reject a few suspicious products and confirm the database updates correctly
-- generate a collage and confirm it uses only approved or strict-safe lay-flat images
 
-## Expected result
-You get a practical approval workflow rather than blind automation:
-- the database is reviewed first,
-- likely lay-flat images are preselected,
-- suspicious products are clearly surfaced,
-- you can approve or change them quickly,
-- and total look collages stop pulling the wrong images.
+- Manually open `/admin/image-review`, filter by `auto_selected`, and confirm Max Mara apparel now shows `-w-` `s3details` packshots as the approved image
+- Open the affected product page on the live site and confirm the trusted image used by collages is the flat packshot, not the worn shot
+- Generate one total look and confirm the collage uses only flat packshots
