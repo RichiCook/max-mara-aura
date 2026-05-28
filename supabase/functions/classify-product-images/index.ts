@@ -45,37 +45,64 @@ function classifyUrl(url: string, category: string | null | undefined): Verdict 
   }
 
   // Max Mara rules
+  // URL convention observed in DB:
+  //   /s3master/  + -a- + _normal  => front shot ON MODEL (worn)        — NOT a flat lay for apparel
+  //   /s3details/ + -w- + _normal  => true flat product packshot         — the lay-flat we want for apparel
+  //   /s3details/ + -b/-d/-e/-f- + _normal => back / detail / closeup    — reject
+  //   /s3swatch/                   => color chip                         — reject
+  // For shoes the master -a- shot is already a flat packshot on white, so keep it as lay-flat.
   if (lower.includes("maxmara.com")) {
     if (lower.includes("/s3swatch/")) {
       reasons.push("color_swatch_folder");
       return { label: "rejected", confidence: 0.95, reasons };
     }
+
     const variantMatch = lower.match(/-([a-z])-[^/_?#]+_normal\./);
     const variant = variantMatch?.[1] ?? null;
-    if (!lower.includes("/s3master/")) {
-      reasons.push("editorial_folder");
-    }
-    if (!variant) {
-      reasons.push("no_variant_code");
-    } else if (variant === "a") {
-      reasons.push("master_packshot_a");
-    } else if (variant === "w" && isShoeCategory(category)) {
-      reasons.push("shoe_packshot_w");
-    } else {
-      reasons.push(`worn_variant_${variant}`);
-    }
+    const inMaster = lower.includes("/s3master/");
+    const inDetails = lower.includes("/s3details/");
+    const isNormal = lower.includes("_normal.");
+    const shoe = isShoeCategory(category);
 
-    const isMaster = lower.includes("/s3master/") && lower.includes("_normal.") && !lower.includes("/s3swatch/");
-    const isApproved = variant === "a" || (variant === "w" && isShoeCategory(category));
-    if (isMaster && isApproved) {
+    if (!variant) reasons.push("no_variant_code");
+    else reasons.push(`variant_${variant}`);
+    if (inMaster) reasons.push("folder_s3master");
+    if (inDetails) reasons.push("folder_s3details");
+
+    // Apparel: prefer /s3details/ -w- _normal as the true flat packshot
+    if (!shoe && inDetails && variant === "w" && isNormal) {
+      reasons.push("apparel_flat_packshot_w");
       return { label: "likely_lay_flat", confidence: 0.95, reasons };
     }
-    if (!isMaster && isApproved) {
-      // Right variant but wrong folder — can usually be rewritten, but treat as suspicious
+
+    // Shoes: /s3master/ -a- _normal is already a flat packshot
+    if (shoe && inMaster && variant === "a" && isNormal) {
+      reasons.push("shoe_master_packshot_a");
+      return { label: "likely_lay_flat", confidence: 0.95, reasons };
+    }
+
+    // Apparel: master -a- is the worn/model shot — reject for collage use
+    if (!shoe && inMaster && variant === "a") {
+      reasons.push("apparel_worn_model_shot");
+      return { label: "rejected", confidence: 0.9, reasons };
+    }
+
+    // Details with other variants are back/detail/closeup
+    if (inDetails && variant && variant !== "w") {
+      reasons.push("detail_or_back_view");
+      return { label: "rejected", confidence: 0.85, reasons };
+    }
+
+    // Shoe in details/-w- as fallback
+    if (shoe && inDetails && variant === "w" && isNormal) {
+      reasons.push("shoe_details_w_fallback");
       return { label: "suspicious", confidence: 0.5, reasons };
     }
-    return { label: "rejected", confidence: 0.9, reasons };
+
+    reasons.push("maxmara_unrecognized_pattern");
+    return { label: "suspicious", confidence: 0.3, reasons };
   }
+
 
   // Champion / generic patterns
   if (/_full\.(jpg|jpeg|png|webp)(\?.*)?$/.test(lower)) {
