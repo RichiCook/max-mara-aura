@@ -300,10 +300,7 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
       })
       .filter((p): p is { name: string; color: string | null; category: string | null; image: string; trusted_image: string | null } => Boolean(p && (p.image || p.trusted_image)));
 
-          image: candidates.join('\n'),
-        };
-      })
-      .filter((p): p is { name: string; color: string | null; category: string | null; image: string } => Boolean(p && p.image));
+
 
     if (productRefs.length === 0) {
       toast({ title: 'Collage failed', description: 'The selected products do not have usable lay-flat images yet.', variant: 'destructive' });
