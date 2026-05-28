@@ -47,10 +47,6 @@ export function useImageReview(stateFilter?: string) {
     queryFn: async () => {
       let q = supabase
         .from('products')
-        .select('id, name, slug, product_code, category, collection, approved_lay_flat_image_url, lay_flat_review_state')
-        .order('updated_at', { ascending: false })
-      let q = supabase
-        .from('products')
         .select('id, name, slug, product_code, category, collection, approved_lay_flat_image_url, lay_flat_review_state, images')
         .order('updated_at', { ascending: false })
         .limit(100);
