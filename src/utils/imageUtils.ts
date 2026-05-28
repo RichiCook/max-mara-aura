@@ -113,6 +113,17 @@ const isFlatLayUrl = (url: string, category?: string | null): boolean => {
   return false;
 };
 
+const isStrictCollageSafeUrl = (url: string, category?: string | null): boolean => {
+  const lower = url.toLowerCase();
+
+  if (isMaxMaraMasterPackshot(lower)) {
+    return isMaxMaraAllowedPackshotVariant(lower, category);
+  }
+
+  return /_full\.(jpg|jpeg|png|webp)(\?.*)?$/.test(lower) ||
+    /_full_front\.(jpg|jpeg|png|webp)(\?.*)?$/.test(lower);
+};
+
 /**
  * Check if a URL looks like a close-up, crop, or detail shot
  */
@@ -290,35 +301,15 @@ export const getCollageSourceImage = (
   if (parsed.length === 0) return null;
   const skuFiltered = filterImagesBySku(parsed, productCode);
 
-  // 1. Prefer an explicit master packshot.
-  const master = skuFiltered.find(img => {
-    const l = img.toLowerCase();
-    return l.includes('/s3master/') && l.includes('_normal.');
-  });
-  if (master) return master;
-
-  // 2. Try a regular flat-lay (champion _Full.jpg, max mara -a-/-w-_normal).
-  const flat = getFlatLayImage(skuFiltered, category);
-  if (flat) {
-    const lf = flat.toLowerCase();
-    const worn = lf.includes('_alt') || lf.includes('_model') || lf.includes('_worn') ||
-                 lf.includes('_lifestyle') || lf.includes('_crop') || lf.includes('_detail');
-    if (!worn) {
-      // 3. If the flat-lay we found is a Max Mara s3details URL, try the
-      //    matching s3master URL first — it's usually the clean packshot.
-      if (lf.includes('maxmara.com') && (lf.includes('/s3details/') || lf.includes('/s3swatch/'))) {
-        const masterAttempt = toMaxMaraMasterPackshot(flat, category);
-        return masterAttempt;
-      }
-      return flat;
+  const candidates = skuFiltered.flatMap((img) => {
+    const lower = img.toLowerCase();
+    if (lower.includes('maxmara.com')) {
+      const masterAttempt = toMaxMaraMasterPackshot(img, category);
+      return masterAttempt === img ? [img] : [masterAttempt, img];
     }
-  }
+    return [img];
+  });
 
-  // 4. As a last resort, try to derive a master URL from any Max Mara URL.
-  const anyMM = skuFiltered.find(img => img.includes('maxmara.com'));
-  if (anyMM) {
-    return toMaxMaraMasterPackshot(anyMM, category);
-  }
-
-  return null;
+  const uniqueCandidates = Array.from(new Set(candidates));
+  return uniqueCandidates.find((img) => isStrictCollageSafeUrl(img, category)) ?? null;
 };
