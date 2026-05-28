@@ -12,7 +12,9 @@ import {
   LayoutGrid,
   HelpCircle,
   LayoutDashboard,
+  LayoutDashboard,
   Download,
+  ImageCheck,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
@@ -25,6 +27,7 @@ const NAV = [
   { to: '/celebrity-content', label: 'Celebrity', Icon: Star },
   { to: '/activations', label: 'Activations', Icon: Layers },
   { to: '/admin/media-manager', label: 'Campaign Assets', Icon: ImageIcon },
+  { to: '/admin/image-review', label: 'Image Review', Icon: ImageCheck },
   { to: '/admin/carousels', label: 'Carousels', Icon: LayoutGrid },
   { to: '/leads', label: 'Leads', Icon: Users },
   { to: '/scan-analytics', label: 'Analytics', Icon: BarChart3 },
@@ -32,6 +35,7 @@ const NAV = [
   { to: '/api-settings', label: 'API', Icon: Settings2 },
   { to: '/settings', label: 'Settings', Icon: Palette },
 ];
+
 
 export const AdminSidebar = () => {
   const { signOut } = useAuth();
