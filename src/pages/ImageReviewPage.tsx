@@ -70,18 +70,15 @@ function ProductCard({ product, onApprove, onReject, onMarkSuspicious, onSetCust
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
+        {product.candidates.length === 0 ? (
+          product.raw_images.length > 0 ? (
+            <div className="space-y-2">
               <div className="flex items-center justify-between gap-2 text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
                 <span>Not classified yet — {product.raw_images.length} scraped image{product.raw_images.length === 1 ? '' : 's'} found.</span>
                 <Button size="sm" variant="outline" className="h-6 text-[10px]" disabled={classifying} onClick={() => onClassify(product.id)}>
                   {classifying ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <RefreshCw className="w-3 h-3 mr-1" />}
                   Classify now
                 </Button>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                {product.raw_images.map((url, i) => (
-
-              <div className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
-                Not classified yet — {product.raw_images.length} scraped image{product.raw_images.length === 1 ? '' : 's'} found. Click "Classify now" or run a bulk scan.
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                 {product.raw_images.map((url, i) => (
@@ -113,6 +110,8 @@ function ProductCard({ product, onApprove, onReject, onMarkSuspicious, onSetCust
               No scraped images. Run classification or add a URL below.
             </div>
           )
+        ) : (
+
         ) : (
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
