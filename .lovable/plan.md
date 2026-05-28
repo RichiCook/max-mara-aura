@@ -1,44 +1,59 @@
 ## Goal
-Stop the product-page collage from ever showing worn/model images again, and make failures observable instead of guesswork.
+Create a reliable review workflow so scraped product images are classified first, suspicious ones are surfaced for human approval/change, and collages only use trusted lay-flat images.
 
 ## Plan
-1. Tighten the real cache gate on the product page
-- Update the live `ProductGeneratedLook` flow so cached collage images are ignored unless they include valid strict-selection metadata.
-- Treat any cache entry without a valid `collage_cache_version`, matching `collage_source_signature`, and successful debug records as stale.
-- Regenerate the collage automatically on first render when the cache is stale, even if `generated_look` exists.
+1. Normalize scraped product images into reviewable database records
+- Add a dedicated table for product image candidates instead of relying only on the raw `products.images` array.
+- Backfill one row per image URL from existing products, keeping product ID/code, original URL, source, sort order, and normalized filename signals.
+- Add product-level fields for the currently approved lay-flat image so the storefront has one clear source of truth.
 
-2. Make the backend cache return path validate before serving cached looks
-- Update `generate-look-for-product` so it does not blindly return `heroProduct.generated_look`.
-- Add a cache-validity check for look payloads so old cached looks can be rejected server-side and regenerated.
-- Ensure newly cached look payloads carry the fields the frontend needs to know they were produced by the strict collage pipeline.
+2. Run a first-pass lay-flat classifier and suspicion scoring
+- Build a backend pass that evaluates every scraped image using the same strict source rules already used in collage generation.
+- Mark each image with a machine label such as `likely_lay_flat`, `suspicious`, `rejected`, plus confidence and explicit reasons like `worn_variant`, `detail_crop`, `ambiguous_angle`, `no_master_packshot`, or `domain_rule_mismatch`.
+- Preselect the best candidate per product when confidence is strong, but keep ambiguous products in a review-needed state.
 
-3. Make collage input selection fail closed everywhere
-- Keep `getCollageSourceImage` strict and separate from general display-image logic.
-- Remove any remaining permissive fallback behavior from the product-page collage payload assembly so a product with no verified flat-lay source is skipped, not substituted with a worn image.
-- Keep the collage function as final authority: validate every incoming candidate again before cutout generation.
+3. Add an admin review queue for approval and correction
+- Create a dedicated admin screen for product image review, not just per-product editing.
+- Show products grouped by review state: `needs review`, `suspicious`, `approved`, `missing lay-flat`.
+- For each product, show all scraped images, the suggested lay-flat, reason badges, and clear actions: `Approve`, `Reject`, `Mark suspicious`, `Set as lay-flat`, and `Paste replacement URL`.
+- Add filters for collection/category and a quick “only show unresolved” mode so the review workload is manageable.
 
-4. Add decisive debug evidence for the next failure report
-- Persist per-product collage debug details with each generated look: accepted URL, rejected URLs, fetch outcome, and skip reason.
-- Surface this metadata in the stored cache payload so the storefront can tell whether a collage was built from approved packshots.
-- If a collage is invalid or incomplete, force regeneration instead of rendering it.
+4. Add a per-product detail editor for overrides
+- Extend the existing product edit flow with an image-review section so a specific product can be fixed without going through the full queue.
+- Allow admins to manually override the approved lay-flat image, clear an incorrect approval, and trigger reclassification if the image list changes.
+- Keep a lightweight audit trail in the database: who reviewed it, when, machine reasons, and whether the final choice was manual or automatic.
 
-5. Verify against the exact storefront path shown in your screenshot
-- Test the product-page flow, not only the admin look card path.
-- Confirm the actual selected source URLs for each product in the failing look are flat-lay/packshot only.
-- Re-run collage generation for the failing flow and verify the returned debug payload shows only approved sources or explicit skips.
+5. Make collage generation trust only reviewed or explicitly trusted sources
+- Update the collage pipeline so it reads the approved lay-flat image first.
+- If a product has no approved/trusted image, skip it or block collage generation with a clear status instead of silently using worn/editorial photos.
+- Persist the exact approved URL used in collage debug output so any future failure is traceable.
+
+6. Add visibility and safety checks
+- Add admin counts/cards for `approved`, `suspicious`, `missing`, and `recently changed` so the team can see backlog and progress.
+- Add a one-click re-run to refresh machine labels after imports or classifier-rule changes.
+- Add a backfill/repair action to rescan all existing products and repopulate review records from `products.images`.
 
 ## Technical details
-- Files to update:
-  - `src/components/ProductGeneratedLook.tsx`
+- **Current gap:** product images currently live as raw URL arrays in `products.images`, so there is no per-image review state, suspicion flag, or explicit approved lay-flat source.
+- **Recommended data model:**
+  - New table: `public.product_image_candidates`
+  - Suggested fields: `id`, `product_id`, `product_code`, `image_url`, `source_order`, `source_kind`, `machine_label`, `machine_confidence`, `suspicion_reasons jsonb`, `review_status`, `is_selected_lay_flat`, `manual_override`, `reviewed_by`, `reviewed_at`, `created_at`, `updated_at`
+  - Add product-level source-of-truth field(s): `approved_lay_flat_image_url` and optionally `lay_flat_review_state`
+- **Suggested review states:** `pending`, `approved`, `rejected`, `suspicious`, `missing`, `auto_selected`
+- **Suggested machine reasons:** `master_packshot_match`, `full_front_match`, `shoe_packshot_match`, `detail_suffix`, `worn_suffix`, `editorial_folder`, `multiple_candidates`, `no_safe_candidate`
+- **Likely files to update:**
+  - `src/pages/ProductEditPage.tsx`
+  - new admin review page/component for product image review
+  - `src/hooks/useProducts.ts`
   - `src/utils/imageUtils.ts`
+  - `src/components/ProductGeneratedLook.tsx`
   - `supabase/functions/generate-look-for-product/index.ts`
   - `supabase/functions/generate-look-collage/index.ts`
-- Root issue confirmed from code review:
-  - the live product page passes `product.generated_look` straight into `ProductGeneratedLook`
-  - `generate-look-for-product` still returns cached `generated_look` without validating collage metadata
-  - frontend invalidation exists, but server-side cache acceptance is still too permissive, so old bad look payloads survive and keep reseeding the page
+  - migration(s) for the new review table and product fields
+- **Access model:** admin-only write access for review actions; public storefront only reads the approved result already attached to the product.
 
 ## Expected result
-- Old bad collages are no longer trusted.
-- New collages only use approved flat-lay packshots, or skip items that do not have one.
-- If this ever breaks again, we will have stored debug metadata showing exactly which URLs were accepted or rejected and why.
+- Every scraped product image gets a machine signal before it can affect collage output.
+- Suspicious products are visible in a review queue instead of hiding inside raw JSON arrays.
+- Admins can approve or replace the lay-flat image per product.
+- Collages stop falling back to worn/editorial shots because the pipeline only uses approved or explicitly trusted lay-flat sources.

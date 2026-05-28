@@ -20,7 +20,9 @@ import ThemeSettingsPage from "./pages/ThemeSettingsPage";
 import ScanAnalyticsPage from "./pages/ScanAnalyticsPage";
 import CelebrityContentPage from "./pages/CelebrityContentPage";
 import AdminMediaManager from "./pages/AdminMediaManager";
+import ImageReviewPage from "./pages/ImageReviewPage";
 import CarouselSettingsPage from "./pages/CarouselSettingsPage";
+
 import AuthPage from "./pages/AuthPage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { PlatformSettingsProvider } from "./contexts/PlatformSettingsContext";
@@ -66,7 +68,9 @@ const App = () => (
           <Route path="/scan-analytics" element={<Admin><ScanAnalyticsPage /></Admin>} />
           <Route path="/celebrity-content" element={<Admin><CelebrityContentPage /></Admin>} />
           <Route path="/admin/media-manager" element={<Admin><AdminMediaManager /></Admin>} />
-          <Route path="/admin/carousels" element={<Admin><CarouselSettingsPage /></Admin>} />
+          <Route path="/admin/media-manager" element={<Admin><AdminMediaManager /></Admin>} />
+          <Route path="/admin/image-review" element={<Admin><ImageReviewPage /></Admin>} />
+
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
