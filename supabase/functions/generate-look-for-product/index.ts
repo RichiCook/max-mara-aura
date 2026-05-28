@@ -364,11 +364,31 @@ serve(async (req) => {
     const heroProduct = heroProducts[0];
     const targetCollection = heroProduct.collection || null;
 
+    // Minimum acceptable collage cache version. Must stay in sync with
+    // COLLAGE_CACHE_VERSION in src/components/ProductGeneratedLook.tsx.
+    const MIN_COLLAGE_CACHE_VERSION = 4;
+
     // Check for cached look
     if (!force_regenerate && heroProduct.generated_look) {
       console.log('Returning cached look');
+      const sanitizeLook = (look: any) => {
+        if (!look || typeof look !== 'object') return look;
+        const version = typeof look.collage_cache_version === 'number' ? look.collage_cache_version : 0;
+        const debug = Array.isArray(look.collage_debug) ? look.collage_debug : [];
+        const hasUsedEntries = debug.some((d: any) => d?.status === 'used');
+        const collageIsTrusted = version >= MIN_COLLAGE_CACHE_VERSION && hasUsedEntries;
+        if (collageIsTrusted) return look;
+        // Strip the stale collage so the storefront regenerates it from
+        // verified flat-lay packshots. Leave look_image and metadata intact.
+        const { collage_image, ...rest } = look;
+        return { ...rest, collage_cache_version: 0, collage_image: null };
+      };
+
+      const cached = heroProduct.generated_look as any;
+      const sanitized = Array.isArray(cached) ? cached.map(sanitizeLook) : sanitizeLook(cached);
+
       return new Response(
-        JSON.stringify({ look: heroProduct.generated_look, cached: true }),
+        JSON.stringify({ look: sanitized, cached: true }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
