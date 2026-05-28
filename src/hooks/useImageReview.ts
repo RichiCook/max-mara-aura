@@ -49,6 +49,10 @@ export function useImageReview(stateFilter?: string) {
         .from('products')
         .select('id, name, slug, product_code, category, collection, approved_lay_flat_image_url, lay_flat_review_state')
         .order('updated_at', { ascending: false })
+      let q = supabase
+        .from('products')
+        .select('id, name, slug, product_code, category, collection, approved_lay_flat_image_url, lay_flat_review_state, images')
+        .order('updated_at', { ascending: false })
         .limit(100);
       if (stateFilter && stateFilter !== 'all') {
         q = q.eq('lay_flat_review_state', stateFilter);
@@ -80,10 +84,12 @@ export function useImageReview(stateFilter?: string) {
       }
 
 
-      return (data || []).map((p) => ({
-        ...(p as any),
+      return (data || []).map((p: any) => ({
+        ...p,
+        raw_images: normalizeImages(p.images),
         candidates: byProduct.get(p.id) || [],
       })) as ProductWithCandidates[];
+
     },
   });
 
