@@ -633,6 +633,60 @@ export type Database = {
         }
         Relationships: []
       }
+      product_image_candidates: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string
+          is_selected_lay_flat: boolean
+          machine_confidence: number
+          machine_label: string
+          manual_override: boolean
+          product_code: string | null
+          product_id: string
+          review_status: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source_order: number
+          suspicion_reasons: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url: string
+          is_selected_lay_flat?: boolean
+          machine_confidence?: number
+          machine_label?: string
+          manual_override?: boolean
+          product_code?: string | null
+          product_id: string
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_order?: number
+          suspicion_reasons?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string
+          is_selected_lay_flat?: boolean
+          machine_confidence?: number
+          machine_label?: string
+          manual_override?: boolean
+          product_code?: string | null
+          product_id?: string
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_order?: number
+          suspicion_reasons?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       product_pair_scores: {
         Row: {
           click_count: number
@@ -704,6 +758,7 @@ export type Database = {
       products: {
         Row: {
           ai_attributes: Json | null
+          approved_lay_flat_image_url: string | null
           care_instructions: string | null
           category: string | null
           collection: string | null
@@ -717,6 +772,7 @@ export type Database = {
           id: string
           images: Json | null
           is_available: boolean
+          lay_flat_review_state: string
           material: string | null
           name: string
           occasion: string[] | null
@@ -735,6 +791,7 @@ export type Database = {
         }
         Insert: {
           ai_attributes?: Json | null
+          approved_lay_flat_image_url?: string | null
           care_instructions?: string | null
           category?: string | null
           collection?: string | null
@@ -748,6 +805,7 @@ export type Database = {
           id?: string
           images?: Json | null
           is_available?: boolean
+          lay_flat_review_state?: string
           material?: string | null
           name: string
           occasion?: string[] | null
@@ -766,6 +824,7 @@ export type Database = {
         }
         Update: {
           ai_attributes?: Json | null
+          approved_lay_flat_image_url?: string | null
           care_instructions?: string | null
           category?: string | null
           collection?: string | null
@@ -779,6 +838,7 @@ export type Database = {
           id?: string
           images?: Json | null
           is_available?: boolean
+          lay_flat_review_state?: string
           material?: string | null
           name?: string
           occasion?: string[] | null
