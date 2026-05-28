@@ -27,7 +27,7 @@ const NAV = [
   { to: '/celebrity-content', label: 'Celebrity', Icon: Star },
   { to: '/activations', label: 'Activations', Icon: Layers },
   { to: '/admin/media-manager', label: 'Campaign Assets', Icon: ImageIcon },
-  { to: '/admin/image-review', label: 'Image Review', Icon: ImageCheck },
+  { to: '/admin/image-review', label: 'Image Review', Icon: BadgeCheck },
   { to: '/admin/carousels', label: 'Carousels', Icon: LayoutGrid },
   { to: '/leads', label: 'Leads', Icon: Users },
   { to: '/scan-analytics', label: 'Analytics', Icon: BarChart3 },
