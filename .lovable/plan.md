@@ -1,43 +1,53 @@
-# Why "No scraped images" shows up everywhere
+# Make Look collages render like Atelier Compositions
 
-The images are there. The UI just lies when classification hasn't run.
+## Why the current collages look "broken"
 
-Confirmed against the database:
-- 2870 products are in state `pending`
-- All 2870 of them have URLs in `products.images` (the scraped source)
-- 0 of them have any rows in `product_image_candidates`
+The Look collage uses a deterministic background-removal + grid composite pipeline (`supabase/functions/generate-look-collage/index.ts` → `removeBackground` + `layoutCells`). It flood-fills from the image border through anything that resembles the studio backdrop, then drops the cutouts into a fixed grid. On light/neutral garments (cream knits, beige trousers) the flood reaches inside the garment because those pixels score as "close to backdrop", and the result is the shredded silhouettes you saw.
 
-The review screen only reads from `product_image_candidates`. When that table is empty for a product, the card shows "No scraped images. Run classification or add a URL below." — even though `products.images` has 4–6 URLs from the scrape.
+Atelier Compositions (`src/components/product/AtelierCompositions.tsx` + `supabase/functions/generate-composition/index.ts`) produce clean, cohesive still-life images because they don't try to cut anything out — they send the real product photos to Gemini (`google/gemini-3.1-flash-image-preview`) with a strict "reproduce each product exactly, no cropping" prompt, and the model composes a believable shared-surface photograph. Result is cached to `look-images` storage.
 
-Only 344 products have actually been classified (`auto_selected`). The remaining 2870 need the classifier to run before any thumbnails appear.
+## Plan: rebuild `generate-look-collage` on top of the same Atelier pipeline
 
-## Plan
+Rewrite `supabase/functions/generate-look-collage/index.ts` so it produces collages the same way Atelier does — AI-composed still life from the real flat-lay photos — and drop the cutout/grid path entirely.
 
-### 1. Stop lying in the UI
+1. **Inputs unchanged.** Keep the existing request shape (`{ products: [{ name, color, category, image, trusted_image }] }`) so `ProductGeneratedLook.tsx` and `LookCard.tsx` don't have to change. Internally, use `trusted_image || image` as the source URL for each product (admin-approved lay-flat first, same rule we just enforced).
+2. **Fetch each product image as base64.** Reuse the `fetchImageAsBase64` helper pattern from `generate-composition` (route through `export-image-proxy` to bypass CORS/hotlink, fall back to direct fetch). No background removal, no resizing, no cutout step.
+3. **Call Lovable AI Gateway with Gemini image model.** Same call shape as `generate-composition`:
+  - `model: "google/gemini-3.1-flash-image-preview"`
+  - `modalities: ["image", "text"]`
+  - One user message containing the prompt + all product images as `image_url` parts
+  - Prompt adapted for Looks (multiple garments worn-together still life), keeping the Atelier "ABSOLUTE RULES" block verbatim: reproduce each product exactly, no invented items, no cropping, no color changes, square 1:1, shared surface, professional studio lighting, no text/logos, breathing room.
+  - Background = `#f0ece7` (Warm Naturals soft, matches the current canvas BG and the brand memory).
+4. **Cache to storage.** Hash the set of source URLs (sorted, joined, SHA-256, first 16 chars) into a deterministic key like `looks/{hash}.png` in the existing `look-images` bucket. On request:
+  - If the object exists, return its public URL immediately (no AI call).
+  - Otherwise generate, upload with `upsert: true`, return the public URL.
+   This replaces the current `collage_source_signature` + `collage_cache_version` invalidation dance with a content-addressed cache — the frontend's existing `buildCollageSourceSignature` check still works as a client-side guard.
+5. **Return shape.** Keep `{ image, debug, generated_at, items_used, items_skipped, method }` so existing callers keep working. `image` becomes the storage public URL (string) instead of a `data:` URL — `ProductGeneratedLook.tsx` already handles both via `uploadImageToStorage` (it will just re-upload, which is harmless, or we can short-circuit when `data.image` starts with `http`).
+6. **Graceful failures.** Surface 429 (rate-limited) and 402 (credits exhausted) verbatim — the frontend already has a retry path for "Rate limit" in the error message.
+7. **Delete the dead code.** Remove `removeBackground`, `trimTransparent`, `applyDropShadow`, `layoutCells`, `buildCollage`, `decodeProduct`, `isAllowedPackshot`, `deriveMaxMaraPackshot`, `selectPackshotCandidates`, `fetchImageBytes`, and the `imagescript` import. The file becomes ~150 lines of fetch → AI → cache, mirroring `generate-composition`.
 
-In `ImageReviewPage`, when a product has zero candidates:
-- Fall back to rendering raw thumbnails directly from `products.images`
-- Label the section "Not classified yet — N scraped images found"
-- Show a per-card "Classify now" button that calls the existing `classify-product-images` edge function with that single `product_id`
+## Frontend
 
-This way the user always sees the scraped photos and can act on them, even before the bulk job runs.
+No required changes. `ProductGeneratedLook.tsx` line 317 (`supabase.functions.invoke('generate-look-collage', …)`) and `LookCard.tsx` line 174 keep working untouched. Optional follow-up (not in this plan): short-circuit `uploadImageToStorage` when `data.image` already points at our storage bucket.
 
-### 2. Auto-classify on load (bounded)
+## What this fixes
 
-When the review page loads, if any visible product on screen has 0 candidates but >0 entries in `products.images`, fire one `classify-product-images` call with those product IDs (batched, max 100 per call). Re-fetch candidates on success. This makes the page self-healing — no need to remember to press "Scan unreviewed".
+- No more garments dissolving into the background — there's no cutout step that can eat them.
+- Visual quality matches Atelier Compositions (cohesive lighting, shadows, surface).
+- Same caching guarantees: identical product sets resolve from storage instantly.
 
-### 3. One-time backfill for the 2870 pending products
+## Out of scope
 
-Add a small admin action "Classify all pending (2870)" next to the existing scan button. It loops the edge function in pages of 200 until `hasMore` is false, with a progress toast. This catches everything in one go without waiting for the user to scroll.
+- Touching `generate-composition` itself.
+- Adding new composition settings UI (we'll use the existing Atelier-style prompt; we can wire `app_settings.composition_settings` into the Looks prompt in a follow-up if you want shared controls).
+- Any DB schema changes.
 
-### Technical notes
+## Files touched
 
-- `useImageReview.ts` already exposes `classify`. The new per-card and auto-classify calls reuse it with `{ productIds: [...] }`.
-- `products.images` is a Postgres `text[]` rendered as a newline-joined string by PostgREST in some payloads — the classifier already handles that via `normalizeImages()`. The UI fallback needs the same normalization (split on `\n`, trim, drop `#thumbnail`/`#product` fragments only for display).
-- No schema change. No edge function change. Pure frontend + one extra invoke.
+- `supabase/functions/generate-look-collage/index.ts` — full rewrite (AI pipeline, content-addressed cache).
 
-### Validation
+&nbsp;
 
-- Open `/admin/image-review` with the filter on `pending`. Every card should immediately show scraped thumbnails (from `products.images`) instead of the empty-state message.
-- Within a few seconds, the auto-classify call should replace the raw thumbnails with classified candidates and the auto-picked `-w-` flat lay for Max Mara apparel.
-- After running "Classify all pending", the `pending` count drops toward 0 and `auto_selected` + `suspicious` grow.
+keep as a toggle so we can restore easily, just tell me how put it down
+
+&nbsp;
