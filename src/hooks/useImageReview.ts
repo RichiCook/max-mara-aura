@@ -84,7 +84,7 @@ export function useImageReview(stateFilter?: string) {
   });
 
   const classify = useMutation({
-  const classify = useMutation({
+
     mutationFn: async (opts: { all?: boolean; productIds?: string[]; limit?: number }) => {
       const { data, error } = await supabase.functions.invoke('classify-product-images', {
         body: {
