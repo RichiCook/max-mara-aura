@@ -66,10 +66,44 @@ function ProductCard({ product, onApprove, onReject, onMarkSuspicious, onSetCust
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-3">
         {product.candidates.length === 0 ? (
-          <div className="text-xs text-muted-foreground py-3 text-center bg-muted/30 rounded">
-            No scraped images. Run classification or add a URL below.
+          product.raw_images.length > 0 ? (
+            <div className="space-y-2">
+              <div className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+                Not classified yet — {product.raw_images.length} scraped image{product.raw_images.length === 1 ? '' : 's'} found. Click "Classify now" or run a bulk scan.
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                {product.raw_images.map((url, i) => (
+                  <div key={i} className="relative rounded border border-border overflow-hidden">
+                    <div className="aspect-square bg-muted relative">
+                      <img
+                        src={url}
+                        alt=""
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                        referrerPolicy="no-referrer"
+                        onError={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = '0.3'; }}
+                      />
+                      <div className="absolute top-1 left-1"><Badge variant="outline" className="text-[9px]">unclassified</Badge></div>
+                    </div>
+                    <div className="p-2 space-y-1.5">
+                      <div className="text-[10px] text-muted-foreground line-clamp-1" title={url}>{url.split('/').pop()}</div>
+                      <Button size="sm" variant="outline" className="h-6 text-[10px] w-full"
+                        onClick={() => onApprove(product.id, url)}>
+                        <CheckCircle2 className="w-3 h-3 mr-0.5" /> Use as lay-flat
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="text-xs text-muted-foreground py-3 text-center bg-muted/30 rounded">
+              No scraped images. Run classification or add a URL below.
+            </div>
+          )
+        ) : (
+
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
