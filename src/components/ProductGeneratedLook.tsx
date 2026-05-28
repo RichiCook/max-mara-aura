@@ -43,7 +43,9 @@ interface LookProduct {
   color: string | null;
   category: string | null;
   source_url: string | null;
+  approved_lay_flat_image_url?: string | null;
 }
+
 
 interface LookWithProducts {
   look: GeneratedLook;
@@ -202,7 +204,7 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
     if (productCodes.length === 0) return [];
     const { data, error } = await supabase
       .from('products')
-      .select('id, product_code, name, price, images, slug, color, category, source_url')
+      .select('id, product_code, name, price, images, slug, color, category, source_url, approved_lay_flat_image_url')
       .in('product_code', productCodes);
     if (error) return [];
     const seen = new Set<string>();
@@ -220,8 +222,10 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
       color: p.color,
       category: p.category,
       source_url: p.source_url,
+      approved_lay_flat_image_url: (p as any).approved_lay_flat_image_url ?? null,
     }));
   };
+
 
   // Upload a base64 image to storage and return the public URL
   const uploadImageToStorage = async (base64Data: string, lookIndex: number): Promise<string | null> => {
@@ -285,12 +289,15 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
   const generateCollageImage = async (products: LookProduct[], lookData: GeneratedLook, lookIndex: number, retryCount = 0) => {
     const productRefs = products
       .map((p) => {
-        // Build a candidate list for the cutout source: strict lay-flat first,
-        // then any other flat-lay, then a generic fallback. Edge function will
-        // try each URL until one returns bytes (joined with newlines).
+        // Priority order for cutout source:
+        // 1. Admin-approved lay-flat URL (source of truth)
+        // 2. Strict lay-flat selector
+        // 3. Generic flat-lay fallback
+        // The edge function still validates every URL before fetching.
+        const approved = p.approved_lay_flat_image_url || null;
         const strict = getCollageSourceImage(p.images, p.product_code, p.category);
         const flat = getFlatLayImage(filterImagesBySku(p.images, p.product_code), p.category);
-        const candidates = Array.from(new Set([strict, flat].filter(Boolean) as string[]));
+        const candidates = Array.from(new Set([approved, strict, flat].filter(Boolean) as string[]));
         if (candidates.length === 0) return null;
         return {
           name: p.name,
