@@ -289,6 +289,10 @@ export default function ImageReviewPage() {
         <Button onClick={() => handleClassify(true)} disabled={classify.isPending} size="sm" variant="outline">
           Rescan batch of 500
         </Button>
+        <Button onClick={handleClassifyAllPending} disabled={classify.isPending} size="sm" variant="outline">
+          Classify all pending ({counts.pending || 0})
+        </Button>
+
         <Button onClick={() => refetch()} size="sm" variant="ghost">
           <RefreshCw className="w-4 h-4 mr-2" /> Refresh
         </Button>
