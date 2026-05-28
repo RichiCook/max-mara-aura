@@ -11,7 +11,11 @@ interface ProductInfo {
   color: string | null;
   category: string | null;
   image: string | null;
+  // Optional admin-trusted URL that bypasses the strict packshot allow list.
+  // Used when an admin has manually approved a specific lay-flat image.
+  trusted_image?: string | null;
 }
+
 
 // ---------- Image source validation ----------
 
@@ -468,8 +472,53 @@ async function buildCollage(products: ProductInfo[]): Promise<{ image: string; d
   }));
 
   await Promise.all(products.map(async (p, idx) => {
-    if (!p.image) {
+    if (!p.image && !p.trusted_image) {
       debug[idx].status = 'skipped';
+      return;
+    }
+    // If admin approved a trusted image, try it first without strict validation.
+    if (p.trusted_image) {
+      try {
+        const parsed = new URL(p.trusted_image);
+        const upstream = await fetch(parsed.toString(), {
+          headers: {
+            'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36',
+            'accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+            'referer': `${parsed.origin}/`,
+          },
+        });
+        if (upstream.ok) {
+          const bytes = new Uint8Array(await upstream.arrayBuffer());
+          debug[idx].used_url = p.trusted_image;
+          debug[idx].considered = [p.trusted_image];
+          try {
+            const decodedImg = await decode(bytes);
+            if (decodedImg instanceof Image) {
+              let img = decodedImg as Image;
+              const maxSide = Math.max(img.width, img.height);
+              if (maxSide > 900) {
+                const scale = 900 / maxSide;
+                img = img.resize(Math.round(img.width * scale), Math.round(img.height * scale));
+              }
+              img = removeBackground(img);
+              img = trimTransparent(img);
+              if (img.width >= 8 && img.height >= 8) {
+                decoded.push({ slot: classifySlot(p.category, p.name), img, productIndex: idx });
+                debug[idx].status = 'used';
+                return;
+              }
+            }
+          } catch (err) {
+            console.warn(`Decode failed for trusted image "${p.name}":`, err);
+          }
+        }
+      } catch (err) {
+        console.warn(`Trusted image fetch failed for "${p.name}":`, err);
+      }
+      // Fall through to strict validation if trusted fetch/decode failed
+    }
+    if (!p.image) {
+      debug[idx].status = 'no_valid_packshot';
       return;
     }
     const { bytes, usedUrl, selection } = await fetchImageBytes(p.image, p.category);
@@ -486,6 +535,7 @@ async function buildCollage(products: ProductInfo[]): Promise<{ image: string; d
       return;
     }
     debug[idx].used_url = usedUrl ?? selection.url;
+
     try {
       const decodedImg = await decode(bytes);
       if (!(decodedImg instanceof Image)) {
