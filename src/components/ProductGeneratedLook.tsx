@@ -27,6 +27,9 @@ interface GeneratedLook {
   generated_at: string;
   look_image?: string;
   collage_image?: string;
+  collage_debug?: Array<{ name?: string; status?: string; used_url?: string }>;
+  collage_source_signature?: string;
+  collage_cache_version?: number;
   config?: LookConfig;
 }
 
@@ -100,7 +103,7 @@ const resolveColorToHex = (c: string): string | null => {
 const INITIAL_LOOKS = 3;
 // Bump this whenever the collage source-selection logic changes so cached
 // collage images generated from the wrong source get regenerated automatically.
-const COLLAGE_CACHE_VERSION = 2;
+const COLLAGE_CACHE_VERSION = 3;
 
 
 export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, onColorPaletteReady }: ProductGeneratedLookProps) => {
@@ -120,6 +123,15 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
   const [modeRules, setModeRules] = useState<LookModeRules>(DEFAULT_LOOK_MODE_RULES);
   const [modeRulesReady, setModeRulesReady] = useState(false);
   const [initialModes, setInitialModes] = useState<Record<number, LookMode>>({});
+
+  const buildCollageSourceSignature = useCallback((products: LookProduct[]) => {
+    return products
+      .map((p) => {
+        const strict = getCollageSourceImage(p.images, p.product_code, p.category) || 'none';
+        return `${p.product_code}|${p.category ?? ''}|${strict}`;
+      })
+      .join('||');
+  }, []);
 
   const getPrimaryProductImage = useCallback((product: LookProduct) => {
     const flatLay = getFlatLayImage(filterImagesBySku(product.images, product.product_code), product.category);
@@ -259,6 +271,8 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
           look_image: l.lookImage || l.look.look_image,
           collage_image: l.collageImage || l.look.collage_image,
           collage_cache_version: l.collageImage ? COLLAGE_CACHE_VERSION : (l.look as any).collage_cache_version,
+          collage_source_signature: l.collageImage ? buildCollageSourceSignature(l.products) : (l.look as any).collage_source_signature,
+          collage_debug: l.collageImage ? ((l.look as any).collage_debug || []) : (l.look as any).collage_debug,
         }));
       if (looksToCache.length === 0) return;
       await supabase.from('products').update({ 
@@ -313,7 +327,18 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
         const storageUrl = await uploadImageToStorage(data.image, lookIndex);
         const finalImage = storageUrl || data.image;
         setLooks(prev => {
-          const updated = prev.map((l, i) => i === lookIndex ? { ...l, collageImage: finalImage, generatingCollage: false } : l);
+          const updated = prev.map((l, i) => i === lookIndex ? {
+            ...l,
+            collageImage: finalImage,
+            generatingCollage: false,
+            look: {
+              ...l.look,
+              collage_image: finalImage,
+              collage_cache_version: COLLAGE_CACHE_VERSION,
+              collage_source_signature: buildCollageSourceSignature(l.products),
+              collage_debug: Array.isArray(data?.debug) ? data.debug : [],
+            }
+          } : l);
           cacheLooks(updated);
           return updated;
         });
@@ -425,11 +450,17 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
     for (const cl of cachedLooks) {
       const products = await fetchLookProducts(cl.product_codes || []);
       if (products.length > 0) {
-        // Invalidate stale collages produced before the source-selection fix.
+        const expectedSignature = buildCollageSourceSignature(products);
         const cachedVersion = (cl as any).collage_cache_version ?? 0;
-        const collageStale = cachedVersion < COLLAGE_CACHE_VERSION;
+        const cachedSignature = (cl as any).collage_source_signature ?? null;
+        const cachedDebug = Array.isArray((cl as any).collage_debug) ? (cl as any).collage_debug : [];
+        const hasUsedEntries = cachedDebug.some((item: any) => item?.status === 'used');
+        const collageStale = cachedVersion < COLLAGE_CACHE_VERSION || cachedSignature !== expectedSignature || !hasUsedEntries;
         results.push({
-          look: cl,
+          look: {
+            ...cl,
+            collage_source_signature: expectedSignature,
+          },
           products,
           lookImage: cl.look_image || null,
           collageImage: collageStale ? null : (cl.collage_image || null),
@@ -452,7 +483,20 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
         if (!error && data?.look) {
           const products = await fetchLookProducts(data.look.product_codes || []);
           if (products.length > 0) {
-            results.push({ look: data.look, products, lookImage: data.look.look_image || null, collageImage: data.look.collage_image || null, generatingImage: false, generatingCollage: false });
+            const expectedSignature = buildCollageSourceSignature(products);
+            const cachedVersion = (data.look as any)?.collage_cache_version ?? 0;
+            const cachedSignature = (data.look as any)?.collage_source_signature ?? null;
+            const cachedDebug = Array.isArray((data.look as any)?.collage_debug) ? (data.look as any).collage_debug : [];
+            const hasUsedEntries = cachedDebug.some((item: any) => item?.status === 'used');
+            const collageStale = cachedVersion < COLLAGE_CACHE_VERSION || cachedSignature !== expectedSignature || !hasUsedEntries;
+            results.push({
+              look: { ...data.look, collage_source_signature: expectedSignature },
+              products,
+              lookImage: data.look.look_image || null,
+              collageImage: collageStale ? null : (data.look.collage_image || null),
+              generatingImage: false,
+              generatingCollage: false
+            });
             for (const code of data.look.product_codes || []) {
               if (code !== productCode) usedProductCodesRef.current.add(code);
             }
