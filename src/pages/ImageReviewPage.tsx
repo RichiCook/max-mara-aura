@@ -176,6 +176,34 @@ export default function ImageReviewPage() {
     }
   };
 
+  return (
+    <div className="px-8 py-10 max-w-[1400px] mx-auto">
+      <div className="mb-8">
+        <div className="admin-subtitle mb-2">Quality</div>
+        <h1 className="admin-page-title mb-1">Lay-flat Image Review</h1>
+        <p className="admin-body-secondary">
+          Approve the right lay-flat image per product. Suspicious ones are flagged automatically.
+        </p>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2 mb-6">
+        <Button onClick={() => handleClassify(false)} disabled={classify.isPending} size="sm">
+          {classify.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />}
+          Scan unreviewed
+        </Button>
+        <Button onClick={() => handleClassify(true)} disabled={classify.isPending} size="sm" variant="outline">
+          Rescan batch of 500
+        </Button>
+        <Button onClick={() => refetch()} size="sm" variant="ghost">
+          <RefreshCw className="w-4 h-4 mr-2" /> Refresh
+        </Button>
+        {scanProgress && (
+          <span className="text-xs text-muted-foreground ml-2">
+            Processed {scanProgress.processed} · {scanProgress.remaining} pending left
+          </span>
+        )}
+      </div>
+
 
       {/* State filter pills with counts */}
       <div className="flex flex-wrap gap-2 mb-6">
