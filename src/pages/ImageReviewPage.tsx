@@ -185,7 +185,44 @@ function ProductCard({ product, onApprove, onReject, onMarkSuspicious, onSetCust
 export default function ImageReviewPage() {
   const [filter, setFilter] = useState('suspicious');
   const [scanProgress, setScanProgress] = useState<{ processed: number; remaining: number } | null>(null);
+  const [classifyingIds, setClassifyingIds] = useState<Set<string>>(new Set());
+  const autoClassifiedRef = useRef<Set<string>>(new Set());
   const { products, isLoading, counts, classify, setApprovedImage, markSuspicious, rejectCandidate, refetch } = useImageReview(filter);
+
+  const classifyProducts = async (productIds: string[]) => {
+    if (productIds.length === 0) return;
+    setClassifyingIds((prev) => {
+      const next = new Set(prev);
+      productIds.forEach((id) => next.add(id));
+      return next;
+    });
+    try {
+      await classify.mutateAsync({ productIds });
+    } catch (err: any) {
+      toast.error(err?.message || 'Classify failed');
+    } finally {
+      setClassifyingIds((prev) => {
+        const next = new Set(prev);
+        productIds.forEach((id) => next.delete(id));
+        return next;
+      });
+    }
+  };
+
+  // Auto-classify visible products that have raw images but no candidates yet.
+  useEffect(() => {
+    if (isLoading) return;
+    const todo = products
+      .filter((p) => p.candidates.length === 0 && p.raw_images.length > 0 && !autoClassifiedRef.current.has(p.id))
+      .map((p) => p.id);
+    if (todo.length === 0) return;
+    todo.forEach((id) => autoClassifiedRef.current.add(id));
+    // Chunk to keep payloads reasonable.
+    for (let i = 0; i < todo.length; i += 50) {
+      classifyProducts(todo.slice(i, i + 50));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [products, isLoading]);
 
   const handleClassify = async (all: boolean) => {
     setScanProgress({ processed: 0, remaining: 0 });
@@ -193,18 +230,14 @@ export default function ImageReviewPage() {
     let totalSuspicious = 0;
     let totalMissing = 0;
     try {
-      // Chain batches until no products remain in pending. `all=true` rescans
-      // every product once (single batch via `product_ids` is not needed —
-      // ordering by updated_at asc keeps the cursor moving).
-      // For "all" we run a single pass over the oldest 500; the admin can re-click.
-      let safety = 50; // hard cap on chained calls
+      let safety = 50;
       do {
         const res: any = await classify.mutateAsync({ all, limit: all ? 500 : 200 });
         totalProcessed += res?.processed ?? 0;
         totalSuspicious += res?.suspiciousCount ?? 0;
         totalMissing += res?.missingCount ?? 0;
         setScanProgress({ processed: totalProcessed, remaining: res?.remaining ?? 0 });
-        if (all) break; // one batch for full rescans; user can re-click
+        if (all) break;
         if (!res?.hasMore || (res?.processed ?? 0) === 0) break;
         safety--;
       } while (safety > 0);
@@ -216,6 +249,27 @@ export default function ImageReviewPage() {
       setScanProgress(null);
     }
   };
+
+  const handleClassifyAllPending = async () => {
+    setScanProgress({ processed: 0, remaining: 0 });
+    let totalProcessed = 0;
+    try {
+      let safety = 100;
+      while (safety > 0) {
+        const res: any = await classify.mutateAsync({ limit: 200 });
+        totalProcessed += res?.processed ?? 0;
+        setScanProgress({ processed: totalProcessed, remaining: res?.remaining ?? 0 });
+        if (!res?.hasMore || (res?.processed ?? 0) === 0) break;
+        safety--;
+      }
+      toast.success(`Classified ${totalProcessed} pending products`);
+    } catch (err: any) {
+      toast.error(err?.message || 'Bulk classify failed');
+    } finally {
+      setScanProgress(null);
+    }
+  };
+
 
   return (
     <div className="px-8 py-10 max-w-[1400px] mx-auto">
