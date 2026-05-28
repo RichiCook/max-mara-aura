@@ -642,7 +642,8 @@ serve(async (req) => {
     }
 
     const productList = products as ProductInfo[];
-    const withImages = productList.filter((p) => !!p.image);
+    const withImages = productList.filter((p) => !!p.image || !!p.trusted_image);
+
     if (withImages.length === 0) {
       return new Response(JSON.stringify({ error: 'No product images to compose' }), {
         status: 400,
