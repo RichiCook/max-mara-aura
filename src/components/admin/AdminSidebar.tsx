@@ -12,9 +12,9 @@ import {
   LayoutGrid,
   HelpCircle,
   LayoutDashboard,
-  LayoutDashboard,
   Download,
-  ImageCheck,
+  BadgeCheck,
+
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
