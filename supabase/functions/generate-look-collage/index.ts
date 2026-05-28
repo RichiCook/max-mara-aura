@@ -753,6 +753,25 @@ serve(async (req) => {
       });
     }
 
+    // Mode toggle: COLLAGE_MODE=cutout falls back to the legacy deterministic grid.
+    // Default = "ai" (Atelier-style still life via Gemini image model).
+    const mode = (Deno.env.get('COLLAGE_MODE') || 'ai').toLowerCase();
+
+    if (mode === 'ai') {
+      const { image, debug } = await runAiCollage(withImages.slice(0, 8));
+      return new Response(
+        JSON.stringify({
+          image,
+          items_used: withImages.length,
+          items_skipped: 0,
+          method: 'ai_still_life',
+          debug,
+          generated_at: new Date().toISOString(),
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+
     const { image, debug } = await buildCollage(withImages.slice(0, 8));
 
     return new Response(
