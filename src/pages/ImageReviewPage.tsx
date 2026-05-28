@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+
 import { AppHeader } from '@/components/AppHeader';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -37,13 +38,16 @@ function stateBadge(state: string) {
   return <Badge className={`${map[state] || 'bg-muted'} border-0 capitalize`}>{state.replace('_', ' ')}</Badge>;
 }
 
-function ProductCard({ product, onApprove, onReject, onMarkSuspicious, onSetCustomUrl }: {
+function ProductCard({ product, onApprove, onReject, onMarkSuspicious, onSetCustomUrl, onClassify, classifying }: {
   product: ProductWithCandidates;
   onApprove: (productId: string, imageUrl: string, candidateId?: string) => void;
   onReject: (candidateId: string) => void;
   onMarkSuspicious: (productId: string) => void;
   onSetCustomUrl: (productId: string, url: string) => void;
+  onClassify: (productId: string) => void;
+  classifying: boolean;
 }) {
+
   const [customUrl, setCustomUrl] = useState('');
   const approvedUrl = product.approved_lay_flat_image_url;
 
@@ -67,10 +71,47 @@ function ProductCard({ product, onApprove, onReject, onMarkSuspicious, onSetCust
       </CardHeader>
       <CardContent className="space-y-3">
         {product.candidates.length === 0 ? (
-          <div className="text-xs text-muted-foreground py-3 text-center bg-muted/30 rounded">
-            No scraped images. Run classification or add a URL below.
-          </div>
+          product.raw_images.length > 0 ? (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2 text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+                <span>Not classified yet — {product.raw_images.length} scraped image{product.raw_images.length === 1 ? '' : 's'} found.</span>
+                <Button size="sm" variant="outline" className="h-6 text-[10px]" disabled={classifying} onClick={() => onClassify(product.id)}>
+                  {classifying ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <RefreshCw className="w-3 h-3 mr-1" />}
+                  Classify now
+                </Button>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                {product.raw_images.map((url, i) => (
+                  <div key={i} className="relative rounded border border-border overflow-hidden">
+                    <div className="aspect-square bg-muted relative">
+                      <img
+                        src={url}
+                        alt=""
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                        referrerPolicy="no-referrer"
+                        onError={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = '0.3'; }}
+                      />
+                      <div className="absolute top-1 left-1"><Badge variant="outline" className="text-[9px]">unclassified</Badge></div>
+                    </div>
+                    <div className="p-2 space-y-1.5">
+                      <div className="text-[10px] text-muted-foreground line-clamp-1" title={url}>{url.split('/').pop()}</div>
+                      <Button size="sm" variant="outline" className="h-6 text-[10px] w-full"
+                        onClick={() => onApprove(product.id, url)}>
+                        <CheckCircle2 className="w-3 h-3 mr-0.5" /> Use as lay-flat
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="text-xs text-muted-foreground py-3 text-center bg-muted/30 rounded">
+              No scraped images. Run classification or add a URL below.
+            </div>
+          )
         ) : (
+
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             {product.candidates.map((c: ImageCandidate) => {
               const isApproved = approvedUrl === c.image_url;
@@ -144,7 +185,44 @@ function ProductCard({ product, onApprove, onReject, onMarkSuspicious, onSetCust
 export default function ImageReviewPage() {
   const [filter, setFilter] = useState('suspicious');
   const [scanProgress, setScanProgress] = useState<{ processed: number; remaining: number } | null>(null);
+  const [classifyingIds, setClassifyingIds] = useState<Set<string>>(new Set());
+  const autoClassifiedRef = useRef<Set<string>>(new Set());
   const { products, isLoading, counts, classify, setApprovedImage, markSuspicious, rejectCandidate, refetch } = useImageReview(filter);
+
+  const classifyProducts = async (productIds: string[]) => {
+    if (productIds.length === 0) return;
+    setClassifyingIds((prev) => {
+      const next = new Set(prev);
+      productIds.forEach((id) => next.add(id));
+      return next;
+    });
+    try {
+      await classify.mutateAsync({ productIds });
+    } catch (err: any) {
+      toast.error(err?.message || 'Classify failed');
+    } finally {
+      setClassifyingIds((prev) => {
+        const next = new Set(prev);
+        productIds.forEach((id) => next.delete(id));
+        return next;
+      });
+    }
+  };
+
+  // Auto-classify visible products that have raw images but no candidates yet.
+  useEffect(() => {
+    if (isLoading) return;
+    const todo = products
+      .filter((p) => p.candidates.length === 0 && p.raw_images.length > 0 && !autoClassifiedRef.current.has(p.id))
+      .map((p) => p.id);
+    if (todo.length === 0) return;
+    todo.forEach((id) => autoClassifiedRef.current.add(id));
+    // Chunk to keep payloads reasonable.
+    for (let i = 0; i < todo.length; i += 50) {
+      classifyProducts(todo.slice(i, i + 50));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [products, isLoading]);
 
   const handleClassify = async (all: boolean) => {
     setScanProgress({ processed: 0, remaining: 0 });
@@ -152,18 +230,14 @@ export default function ImageReviewPage() {
     let totalSuspicious = 0;
     let totalMissing = 0;
     try {
-      // Chain batches until no products remain in pending. `all=true` rescans
-      // every product once (single batch via `product_ids` is not needed —
-      // ordering by updated_at asc keeps the cursor moving).
-      // For "all" we run a single pass over the oldest 500; the admin can re-click.
-      let safety = 50; // hard cap on chained calls
+      let safety = 50;
       do {
         const res: any = await classify.mutateAsync({ all, limit: all ? 500 : 200 });
         totalProcessed += res?.processed ?? 0;
         totalSuspicious += res?.suspiciousCount ?? 0;
         totalMissing += res?.missingCount ?? 0;
         setScanProgress({ processed: totalProcessed, remaining: res?.remaining ?? 0 });
-        if (all) break; // one batch for full rescans; user can re-click
+        if (all) break;
         if (!res?.hasMore || (res?.processed ?? 0) === 0) break;
         safety--;
       } while (safety > 0);
@@ -175,6 +249,27 @@ export default function ImageReviewPage() {
       setScanProgress(null);
     }
   };
+
+  const handleClassifyAllPending = async () => {
+    setScanProgress({ processed: 0, remaining: 0 });
+    let totalProcessed = 0;
+    try {
+      let safety = 100;
+      while (safety > 0) {
+        const res: any = await classify.mutateAsync({ limit: 200 });
+        totalProcessed += res?.processed ?? 0;
+        setScanProgress({ processed: totalProcessed, remaining: res?.remaining ?? 0 });
+        if (!res?.hasMore || (res?.processed ?? 0) === 0) break;
+        safety--;
+      }
+      toast.success(`Classified ${totalProcessed} pending products`);
+    } catch (err: any) {
+      toast.error(err?.message || 'Bulk classify failed');
+    } finally {
+      setScanProgress(null);
+    }
+  };
+
 
   return (
     <div className="px-8 py-10 max-w-[1400px] mx-auto">
@@ -194,6 +289,10 @@ export default function ImageReviewPage() {
         <Button onClick={() => handleClassify(true)} disabled={classify.isPending} size="sm" variant="outline">
           Rescan batch of 500
         </Button>
+        <Button onClick={handleClassifyAllPending} disabled={classify.isPending} size="sm" variant="outline">
+          Classify all pending ({counts.pending || 0})
+        </Button>
+
         <Button onClick={() => refetch()} size="sm" variant="ghost">
           <RefreshCw className="w-4 h-4 mr-2" /> Refresh
         </Button>
@@ -251,7 +350,11 @@ export default function ImageReviewPage() {
                 setApprovedImage.mutate({ productId, imageUrl: url });
                 toast.success('Custom URL set');
               }}
+              onClassify={(productId) => classifyProducts([productId])}
+              classifying={classifyingIds.has(p.id) || classify.isPending}
             />
+
+
           ))}
         </div>
       )}

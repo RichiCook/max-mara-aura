@@ -1,49 +1,43 @@
-## Problem
+# Why "No scraped images" shows up everywhere
 
-The Image Review screen looks like it's "missing" pictures (for example product `5366115106012 - ADDOTTO` shows only variants `a`, `b`, `d` and not the `-w-` flat lay), but the database actually has all the images and classifies them correctly — the `-w-` variant is stored as `likely_lay_flat` at 0.95 confidence and is the approved lay-flat URL.
+The images are there. The UI just lies when classification hasn't run.
 
-The real issue is in `src/hooks/useImageReview.ts`. It loads up to 500 products and then runs a single query:
+Confirmed against the database:
+- 2870 products are in state `pending`
+- All 2870 of them have URLs in `products.images` (the scraped source)
+- 0 of them have any rows in `product_image_candidates`
 
-```ts
-supabase
-  .from('product_image_candidates')
-  .select('*')
-  .in('product_id', ids)
-  .order('source_order', { ascending: true })
-```
+The review screen only reads from `product_image_candidates`. When that table is empty for a product, the card shows "No scraped images. Run classification or add a URL below." — even though `products.images` has 4–6 URLs from the scrape.
 
-Supabase caps results at 1000 rows by default. With ~9 candidates per product × 500 products = ~4500 rows, only the first 1000 come back. Because results are ordered by `source_order` ascending across all products, the early-index candidates (a, b, d, etc.) load for every product while the later ones (including the `-w-` flat lay at index 4–5 and the swatches) are silently dropped.
+Only 344 products have actually been classified (`auto_selected`). The remaining 2870 need the classifier to run before any thumbnails appear.
 
-That's why the UI looks broken even though the classifier is correct.
+## Plan
 
-## Fix plan
+### 1. Stop lying in the UI
 
-### 1. Paginate the candidate fetch in `useImageReview`
+In `ImageReviewPage`, when a product has zero candidates:
+- Fall back to rendering raw thumbnails directly from `products.images`
+- Label the section "Not classified yet — N scraped images found"
+- Show a per-card "Classify now" button that calls the existing `classify-product-images` edge function with that single `product_id`
 
-Replace the single `.in('product_id', ids)` call with a chunked fetch:
+This way the user always sees the scraped photos and can act on them, even before the bulk job runs.
 
-- Split `ids` into batches of ~100 product IDs
-- For each batch, fetch candidates with an explicit `.range(0, 9999)` (or `.limit(10000)`) and order by `product_id` then `source_order`
-- Merge the results into the `byProduct` map
+### 2. Auto-classify on load (bounded)
 
-This guarantees we never hit the 1000-row cap silently and we always get every candidate for every product on the page.
+When the review page loads, if any visible product on screen has 0 candidates but >0 entries in `products.images`, fire one `classify-product-images` call with those product IDs (batched, max 100 per call). Re-fetch candidates on success. This makes the page self-healing — no need to remember to press "Scan unreviewed".
 
-### 2. Trim the product page size to something the UI can actually render
+### 3. One-time backfill for the 2870 pending products
 
-`limit(500)` is too many products to render at once anyway. Reduce to a reasonable page (for example 100) and surface the existing state filters more clearly so admins can step through buckets (`auto_selected`, `suspicious`, `missing`, `approved`) without overloading the page.
+Add a small admin action "Classify all pending (2870)" next to the existing scan button. It loops the edge function in pages of 200 until `hasMore` is false, with a progress toast. This catches everything in one go without waiting for the user to scroll.
 
-### 3. Verify on the ADDOTTO example
+### Technical notes
 
-After the fix, the ADDOTTO card should show 5 product photos (a, b, d, e, w) plus 4 swatches, with the `-w-` card marked `likely_lay_flat` and visibly used as the approved lay flat.
+- `useImageReview.ts` already exposes `classify`. The new per-card and auto-classify calls reuse it with `{ productIds: [...] }`.
+- `products.images` is a Postgres `text[]` rendered as a newline-joined string by PostgREST in some payloads — the classifier already handles that via `normalizeImages()`. The UI fallback needs the same normalization (split on `\n`, trim, drop `#thumbnail`/`#product` fragments only for display).
+- No schema change. No edge function change. Pure frontend + one extra invoke.
 
-## Technical details
+### Validation
 
-- File to change: `src/hooks/useImageReview.ts` (the candidate fetch inside `queryFn`)
-- Optional: `src/pages/ImageReviewPage.tsx` only if we lower the product page size and want to expose pagination controls
-- No backend, schema, or classifier changes needed — the data in `product_image_candidates` is already correct
-
-## Validation
-
-- Open `/admin/image-review`, scroll to product `5366115106012 - ADDOTTO`, confirm all 5 photo candidates appear and the `-w-` is the auto-selected lay flat
-- Spot-check 5 more Max Mara apparel products and confirm every product shows the full candidate set (no missing tail of candidates)
-- Reload with each state filter (`auto_selected`, `suspicious`, `missing`) and confirm no product is missing candidates that exist in the database
+- Open `/admin/image-review` with the filter on `pending`. Every card should immediately show scraped thumbnails (from `products.images`) instead of the empty-state message.
+- Within a few seconds, the auto-classify call should replace the raw thumbnails with classified candidates and the auto-picked `-w-` flat lay for Max Mara apparel.
+- After running "Classify all pending", the `pending` count drops toward 0 and `auto_selected` + `suspicious` grow.

@@ -25,8 +25,19 @@ export interface ProductWithCandidates {
   collection: string | null;
   approved_lay_flat_image_url: string | null;
   lay_flat_review_state: string;
+  raw_images: string[];
   candidates: ImageCandidate[];
 }
+
+function normalizeImages(images: unknown): string[] {
+  if (!images) return [];
+  const list = Array.isArray(images) ? images : typeof images === 'string' ? [images] : [];
+  return list
+    .flatMap((img) => (typeof img === 'string' ? img.split(/\r?\n/) : []))
+    .map((u) => String(u).trim())
+    .filter((u) => u.length > 0 && (u.startsWith('http') || u.startsWith('data:')));
+}
+
 
 export function useImageReview(stateFilter?: string) {
   const qc = useQueryClient();
@@ -36,7 +47,7 @@ export function useImageReview(stateFilter?: string) {
     queryFn: async () => {
       let q = supabase
         .from('products')
-        .select('id, name, slug, product_code, category, collection, approved_lay_flat_image_url, lay_flat_review_state')
+        .select('id, name, slug, product_code, category, collection, approved_lay_flat_image_url, lay_flat_review_state, images')
         .order('updated_at', { ascending: false })
         .limit(100);
       if (stateFilter && stateFilter !== 'all') {
@@ -69,10 +80,12 @@ export function useImageReview(stateFilter?: string) {
       }
 
 
-      return (data || []).map((p) => ({
-        ...(p as any),
+      return (data || []).map((p: any) => ({
+        ...p,
+        raw_images: normalizeImages(p.images),
         candidates: byProduct.get(p.id) || [],
       })) as ProductWithCandidates[];
+
     },
   });
 
