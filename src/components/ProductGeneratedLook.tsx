@@ -282,7 +282,13 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
       await supabase.from('products').update({ 
         generated_look: (looksToCache.length === 1 ? looksToCache[0] : looksToCache) as any 
       }).eq('product_code', productCode);
+    } catch (err) {
+      console.error('Cache looks failed:', err);
+    }
+  };
+
   const generateCollageImage = async (products: LookProduct[], lookData: GeneratedLook, lookIndex: number, retryCount = 0) => {
+
     const productRefs = products
       .map((p) => {
         const approved = p.approved_lay_flat_image_url || null;
