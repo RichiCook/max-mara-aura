@@ -116,13 +116,21 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const productIds: string[] | undefined = Array.isArray(body.product_ids) ? body.product_ids : undefined;
     const allProducts: boolean = body.all === true;
+    const limit: number = Math.min(Math.max(Number(body.limit) || 200, 1), 500);
 
-    let query = supabase.from("products").select("id, product_code, category, images");
+    // Select products + current state so we can preserve manual approvals without
+    // a per-product round-trip.
+    let query = supabase
+      .from("products")
+      .select("id, product_code, category, images, approved_lay_flat_image_url, lay_flat_review_state")
+      .order("updated_at", { ascending: true })
+      .limit(limit);
+
     if (productIds && productIds.length > 0) {
       query = query.in("id", productIds);
     } else if (!allProducts) {
-      // Default: only products without an approved lay-flat yet
-      query = query.is("approved_lay_flat_image_url", null);
+      // Default: only products still in 'pending' (never classified).
+      query = query.eq("lay_flat_review_state", "pending");
     }
 
     const { data: products, error } = await query;
@@ -133,6 +141,11 @@ Deno.serve(async (req) => {
     let suspiciousCount = 0;
     let missingCount = 0;
 
+    // Collect all candidate rows + product updates so we can write in bulk.
+    const allCandidateRows: any[] = [];
+    const productUpdates: { id: string; state: string; url: string | null }[] = [];
+    const productIdsToClear: string[] = [];
+
     for (const p of products || []) {
       const urls = normalizeImages((p as any).images);
       const verdicts = urls.map((url, idx) => ({
@@ -141,13 +154,13 @@ Deno.serve(async (req) => {
         v: classifyUrl(url, p.category),
       }));
 
-      // Pick best lay-flat candidate by confidence
-      const layFlats = verdicts.filter((x) => x.v.label === "likely_lay_flat")
+      const layFlats = verdicts
+        .filter((x) => x.v.label === "likely_lay_flat")
         .sort((a, b) => b.v.confidence - a.v.confidence);
       const best = layFlats[0] ?? null;
-
       const suspiciousOnly = verdicts.filter((x) => x.v.label === "suspicious");
-      let productState: "approved" | "auto_selected" | "suspicious" | "missing" = "missing";
+
+      let productState: "auto_selected" | "suspicious" | "missing" = "missing";
       let approvedUrl: string | null = null;
 
       if (best && best.v.confidence >= 0.85) {
@@ -162,49 +175,97 @@ Deno.serve(async (req) => {
         missingCount++;
       }
 
-      // Replace candidate rows for this product
-      await supabase.from("product_image_candidates").delete().eq("product_id", p.id);
+      productIdsToClear.push(p.id);
 
       if (verdicts.length > 0) {
-        const rows = verdicts.map(({ url, idx, v }) => ({
-          product_id: p.id,
-          product_code: p.product_code,
-          image_url: url,
-          source_order: idx,
-          machine_label: v.label,
-          machine_confidence: v.confidence,
-          suspicion_reasons: v.reasons,
-          review_status: best && url === best.url && productState === "auto_selected" ? "auto_selected" : "pending",
-          is_selected_lay_flat: !!(best && url === best.url && productState === "auto_selected"),
-          manual_override: false,
-        }));
-        await supabase.from("product_image_candidates").insert(rows);
+        for (const { url, idx, v } of verdicts) {
+          const isAuto = !!(best && url === best.url && productState === "auto_selected");
+          allCandidateRows.push({
+            product_id: p.id,
+            product_code: p.product_code,
+            image_url: url,
+            source_order: idx,
+            machine_label: v.label,
+            machine_confidence: v.confidence,
+            suspicion_reasons: v.reasons,
+            review_status: isAuto ? "auto_selected" : "pending",
+            is_selected_lay_flat: isAuto,
+            manual_override: false,
+          });
+        }
       }
 
-      // Only set approved fields automatically if confidence was high; do not
-      // overwrite an existing manual approval.
-      const { data: existing } = await supabase
-        .from("products")
-        .select("approved_lay_flat_image_url, lay_flat_review_state")
-        .eq("id", p.id)
-        .single();
-
-      const alreadyApprovedManually = existing?.lay_flat_review_state === "approved";
+      // Preserve manual approvals: never overwrite if already approved by a human.
+      const alreadyApprovedManually = (p as any).lay_flat_review_state === "approved";
       if (!alreadyApprovedManually) {
-        await supabase
-          .from("products")
-          .update({
-            approved_lay_flat_image_url: approvedUrl,
-            lay_flat_review_state: productState,
-          })
-          .eq("id", p.id);
+        productUpdates.push({ id: p.id, state: productState, url: approvedUrl });
       }
 
       processed++;
     }
 
+    // Bulk delete previous candidate rows for these products.
+    if (productIdsToClear.length > 0) {
+      await supabase.from("product_image_candidates").delete().in("product_id", productIdsToClear);
+    }
+
+    // Bulk insert candidates in chunks (Postgres has a parameter limit).
+    const CHUNK = 500;
+    for (let i = 0; i < allCandidateRows.length; i += CHUNK) {
+      const slice = allCandidateRows.slice(i, i + CHUNK);
+      const { error: insErr } = await supabase.from("product_image_candidates").insert(slice);
+      if (insErr) console.error("candidate insert error:", insErr);
+    }
+
+    // Apply product updates grouped by (state, url) to minimize round-trips.
+    // Group by state when url is null; otherwise update one-by-one.
+    const stateGroups = new Map<string, string[]>();
+    const urlUpdates: { id: string; url: string; state: string }[] = [];
+    for (const u of productUpdates) {
+      if (u.url) urlUpdates.push({ id: u.id, url: u.url, state: u.state });
+      else {
+        const arr = stateGroups.get(u.state) || [];
+        arr.push(u.id);
+        stateGroups.set(u.state, arr);
+      }
+    }
+    for (const [state, ids] of stateGroups) {
+      for (let i = 0; i < ids.length; i += CHUNK) {
+        const slice = ids.slice(i, i + CHUNK);
+        await supabase
+          .from("products")
+          .update({ approved_lay_flat_image_url: null, lay_flat_review_state: state })
+          .in("id", slice);
+      }
+    }
+    // url-bearing updates need per-row values; run in parallel batches.
+    const PAR = 10;
+    for (let i = 0; i < urlUpdates.length; i += PAR) {
+      const slice = urlUpdates.slice(i, i + PAR);
+      await Promise.all(
+        slice.map((u) =>
+          supabase
+            .from("products")
+            .update({ approved_lay_flat_image_url: u.url, lay_flat_review_state: u.state })
+            .eq("id", u.id)
+        )
+      );
+    }
+
+    const remaining = !productIds && !allProducts
+      ? Math.max(0, (await supabase.from("products").select("id", { count: "exact", head: true }).eq("lay_flat_review_state", "pending")).count || 0)
+      : 0;
+
     return new Response(
-      JSON.stringify({ success: true, processed, approvedCount, suspiciousCount, missingCount }),
+      JSON.stringify({
+        success: true,
+        processed,
+        approvedCount,
+        suspiciousCount,
+        missingCount,
+        remaining,
+        hasMore: remaining > 0,
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
@@ -215,3 +276,4 @@ Deno.serve(async (req) => {
     );
   }
 });
+
