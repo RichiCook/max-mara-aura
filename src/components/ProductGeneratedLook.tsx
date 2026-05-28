@@ -282,27 +282,24 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
       await supabase.from('products').update({ 
         generated_look: (looksToCache.length === 1 ? looksToCache[0] : looksToCache) as any 
       }).eq('product_code', productCode);
-    } catch { /* silent */ }
-  };
-
-
   const generateCollageImage = async (products: LookProduct[], lookData: GeneratedLook, lookIndex: number, retryCount = 0) => {
     const productRefs = products
       .map((p) => {
-        // Priority order for cutout source:
-        // 1. Admin-approved lay-flat URL (source of truth)
-        // 2. Strict lay-flat selector
-        // 3. Generic flat-lay fallback
-        // The edge function still validates every URL before fetching.
         const approved = p.approved_lay_flat_image_url || null;
         const strict = getCollageSourceImage(p.images, p.product_code, p.category);
         const flat = getFlatLayImage(filterImagesBySku(p.images, p.product_code), p.category);
-        const candidates = Array.from(new Set([approved, strict, flat].filter(Boolean) as string[]));
-        if (candidates.length === 0) return null;
+        const candidates = Array.from(new Set([strict, flat].filter(Boolean) as string[]));
+        if (!approved && candidates.length === 0) return null;
         return {
           name: p.name,
           color: p.color,
           category: p.category,
+          image: candidates.join('\n'),
+          trusted_image: approved,
+        };
+      })
+      .filter((p): p is { name: string; color: string | null; category: string | null; image: string; trusted_image: string | null } => Boolean(p && (p.image || p.trusted_image)));
+
           image: candidates.join('\n'),
         };
       })
