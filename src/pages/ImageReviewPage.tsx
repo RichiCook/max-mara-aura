@@ -38,13 +38,16 @@ function stateBadge(state: string) {
   return <Badge className={`${map[state] || 'bg-muted'} border-0 capitalize`}>{state.replace('_', ' ')}</Badge>;
 }
 
-function ProductCard({ product, onApprove, onReject, onMarkSuspicious, onSetCustomUrl }: {
+function ProductCard({ product, onApprove, onReject, onMarkSuspicious, onSetCustomUrl, onClassify, classifying }: {
   product: ProductWithCandidates;
   onApprove: (productId: string, imageUrl: string, candidateId?: string) => void;
   onReject: (candidateId: string) => void;
   onMarkSuspicious: (productId: string) => void;
   onSetCustomUrl: (productId: string, url: string) => void;
+  onClassify: (productId: string) => void;
+  classifying: boolean;
 }) {
+
   const [customUrl, setCustomUrl] = useState('');
   const approvedUrl = product.approved_lay_flat_image_url;
 
