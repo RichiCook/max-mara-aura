@@ -143,39 +143,39 @@ function ProductCard({ product, onApprove, onReject, onMarkSuspicious, onSetCust
 
 export default function ImageReviewPage() {
   const [filter, setFilter] = useState('suspicious');
+  const [scanProgress, setScanProgress] = useState<{ processed: number; remaining: number } | null>(null);
   const { products, isLoading, counts, classify, setApprovedImage, markSuspicious, rejectCandidate, refetch } = useImageReview(filter);
 
   const handleClassify = async (all: boolean) => {
+    setScanProgress({ processed: 0, remaining: 0 });
+    let totalProcessed = 0;
+    let totalSuspicious = 0;
+    let totalMissing = 0;
     try {
-      const res: any = await classify.mutateAsync({ all });
-      toast.success(`Classified ${res?.processed ?? 0} products — ${res?.suspiciousCount ?? 0} suspicious, ${res?.missingCount ?? 0} missing`);
+      // Chain batches until no products remain in pending. `all=true` rescans
+      // every product once (single batch via `product_ids` is not needed —
+      // ordering by updated_at asc keeps the cursor moving).
+      // For "all" we run a single pass over the oldest 500; the admin can re-click.
+      let safety = 50; // hard cap on chained calls
+      do {
+        const res: any = await classify.mutateAsync({ all, limit: all ? 500 : 200 });
+        totalProcessed += res?.processed ?? 0;
+        totalSuspicious += res?.suspiciousCount ?? 0;
+        totalMissing += res?.missingCount ?? 0;
+        setScanProgress({ processed: totalProcessed, remaining: res?.remaining ?? 0 });
+        if (all) break; // one batch for full rescans; user can re-click
+        if (!res?.hasMore || (res?.processed ?? 0) === 0) break;
+        safety--;
+      } while (safety > 0);
+
+      toast.success(`Scanned ${totalProcessed} products — ${totalSuspicious} suspicious, ${totalMissing} missing`);
     } catch (err: any) {
       toast.error(err?.message || 'Classification failed');
+    } finally {
+      setScanProgress(null);
     }
   };
 
-  return (
-    <div className="px-8 py-10 max-w-[1400px] mx-auto">
-      <div className="mb-8">
-        <div className="admin-subtitle mb-2">Quality</div>
-        <h1 className="admin-page-title mb-1">Lay-flat Image Review</h1>
-        <p className="admin-body-secondary">
-          Approve the right lay-flat image per product. Suspicious ones are flagged automatically.
-        </p>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2 mb-6">
-        <Button onClick={() => handleClassify(false)} disabled={classify.isPending} size="sm">
-          {classify.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />}
-          Scan unreviewed
-        </Button>
-        <Button onClick={() => handleClassify(true)} disabled={classify.isPending} size="sm" variant="outline">
-          Rescan all products
-        </Button>
-        <Button onClick={() => refetch()} size="sm" variant="ghost">
-          <RefreshCw className="w-4 h-4 mr-2" /> Refresh
-        </Button>
-      </div>
 
       {/* State filter pills with counts */}
       <div className="flex flex-wrap gap-2 mb-6">
