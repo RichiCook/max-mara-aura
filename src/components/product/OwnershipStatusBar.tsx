@@ -10,7 +10,7 @@ const OwnershipStatusBar = ({ onClick }: OwnershipStatusBarProps) => {
       onClick={onClick}
       className="w-full flex items-center gap-3 left-0 right-0 z-50"
       style={{
-        background: '#E12B38',
+        background: '#1A1A1A',
         padding: '18px 20px',
         paddingBottom: 'calc(18px + env(safe-area-inset-bottom, 0px))',
         border: 'none',

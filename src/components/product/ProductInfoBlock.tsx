@@ -118,7 +118,7 @@ const ProductInfoBlock = ({ productCode, composition, sourceUrl, productName, pr
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center justify-center gap-2 w-full rounded-lg font-sans text-[15px] font-semibold py-4 no-underline text-center"
-          style={{ background: '#E12B38', color: '#fff' }}
+          style={{ background: '#1A1A1A', color: '#fff' }}
         >
           View on our Store
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.5 }}>

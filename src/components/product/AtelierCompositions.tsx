@@ -311,8 +311,8 @@ const AtelierCompositions = ({ currentProduct }: AtelierCompositionsProps) => {
       <div className="max-w-6xl mx-auto px-4 overflow-hidden">
         {/* Header */}
         <div className="flex items-center gap-2 mb-1">
-          <Sparkles className="w-4 h-4 text-[#E12B38]" />
-          <span className="inline-flex items-center gap-1 text-xs font-medium rounded-full px-2 py-0.5 bg-[#E12B38] text-white">
+          <Sparkles className="w-4 h-4 text-[#1A1A1A]" />
+          <span className="inline-flex items-center gap-1 text-xs font-medium rounded-full px-2 py-0.5 bg-[#1A1A1A] text-white">
             AI
           </span>
         </div>
@@ -347,7 +347,7 @@ const AtelierCompositions = ({ currentProduct }: AtelierCompositionsProps) => {
                   />
                 ) : comp.loading ? (
                   <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-                    <Loader2 className="w-6 h-6 animate-spin text-[#E12B38]" />
+                    <Loader2 className="w-6 h-6 animate-spin text-[#1A1A1A]" />
                     <span className="text-[10px] text-muted-foreground">Composing…</span>
                     <div className="flex items-end justify-center gap-1 mt-2">
                       {comp.products.slice(0, 3).map((p, i) => (
@@ -413,7 +413,7 @@ const AtelierCompositions = ({ currentProduct }: AtelierCompositionsProps) => {
                   {comp.generatedImage && (
                     <button
                       onClick={(e) => { e.stopPropagation(); regenerate(comp.id); }}
-                      className="text-[9px] text-muted-foreground hover:text-[#E12B38] flex items-center gap-0.5 transition-colors"
+                      className="text-[9px] text-muted-foreground hover:text-[#1A1A1A] flex items-center gap-0.5 transition-colors"
                       title="Regenerate"
                     >
                       <RefreshCw className="w-2.5 h-2.5" />

@@ -32,7 +32,7 @@ const NewsletterSection = () => {
           <button
             type="submit"
             className="h-11 px-5 rounded-lg font-sans text-sm font-semibold text-white shrink-0"
-            style={{ background: 'var(--louboutin-red, #E12B38)' }}
+            style={{ background: 'var(--louboutin-red, #1A1A1A)' }}
           >
             Subscribe
           </button>
