@@ -765,6 +765,9 @@ export type Database = {
           color: string | null
           composition: string | null
           created_at: string
+          cutout_failed_reason: string | null
+          cutout_status: string | null
+          cutout_url: string | null
           description: string | null
           gender: string
           generated_look: Json | null
@@ -798,6 +801,9 @@ export type Database = {
           color?: string | null
           composition?: string | null
           created_at?: string
+          cutout_failed_reason?: string | null
+          cutout_status?: string | null
+          cutout_url?: string | null
           description?: string | null
           gender?: string
           generated_look?: Json | null
@@ -831,6 +837,9 @@ export type Database = {
           color?: string | null
           composition?: string | null
           created_at?: string
+          cutout_failed_reason?: string | null
+          cutout_status?: string | null
+          cutout_url?: string | null
           description?: string | null
           gender?: string
           generated_look?: Json | null
