@@ -15,7 +15,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 10%;
 
-    --primary: 356 76% 53%;
+    --primary: 0 0% 10%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 30 25% 96%;
@@ -24,7 +24,7 @@
     --muted: 30 15% 93%;
     --muted-foreground: 0 0% 45%;
 
-    --accent: 38 42% 58%;
+    --accent: 30 32% 51%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
@@ -32,24 +32,24 @@
 
     --border: 30 15% 88%;
     --input: 30 15% 88%;
-    --ring: 356 76% 53%;
+    --ring: 30 32% 51%;
 
     --radius: 0.5rem;
 
     --sidebar-background: 30 20% 97%;
     --sidebar-foreground: 0 0% 10%;
-    --sidebar-primary: 356 76% 53%;
+    --sidebar-primary: 0 0% 10%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 30 25% 94%;
     --sidebar-accent-foreground: 0 0% 10%;
     --sidebar-border: 30 15% 88%;
-    --sidebar-ring: 356 76% 53%;
+    --sidebar-ring: 30 32% 51%;
 
-    --louboutin-red: #e12b38;
+    --louboutin-red: #1a1a1a;
     --louboutin-dark: #1a1a1a;
     --louboutin-cream: #f7f3ef;
-    --aura-gold: #c4a265;
-    --aura-teal: #2dd4bf;
+    --aura-gold: #a8845c;
+    --aura-teal: #a8845c;
 
     --font-sans: '"NB Akademie"', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
     --font-serif: '"NB Akademie" Garamond', Georgia, serif;
