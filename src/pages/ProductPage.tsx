@@ -316,6 +316,7 @@ const ProductPage = () => {
                 <span className="hidden sm:inline ml-1.5">Edit</span>
               </Link>
             </Button>
+            <UserMenu className="ml-1" />
           </div>
         </div>
       </header>
