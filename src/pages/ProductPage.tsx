@@ -6,7 +6,7 @@ import { ActivationRenderer } from '@/components/activations/ActivationRenderer'
 import { ProductGeneratedLook } from '@/components/ProductGeneratedLook';
 import AtelierCompositions from '@/components/product/AtelierCompositions';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, ArrowLeft, Settings, Heart, Shirt } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ArrowLeft, Heart, Shirt } from 'lucide-react';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { useWishlist } from '@/hooks/useWishlist';
 import { useWardrobe } from '@/hooks/useWardrobe';
