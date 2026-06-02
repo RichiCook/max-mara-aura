@@ -206,8 +206,8 @@ export async function shareToInstagram(look: ShareableLook): Promise<{ status: '
   if (!look.imageUrl) return { status: 'no-image' };
   const file = await fetchLookImageAsFile(look.imageUrl, `${slugify(look.name)}.jpg`);
   if (file) downloadImage(file);
-  await copyToClipboard(buildCaption(look));
-  // Best-effort deep link (works on mobile with the IG app installed)
+  const shortUrl = await createLookShortUrl(look);
+  await copyToClipboard(buildShortCaption(shortUrl));
   setTimeout(() => {
     window.location.href = 'instagram://story-camera';
   }, 400);
