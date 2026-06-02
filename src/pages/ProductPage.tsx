@@ -14,6 +14,8 @@ import { usePlatformSettingsContext } from '@/contexts/PlatformSettingsContext';
 import { supabase } from '@/integrations/supabase/client';
 import GenuineProductBanner from '@/components/product/GenuineProductBanner';
 import ProductInfoBlock from '@/components/product/ProductInfoBlock';
+import WishlistButton from '@/components/WishlistButton';
+import WardrobeButton from '@/components/WardrobeButton';
 import OwnershipStatusBar from '@/components/product/OwnershipStatusBar';
 import AuraDigitalPassportCard from '@/components/product/AuraDigitalPassportCard';
 import AuraPassportModal from '@/components/product/AuraPassportModal';
