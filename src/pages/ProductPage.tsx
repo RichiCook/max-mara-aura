@@ -665,14 +665,6 @@ const HeaderActions = ({ slug, ownerRegistered, onResetOwnership }: { slug?: str
           )}
         </Link>
       </Button>
-      {isAdmin && slug && (
-        <Button asChild variant="ghost" size="sm" className="text-xs" title="Edit (admin)">
-          <Link to={`/product/${slug}/edit`}>
-            <Settings className="w-4 h-4" />
-            <span className="hidden sm:inline ml-1.5">Edit</span>
-          </Link>
-        </Button>
-      )}
       <UserMenu className="ml-1" />
     </div>
   );
