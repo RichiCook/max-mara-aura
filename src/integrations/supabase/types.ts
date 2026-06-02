@@ -404,6 +404,39 @@ export type Database = {
           },
         ]
       }
+      look_shares: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          image_url: string | null
+          name: string
+          product_codes: string[]
+          short_code: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name: string
+          product_codes?: string[]
+          short_code?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name?: string
+          product_codes?: string[]
+          short_code?: string
+        }
+        Relationships: []
+      }
       looks: {
         Row: {
           ai_reasoning: string | null
