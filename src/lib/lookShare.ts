@@ -1,6 +1,8 @@
 /**
  * Helpers to share a "look" (collage/photo + product links) to social channels.
  */
+import { supabase } from '@/integrations/supabase/client';
+
 
 export interface ShareableProduct {
   name: string;
@@ -49,6 +51,31 @@ export function buildLookShareUrl(look: ShareableLook): string {
   return `https://vifbscpxguafvhccybhq.supabase.co/functions/v1/look-share-og?${params.toString()}`;
 }
 
+/**
+ * Persist this look as a row in `look_shares` and return a short URL
+ * (e.g. https://maxmara.aitems.dev/l/aB3xY9) that resolves to the look page.
+ * Falls back to the long /look/share URL if the insert fails.
+ */
+export async function createLookShortUrl(look: ShareableLook): Promise<string> {
+  try {
+    const { data, error } = await supabase
+      .from('look_shares')
+      .insert({
+        name: look.name,
+        description: look.description ?? null,
+        image_url: look.imageUrl ?? null,
+        product_codes: look.products.map((p) => p.product_code).filter(Boolean),
+      })
+      .select('short_code')
+      .single();
+    if (error || !data?.short_code) throw error;
+    return `${origin()}/l/${data.short_code}`;
+  } catch (e) {
+    console.warn('createLookShortUrl failed, falling back to long URL', e);
+    return buildLookSpaUrl(look);
+  }
+}
+
 export function buildProductUrl(p: ShareableProduct): string {
   // Prefer the external e-commerce URL so recipients land on the purchase page.
   if (p.source_url) return p.source_url;
@@ -57,15 +84,15 @@ export function buildProductUrl(p: ShareableProduct): string {
   return origin();
 }
 
+/** Short Italian caption used when the picture is sent alongside the link. */
+export function buildShortCaption(shortUrl: string): string {
+  return `Scopri il look:\n${shortUrl}`;
+}
+
 export function buildCaption(look: ShareableLook): string {
+  // Long-form fallback caption (used by copy-to-clipboard).
   const lines: string[] = [];
-  // The look URL MUST be the first URL in the message — WhatsApp (and most
-  // chat apps) generate the link-preview card from the first URL they find.
-  // Putting product links first would make the preview thumbnail open a
-  // single product instead of the full look card.
   lines.push(look.name);
-  lines.push('');
-  lines.push(`See the full look: ${buildLookShareUrl(look)}`);
   lines.push('');
   lines.push('Shop each piece:');
   for (const p of look.products) {
@@ -115,18 +142,18 @@ export async function copyToClipboard(text: string) {
   }
 }
 
-/** Web Share API with image attachment when supported. */
+/** Web Share API with image attachment + short Italian caption. */
 export async function nativeShare(look: ShareableLook): Promise<'shared' | 'unsupported' | 'cancelled'> {
-  const caption = buildCaption(look);
-  const url = buildLookShareUrl(look);
   if (typeof navigator === 'undefined' || !navigator.share) return 'unsupported';
+  const shortUrl = await createLookShortUrl(look);
+  const caption = buildShortCaption(shortUrl);
 
-  // Try with image file if possible
+  // Try with image file if possible — picture + "Scopri il look: <short url>"
   if (look.imageUrl && (navigator as any).canShare) {
     const file = await fetchLookImageAsFile(look.imageUrl, `${slugify(look.name)}.jpg`);
     if (file && (navigator as any).canShare({ files: [file] })) {
       try {
-        await navigator.share({ title: look.name, text: caption, url, files: [file] } as any);
+        await navigator.share({ title: look.name, text: caption, files: [file] } as any);
         return 'shared';
       } catch (e: any) {
         if (e?.name === 'AbortError') return 'cancelled';
@@ -134,7 +161,7 @@ export async function nativeShare(look: ShareableLook): Promise<'shared' | 'unsu
     }
   }
   try {
-    await navigator.share({ title: look.name, text: caption, url });
+    await navigator.share({ title: look.name, text: caption, url: shortUrl });
     return 'shared';
   } catch (e: any) {
     if (e?.name === 'AbortError') return 'cancelled';
@@ -143,32 +170,44 @@ export async function nativeShare(look: ShareableLook): Promise<'shared' | 'unsu
 }
 
 export async function shareToWhatsApp(look: ShareableLook) {
-  const caption = buildCaption(look);
-  // Send as a text message with the look URL so WhatsApp generates a clickable
-  // link preview card (image from OG tags on /look/share). If we attached the
-  // collage as a file, WhatsApp would deliver it as a plain photo — tapping it
-  // would just open the image fullscreen instead of opening the look page.
-  const text = encodeURIComponent(caption);
-  window.open(`https://wa.me/?text=${text}`, '_blank', 'noopener,noreferrer');
+  const shortUrl = await createLookShortUrl(look);
+  const caption = buildShortCaption(shortUrl);
+
+  // Prefer native share so the collage image is attached as a photo and the
+  // caption ("Scopri il look: <short url>") sits right below it in WhatsApp.
+  if (typeof navigator !== 'undefined' && (navigator as any).canShare && look.imageUrl) {
+    const file = await fetchLookImageAsFile(look.imageUrl, `${slugify(look.name)}.jpg`);
+    if (file && (navigator as any).canShare({ files: [file] })) {
+      try {
+        await navigator.share({ title: look.name, text: caption, files: [file] } as any);
+        return;
+      } catch {
+        /* fall through to wa.me */
+      }
+    }
+  }
+
+  // Fallback: text-only via wa.me (no image attachment available).
+  window.open(`https://wa.me/?text=${encodeURIComponent(caption)}`, '_blank', 'noopener,noreferrer');
 }
 
-export function shareToSMS(look: ShareableLook) {
-  const text = encodeURIComponent(buildCaption(look));
-  // iOS uses &, Android uses ?; both forms generally accept "?&body=" or "?body="
+export async function shareToSMS(look: ShareableLook) {
+  const shortUrl = await createLookShortUrl(look);
+  const text = encodeURIComponent(buildShortCaption(shortUrl));
   window.location.href = `sms:?&body=${text}`;
 }
 
-export function shareToMessenger(look: ShareableLook) {
-  const url = encodeURIComponent(buildLookShareUrl(look));
-  window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank', 'noopener,noreferrer');
+export async function shareToMessenger(look: ShareableLook) {
+  const shortUrl = await createLookShortUrl(look);
+  window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shortUrl)}`, '_blank', 'noopener,noreferrer');
 }
 
 export async function shareToInstagram(look: ShareableLook): Promise<{ status: 'ok' | 'no-image' }> {
   if (!look.imageUrl) return { status: 'no-image' };
   const file = await fetchLookImageAsFile(look.imageUrl, `${slugify(look.name)}.jpg`);
   if (file) downloadImage(file);
-  await copyToClipboard(buildCaption(look));
-  // Best-effort deep link (works on mobile with the IG app installed)
+  const shortUrl = await createLookShortUrl(look);
+  await copyToClipboard(buildShortCaption(shortUrl));
   setTimeout(() => {
     window.location.href = 'instagram://story-camera';
   }, 400);

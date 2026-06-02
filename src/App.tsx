@@ -26,6 +26,7 @@ import CarouselSettingsPage from "./pages/CarouselSettingsPage";
 import AuthPage from "./pages/AuthPage";
 import AccountPage from "./pages/AccountPage";
 import LookSharePage from "./pages/LookSharePage";
+import LookShortRedirect from "./pages/LookShortRedirect";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { PlatformSettingsProvider } from "./contexts/PlatformSettingsContext";
 import { AdminLayout } from "./layouts/AdminLayout";
@@ -50,6 +51,7 @@ const App = () => (
         <Routes>
           {/* Public routes - QR scans outside PlatformSettingsProvider for performance */}
           <Route path="/p/:code" element={<ShortUrlRedirect />} />
+          <Route path="/l/:code" element={<PlatformSettingsProvider><LookShortRedirect /></PlatformSettingsProvider>} />
           
           {/* All other routes wrapped in PlatformSettingsProvider */}
           <Route path="/product/:slug" element={<PlatformSettingsProvider><ProductPageRouter /></PlatformSettingsProvider>} />

@@ -23,6 +23,8 @@ import {
   buildLookShareUrl,
   copyToClipboard,
   buildCaption,
+  buildShortCaption,
+  createLookShortUrl,
 } from '@/lib/lookShare';
 
 interface Props {
@@ -57,7 +59,7 @@ const LookShareMenu = ({ look, onShared, disabledReason }: Props) => {
   };
 
   const handleWeChat = async () => {
-    const url = buildLookShareUrl(look);
+    const url = await createLookShortUrl(look);
     const dataUrl = await QRCode.toDataURL(url, { width: 260, margin: 1 });
     setQrDataUrl(dataUrl);
     setWechatOpen(true);
@@ -78,8 +80,9 @@ const LookShareMenu = ({ look, onShared, disabledReason }: Props) => {
   };
 
   const handleCopy = async () => {
-    const ok = await copyToClipboard(buildCaption(look));
-    if (ok) toast.success('Link & products copied');
+    const shortUrl = await createLookShortUrl(look);
+    const ok = await copyToClipboard(buildShortCaption(shortUrl));
+    if (ok) toast.success('Link copiato');
     else toast.error('Copy failed');
     fire('copy');
   };
