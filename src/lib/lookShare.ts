@@ -1,6 +1,8 @@
 /**
  * Helpers to share a "look" (collage/photo + product links) to social channels.
  */
+import { supabase } from '@/integrations/supabase/client';
+
 
 export interface ShareableProduct {
   name: string;
@@ -49,6 +51,31 @@ export function buildLookShareUrl(look: ShareableLook): string {
   return `https://vifbscpxguafvhccybhq.supabase.co/functions/v1/look-share-og?${params.toString()}`;
 }
 
+/**
+ * Persist this look as a row in `look_shares` and return a short URL
+ * (e.g. https://maxmara.aitems.dev/l/aB3xY9) that resolves to the look page.
+ * Falls back to the long /look/share URL if the insert fails.
+ */
+export async function createLookShortUrl(look: ShareableLook): Promise<string> {
+  try {
+    const { data, error } = await supabase
+      .from('look_shares')
+      .insert({
+        name: look.name,
+        description: look.description ?? null,
+        image_url: look.imageUrl ?? null,
+        product_codes: look.products.map((p) => p.product_code).filter(Boolean),
+      })
+      .select('short_code')
+      .single();
+    if (error || !data?.short_code) throw error;
+    return `${origin()}/l/${data.short_code}`;
+  } catch (e) {
+    console.warn('createLookShortUrl failed, falling back to long URL', e);
+    return buildLookSpaUrl(look);
+  }
+}
+
 export function buildProductUrl(p: ShareableProduct): string {
   // Prefer the external e-commerce URL so recipients land on the purchase page.
   if (p.source_url) return p.source_url;
@@ -57,15 +84,15 @@ export function buildProductUrl(p: ShareableProduct): string {
   return origin();
 }
 
+/** Short Italian caption used when the picture is sent alongside the link. */
+export function buildShortCaption(shortUrl: string): string {
+  return `Scopri il look:\n${shortUrl}`;
+}
+
 export function buildCaption(look: ShareableLook): string {
+  // Long-form fallback caption (used by copy-to-clipboard).
   const lines: string[] = [];
-  // The look URL MUST be the first URL in the message — WhatsApp (and most
-  // chat apps) generate the link-preview card from the first URL they find.
-  // Putting product links first would make the preview thumbnail open a
-  // single product instead of the full look card.
   lines.push(look.name);
-  lines.push('');
-  lines.push(`See the full look: ${buildLookShareUrl(look)}`);
   lines.push('');
   lines.push('Shop each piece:');
   for (const p of look.products) {
