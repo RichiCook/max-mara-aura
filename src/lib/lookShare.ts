@@ -114,8 +114,28 @@ export async function nativeShare(look: ShareableLook): Promise<'shared' | 'unsu
   }
 }
 
-export function shareToWhatsApp(look: ShareableLook) {
-  const text = encodeURIComponent(buildCaption(look));
+export async function shareToWhatsApp(look: ShareableLook) {
+  const caption = buildCaption(look);
+  const url = buildLookShareUrl(look);
+
+  // Try Web Share API with the collage attached — on mobile this lets the user
+  // pick WhatsApp and the image goes through as a real attachment (not just a link preview).
+  if (look.imageUrl && typeof navigator !== 'undefined' && (navigator as any).canShare && navigator.share) {
+    const file = await fetchLookImageAsFile(look.imageUrl, `${slugify(look.name)}.jpg`);
+    if (file && (navigator as any).canShare({ files: [file] })) {
+      try {
+        await navigator.share({ title: look.name, text: caption, url, files: [file] } as any);
+        return;
+      } catch (e: any) {
+        if (e?.name === 'AbortError') return;
+        // fall through to wa.me fallback
+      }
+    }
+  }
+
+  // Desktop / no file-share support: open WhatsApp web with caption.
+  // The link preview will render the collage via OG tags on /look/share.
+  const text = encodeURIComponent(caption);
   window.open(`https://wa.me/?text=${text}`, '_blank', 'noopener,noreferrer');
 }
 
