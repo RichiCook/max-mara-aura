@@ -24,6 +24,7 @@ import ImageReviewPage from "./pages/ImageReviewPage";
 import CarouselSettingsPage from "./pages/CarouselSettingsPage";
 
 import AuthPage from "./pages/AuthPage";
+import AccountPage from "./pages/AccountPage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { PlatformSettingsProvider } from "./contexts/PlatformSettingsContext";
 import { AdminLayout } from "./layouts/AdminLayout";
