@@ -1,93 +1,85 @@
+## 1. Lock scanners out of the back-end
 
-# Wishlist & Wardrobe — Plan
+On the product page header (`src/pages/ProductPage.tsx`, lines ~308–321):
 
-## Quick answer to your question
-"How can wishlist work without login?" → it can, by saving the heart-taps to the browser's localStorage. The items live only on that device until the person signs up; on signup we copy them into their account so nothing is lost. I'll use this **guest + merge on signup** pattern as the default — it removes the friction of forcing signup just to favourite something.
+- Remove the always-visible **Edit / Settings** button.
+- Use `useAuth()` + `has_role` (already exposed via `useAuth`) to render the Edit link **only when the current user is an admin**. Non-admin / anonymous scanners never see it.
+- Same gate applied to the dev-only "reset ownership" button stays unchanged (already DEV-only).
 
----
+This removes the only path a scanner had to reach `/product/:slug/edit` from the public UI. All other admin routes are already wrapped in `<Admin>` / `ProtectedRoute`, so they stay inaccessible.
 
-## What we're building
+## 2. Replace the Settings slot with Wishlist + Wardrobe quick actions
 
-1. **Real user accounts** — email + password, plus Google sign-in (Lovable Cloud defaults). On signup we create:
-   - a Supabase auth user
-   - a row in `profiles` (already exists)
-   - a row in `leads` with the same email (so marketing/CRM keeps working). If a lead with that email already exists, we link it to the new `user_id` instead of duplicating.
+In the same header, in place of the removed Settings icon, add two icon buttons:
 
-2. **Wishlist** — products the user wants to buy.
-   - Heart icon on product cards & product page.
-   - Guests: stored in `localStorage`.
-   - On login/signup: localStorage items merged into their account (deduped), then cleared.
+- ❤️ **Wishlist** → navigates to `/account?tab=wishlist`
+- 👕 **Wardrobe** → navigates to `/account?tab=wardrobe`
 
-3. **Wardrobe** — products the user already owns.
-   - "I own this" button on the product page (per your choice — manual only, no auto-claim on scan).
-   - Optional note field (size, purchase date) for future use; we'll keep the schema ready but the UI starts minimal.
+Behaviour:
 
-4. **`/account` page** with three tabs:
-   - **Wishlist** — grid of saved products, remove button, "move to wardrobe" shortcut.
-   - **Wardrobe** — grid of owned products, remove button.
-   - **Profile** — name, email, sign out.
-   - Accessible from a user avatar in the header (replaces/extends current header on consumer pages).
+- If signed in → go straight to the tab.
+- If signed out → go to `/auth?next=/account?tab=wishlist` (or wardrobe) so they land back on the right tab after sign-in.
+- Each icon shows a tiny count badge when the user has items (reuse `useWishlist` / `useWardrobe` counts).
+- The existing `<UserMenu />` avatar stays to the right of them.
 
-5. **Header avatar menu** — when logged out: "Sign in". When logged in: avatar → My Account / Sign out.
+Mobile: icons only; desktop (sm+): icon + small label, matching the current header type scale.
 
----
+## 3. Public Look page (needed for share links to work)
 
-## Technical section
+New route `/look/:id` (public, no auth) in `src/App.tsx`:
 
-### Database (one migration)
+- Fetches the look from `looks` + joined `products`.
+- Renders the collage (or AI photo) full-bleed at the top.
+- Below: a vertical list of products in the look, each card linking to `/product/:slug` with image, name, price.
+- Branded header (logo) + "Save this look" CTA → `/auth` (creates wishlist entry for every product in the look on first login).
+- SEO: `<title>` = look name, OpenGraph image = collage URL, OG description = product names — so previews on WhatsApp/Messages/WeChat look correct.
 
-Two new tables, both auth-scoped:
+## 4. Share menu on look collages
 
+In `src/components/product/LookCardV2.tsx`, add a Share button on each look (next to the existing Photo/Collage toggle area):
+
+Clicking opens a small popover with five actions:
+
+- **Native share** (Web Share API, when `navigator.share` + `canShare({ files })` are supported) — attaches the collage image and a caption with the look URL.
+- **Instagram** — downloads the collage as a JPG and opens `instagram://story-camera` (mobile) with a toast "Image saved — paste into your story". Desktop fallback: copy caption + download image + link to instagram.com.
+- **WhatsApp** — `https://wa.me/?text=<caption + url>` (image is hosted at the OG URL so WhatsApp renders a preview).
+- **WeChat** — generates a QR code modal of the look URL (WeChat has no web deep link; scan-to-share is the standard pattern).
+- **Messages / SMS** — `sms:?&body=<caption + url>`.
+- Plus **Copy link** as a baseline.
+
+Caption template:
+```text
+{look.name} — shop the look:
+• {product1.name} → {origin}/p/{short_code}
+• {product2.name} → {origin}/p/{short_code}
+...
+Full look: {origin}/look/{look.id}
 ```
-user_wishlist (id, user_id, product_id, created_at)
-  UNIQUE (user_id, product_id)
 
-user_wardrobe (id, user_id, product_id, note, acquired_at, created_at)
-  UNIQUE (user_id, product_id)
-```
+The collage image used for sharing is the one already generated by `generate-look-collage` (falls back to photo if no collage). If neither exists yet, the Share button is disabled with tooltip "Generating preview…".
 
-GRANTs: `authenticated` (full CRUD on own rows), `service_role` (all). No `anon`.
+We also fire a `scan_events` row with `event_type = 'look_share'` and the channel in `metadata` for analytics.
 
-RLS: all four policies scoped to `auth.uid() = user_id`.
+## Technical notes
 
-`leads` table: add nullable `user_id uuid` column + index, so a lead can be linked to an account when one exists. No data migration needed for existing leads.
+- No DB schema changes. Re-uses `looks`, `products`, `user_wishlist`, `user_wardrobe`.
+- `useAuth` needs to expose `isAdmin` (read from `user_roles` via `has_role`); if not already there, add a small `useIsAdmin` hook backed by a single `select` on `user_roles`.
+- Public look page bypasses `PlatformSettingsProvider` only if needed; wrap it the same way `ProductPageRouter` is wrapped so logo/brand match.
+- Share image download uses an `<a download>` blob fetched through the existing `export-image-proxy` edge function to avoid CORS on the collage URL.
+- Web Share API file support is gated by `navigator.canShare?.({ files: [file] })`; otherwise we fall back to the per-channel deep links above.
 
-### Auth provisioning
-Extend the existing `handle_new_user()` trigger to also:
-- upsert a `leads` row by email, setting `user_id = NEW.id` (link existing lead if present, else insert a minimal one with `reward_type = 'account_signup'`).
+## Files touched
 
-### Frontend
-- `useAuth` already exists — add `signInWithGoogle()` via `lovable.auth.signInWithOAuth("google", …)` and enable Google provider.
-- New hooks:
-  - `useWishlist()` — reads from Supabase when logged in, from localStorage when not. Exposes `toggle(productId)`, `has(productId)`, `items`.
-  - `useWardrobe()` — Supabase-only (requires login). Exposes `add`, `remove`, `has`, `items`.
-- On `onAuthStateChange(SIGNED_IN)`: read localStorage wishlist, bulk-insert into `user_wishlist` (ignore conflicts), clear localStorage.
-- New components:
-  - `WishlistButton` (heart) — used on `ProductPreviewCard`, `ProductPage`.
-  - `WardrobeButton` ("I own this") — on `ProductPage`.
-  - `UserMenu` in header (avatar + dropdown).
-- New pages:
-  - `/account` with tabs (`Wishlist`, `Wardrobe`, `Profile`) — uses existing `ProductPreviewCard` for grids.
-  - `/account` is a protected route; redirects to `/auth` if not signed in.
-- `/auth` page: keep current flow, add Google button, add "Create account" tab if not already present.
+- `src/pages/ProductPage.tsx` — header gate + new icons
+- `src/hooks/useAuth.ts` (or new `src/hooks/useIsAdmin.ts`) — admin check
+- `src/App.tsx` — `/look/:id` route
+- `src/pages/LookPublicPage.tsx` (new)
+- `src/components/product/LookCardV2.tsx` — Share button
+- `src/components/product/LookShareMenu.tsx` (new) — popover + channels
+- `src/lib/lookShare.ts` (new) — caption builder, image fetch via proxy, channel URL builders
 
-### Out of scope (call out)
-- No sharing/public wishlist URLs.
-- No purchase verification for wardrobe — pure self-declared.
-- No admin view of wishlists/wardrobes (can add later if needed).
-- Existing standalone lead-capture activations keep working unchanged; they just won't create a Supabase auth user (those are still pure marketing captures).
+## Out of scope
 
----
-
-## Files touched (rough)
-
-- migration: new tables, RLS, `leads.user_id`, updated `handle_new_user`
-- `src/hooks/useWishlist.ts` *(new)*, `src/hooks/useWardrobe.ts` *(new)*
-- `src/components/WishlistButton.tsx`, `src/components/WardrobeButton.tsx`, `src/components/UserMenu.tsx` *(new)*
-- `src/pages/AccountPage.tsx` *(new)* + route in `App.tsx`
-- `src/pages/AuthPage.tsx` — add Google button + signup tab if missing
-- `src/hooks/useAuth.ts` — add `signInWithGoogle`
-- `src/components/product/*` — wire heart + "I own this" into product page & cards
-- header component — mount `UserMenu`
-
-Tap **Implement plan** when you're ready and I'll build it.
+- No changes to admin nav/sidebar (already gated).
+- No new server-side image rendering — we share the existing collage.
+- No Instagram Graph API posting (requires business account + OAuth); we use the standard "save image + open app" pattern.

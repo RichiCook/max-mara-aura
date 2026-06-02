@@ -25,6 +25,7 @@ import CarouselSettingsPage from "./pages/CarouselSettingsPage";
 
 import AuthPage from "./pages/AuthPage";
 import AccountPage from "./pages/AccountPage";
+import LookSharePage from "./pages/LookSharePage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { PlatformSettingsProvider } from "./contexts/PlatformSettingsContext";
 import { AdminLayout } from "./layouts/AdminLayout";
@@ -54,6 +55,7 @@ const App = () => (
           <Route path="/product/:slug" element={<PlatformSettingsProvider><ProductPageRouter /></PlatformSettingsProvider>} />
           <Route path="/auth" element={<PlatformSettingsProvider><AuthPage /></PlatformSettingsProvider>} />
           <Route path="/account" element={<PlatformSettingsProvider><AccountPage /></PlatformSettingsProvider>} />
+          <Route path="/look/share" element={<PlatformSettingsProvider><LookSharePage /></PlatformSettingsProvider>} />
           
           
           {/* Protected dashboard routes — Teal Curator admin theme */}
