@@ -53,6 +53,8 @@ const App = () => (
           {/* All other routes wrapped in PlatformSettingsProvider */}
           <Route path="/product/:slug" element={<PlatformSettingsProvider><ProductPageRouter /></PlatformSettingsProvider>} />
           <Route path="/auth" element={<PlatformSettingsProvider><AuthPage /></PlatformSettingsProvider>} />
+          <Route path="/account" element={<PlatformSettingsProvider><AccountPage /></PlatformSettingsProvider>} />
+          
           
           {/* Protected dashboard routes — Teal Curator admin theme */}
           <Route path="/" element={<Admin><AitemzDashboard /></Admin>} />
