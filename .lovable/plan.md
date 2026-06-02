@@ -1,53 +1,93 @@
-# Make Look collages render like Atelier Compositions
 
-## Why the current collages look "broken"
+# Wishlist & Wardrobe — Plan
 
-The Look collage uses a deterministic background-removal + grid composite pipeline (`supabase/functions/generate-look-collage/index.ts` → `removeBackground` + `layoutCells`). It flood-fills from the image border through anything that resembles the studio backdrop, then drops the cutouts into a fixed grid. On light/neutral garments (cream knits, beige trousers) the flood reaches inside the garment because those pixels score as "close to backdrop", and the result is the shredded silhouettes you saw.
+## Quick answer to your question
+"How can wishlist work without login?" → it can, by saving the heart-taps to the browser's localStorage. The items live only on that device until the person signs up; on signup we copy them into their account so nothing is lost. I'll use this **guest + merge on signup** pattern as the default — it removes the friction of forcing signup just to favourite something.
 
-Atelier Compositions (`src/components/product/AtelierCompositions.tsx` + `supabase/functions/generate-composition/index.ts`) produce clean, cohesive still-life images because they don't try to cut anything out — they send the real product photos to Gemini (`google/gemini-3.1-flash-image-preview`) with a strict "reproduce each product exactly, no cropping" prompt, and the model composes a believable shared-surface photograph. Result is cached to `look-images` storage.
+---
 
-## Plan: rebuild `generate-look-collage` on top of the same Atelier pipeline
+## What we're building
 
-Rewrite `supabase/functions/generate-look-collage/index.ts` so it produces collages the same way Atelier does — AI-composed still life from the real flat-lay photos — and drop the cutout/grid path entirely.
+1. **Real user accounts** — email + password, plus Google sign-in (Lovable Cloud defaults). On signup we create:
+   - a Supabase auth user
+   - a row in `profiles` (already exists)
+   - a row in `leads` with the same email (so marketing/CRM keeps working). If a lead with that email already exists, we link it to the new `user_id` instead of duplicating.
 
-1. **Inputs unchanged.** Keep the existing request shape (`{ products: [{ name, color, category, image, trusted_image }] }`) so `ProductGeneratedLook.tsx` and `LookCard.tsx` don't have to change. Internally, use `trusted_image || image` as the source URL for each product (admin-approved lay-flat first, same rule we just enforced).
-2. **Fetch each product image as base64.** Reuse the `fetchImageAsBase64` helper pattern from `generate-composition` (route through `export-image-proxy` to bypass CORS/hotlink, fall back to direct fetch). No background removal, no resizing, no cutout step.
-3. **Call Lovable AI Gateway with Gemini image model.** Same call shape as `generate-composition`:
-  - `model: "google/gemini-3.1-flash-image-preview"`
-  - `modalities: ["image", "text"]`
-  - One user message containing the prompt + all product images as `image_url` parts
-  - Prompt adapted for Looks (multiple garments worn-together still life), keeping the Atelier "ABSOLUTE RULES" block verbatim: reproduce each product exactly, no invented items, no cropping, no color changes, square 1:1, shared surface, professional studio lighting, no text/logos, breathing room.
-  - Background = `#f0ece7` (Warm Naturals soft, matches the current canvas BG and the brand memory).
-4. **Cache to storage.** Hash the set of source URLs (sorted, joined, SHA-256, first 16 chars) into a deterministic key like `looks/{hash}.png` in the existing `look-images` bucket. On request:
-  - If the object exists, return its public URL immediately (no AI call).
-  - Otherwise generate, upload with `upsert: true`, return the public URL.
-   This replaces the current `collage_source_signature` + `collage_cache_version` invalidation dance with a content-addressed cache — the frontend's existing `buildCollageSourceSignature` check still works as a client-side guard.
-5. **Return shape.** Keep `{ image, debug, generated_at, items_used, items_skipped, method }` so existing callers keep working. `image` becomes the storage public URL (string) instead of a `data:` URL — `ProductGeneratedLook.tsx` already handles both via `uploadImageToStorage` (it will just re-upload, which is harmless, or we can short-circuit when `data.image` starts with `http`).
-6. **Graceful failures.** Surface 429 (rate-limited) and 402 (credits exhausted) verbatim — the frontend already has a retry path for "Rate limit" in the error message.
-7. **Delete the dead code.** Remove `removeBackground`, `trimTransparent`, `applyDropShadow`, `layoutCells`, `buildCollage`, `decodeProduct`, `isAllowedPackshot`, `deriveMaxMaraPackshot`, `selectPackshotCandidates`, `fetchImageBytes`, and the `imagescript` import. The file becomes ~150 lines of fetch → AI → cache, mirroring `generate-composition`.
+2. **Wishlist** — products the user wants to buy.
+   - Heart icon on product cards & product page.
+   - Guests: stored in `localStorage`.
+   - On login/signup: localStorage items merged into their account (deduped), then cleared.
 
-## Frontend
+3. **Wardrobe** — products the user already owns.
+   - "I own this" button on the product page (per your choice — manual only, no auto-claim on scan).
+   - Optional note field (size, purchase date) for future use; we'll keep the schema ready but the UI starts minimal.
 
-No required changes. `ProductGeneratedLook.tsx` line 317 (`supabase.functions.invoke('generate-look-collage', …)`) and `LookCard.tsx` line 174 keep working untouched. Optional follow-up (not in this plan): short-circuit `uploadImageToStorage` when `data.image` already points at our storage bucket.
+4. **`/account` page** with three tabs:
+   - **Wishlist** — grid of saved products, remove button, "move to wardrobe" shortcut.
+   - **Wardrobe** — grid of owned products, remove button.
+   - **Profile** — name, email, sign out.
+   - Accessible from a user avatar in the header (replaces/extends current header on consumer pages).
 
-## What this fixes
+5. **Header avatar menu** — when logged out: "Sign in". When logged in: avatar → My Account / Sign out.
 
-- No more garments dissolving into the background — there's no cutout step that can eat them.
-- Visual quality matches Atelier Compositions (cohesive lighting, shadows, surface).
-- Same caching guarantees: identical product sets resolve from storage instantly.
+---
 
-## Out of scope
+## Technical section
 
-- Touching `generate-composition` itself.
-- Adding new composition settings UI (we'll use the existing Atelier-style prompt; we can wire `app_settings.composition_settings` into the Looks prompt in a follow-up if you want shared controls).
-- Any DB schema changes.
+### Database (one migration)
 
-## Files touched
+Two new tables, both auth-scoped:
 
-- `supabase/functions/generate-look-collage/index.ts` — full rewrite (AI pipeline, content-addressed cache).
+```
+user_wishlist (id, user_id, product_id, created_at)
+  UNIQUE (user_id, product_id)
 
-&nbsp;
+user_wardrobe (id, user_id, product_id, note, acquired_at, created_at)
+  UNIQUE (user_id, product_id)
+```
 
-keep as a toggle so we can restore easily, just tell me how put it down
+GRANTs: `authenticated` (full CRUD on own rows), `service_role` (all). No `anon`.
 
-&nbsp;
+RLS: all four policies scoped to `auth.uid() = user_id`.
+
+`leads` table: add nullable `user_id uuid` column + index, so a lead can be linked to an account when one exists. No data migration needed for existing leads.
+
+### Auth provisioning
+Extend the existing `handle_new_user()` trigger to also:
+- upsert a `leads` row by email, setting `user_id = NEW.id` (link existing lead if present, else insert a minimal one with `reward_type = 'account_signup'`).
+
+### Frontend
+- `useAuth` already exists — add `signInWithGoogle()` via `lovable.auth.signInWithOAuth("google", …)` and enable Google provider.
+- New hooks:
+  - `useWishlist()` — reads from Supabase when logged in, from localStorage when not. Exposes `toggle(productId)`, `has(productId)`, `items`.
+  - `useWardrobe()` — Supabase-only (requires login). Exposes `add`, `remove`, `has`, `items`.
+- On `onAuthStateChange(SIGNED_IN)`: read localStorage wishlist, bulk-insert into `user_wishlist` (ignore conflicts), clear localStorage.
+- New components:
+  - `WishlistButton` (heart) — used on `ProductPreviewCard`, `ProductPage`.
+  - `WardrobeButton` ("I own this") — on `ProductPage`.
+  - `UserMenu` in header (avatar + dropdown).
+- New pages:
+  - `/account` with tabs (`Wishlist`, `Wardrobe`, `Profile`) — uses existing `ProductPreviewCard` for grids.
+  - `/account` is a protected route; redirects to `/auth` if not signed in.
+- `/auth` page: keep current flow, add Google button, add "Create account" tab if not already present.
+
+### Out of scope (call out)
+- No sharing/public wishlist URLs.
+- No purchase verification for wardrobe — pure self-declared.
+- No admin view of wishlists/wardrobes (can add later if needed).
+- Existing standalone lead-capture activations keep working unchanged; they just won't create a Supabase auth user (those are still pure marketing captures).
+
+---
+
+## Files touched (rough)
+
+- migration: new tables, RLS, `leads.user_id`, updated `handle_new_user`
+- `src/hooks/useWishlist.ts` *(new)*, `src/hooks/useWardrobe.ts` *(new)*
+- `src/components/WishlistButton.tsx`, `src/components/WardrobeButton.tsx`, `src/components/UserMenu.tsx` *(new)*
+- `src/pages/AccountPage.tsx` *(new)* + route in `App.tsx`
+- `src/pages/AuthPage.tsx` — add Google button + signup tab if missing
+- `src/hooks/useAuth.ts` — add `signInWithGoogle`
+- `src/components/product/*` — wire heart + "I own this" into product page & cards
+- header component — mount `UserMenu`
+
+Tap **Implement plan** when you're ready and I'll build it.
