@@ -6,7 +6,7 @@ import { ActivationRenderer } from '@/components/activations/ActivationRenderer'
 import { ProductGeneratedLook } from '@/components/ProductGeneratedLook';
 import AtelierCompositions from '@/components/product/AtelierCompositions';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, ArrowLeft, Settings, Heart, Shirt } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ArrowLeft, Heart, Shirt } from 'lucide-react';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { useWishlist } from '@/hooks/useWishlist';
 import { useWardrobe } from '@/hooks/useWardrobe';
@@ -665,14 +665,6 @@ const HeaderActions = ({ slug, ownerRegistered, onResetOwnership }: { slug?: str
           )}
         </Link>
       </Button>
-      {isAdmin && slug && (
-        <Button asChild variant="ghost" size="sm" className="text-xs" title="Edit (admin)">
-          <Link to={`/product/${slug}/edit`}>
-            <Settings className="w-4 h-4" />
-            <span className="hidden sm:inline ml-1.5">Edit</span>
-          </Link>
-        </Button>
-      )}
       <UserMenu className="ml-1" />
     </div>
   );
