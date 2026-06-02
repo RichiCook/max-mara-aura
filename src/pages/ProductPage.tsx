@@ -460,6 +460,13 @@ const ProductPage = () => {
       {/* Activations: above_product_info */}
       {renderActivationsForPosition('above_product_info')}
 
+      <div className="px-5 max-w-6xl mx-auto pt-5">
+        <div className="flex flex-col gap-3">
+          <WishlistButton productId={product.id} variant="pill" />
+          <WardrobeButton productId={product.id} />
+        </div>
+      </div>
+
       <ProductInfoBlock
         productCode={product.product_code}
         composition={product.composition}
