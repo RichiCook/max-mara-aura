@@ -4,6 +4,8 @@ import { getFlatLayImage, filterImagesBySku } from '@/utils/imageUtils';
 import ProductPreviewSheet from './ProductPreviewSheet';
 import { useShopifyCheckout } from '@/hooks/useShopifyCheckout';
 import CheckoutModal from './CheckoutModal';
+import LookShareMenu from './LookShareMenu';
+import type { ShareableLook } from '@/lib/lookShare';
 
 interface LookProduct {
   id: string;
