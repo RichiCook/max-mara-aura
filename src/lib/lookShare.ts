@@ -7,6 +7,7 @@ export interface ShareableProduct {
   product_code: string;
   short_code?: string | null;
   slug?: string | null;
+  source_url?: string | null;
 }
 
 export interface ShareableLook {
