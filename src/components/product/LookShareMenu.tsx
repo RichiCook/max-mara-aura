@@ -119,7 +119,7 @@ const LookShareMenu = ({ look, onShared, disabledReason }: Props) => {
             <MenuItem icon={<Send className="w-4 h-4" />} label="Quick share…" onClick={handleNative} />
           )}
           <MenuItem icon={<Instagram className="w-4 h-4" />} label="Instagram Story" onClick={handleInstagram} />
-          <MenuItem icon={<MessageCircle className="w-4 h-4" />} label="WhatsApp" onClick={() => { shareToWhatsApp(look); fire('whatsapp'); }} />
+          <MenuItem icon={<MessageCircle className="w-4 h-4" />} label="WhatsApp" onClick={async () => { setBusy(true); await shareToWhatsApp(look); setBusy(false); fire('whatsapp'); }} />
           <MenuItem icon={<QrCode className="w-4 h-4" />} label="WeChat" onClick={handleWeChat} />
           <MenuItem icon={<MessageSquare className="w-4 h-4" />} label="Messages" onClick={() => { shareToSMS(look); fire('sms'); }} />
           <div className="my-1 h-px bg-border" />
