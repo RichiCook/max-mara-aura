@@ -240,9 +240,25 @@ const LookCardV2 = ({ looks, productCode, loading, loadingMore, onTrackEvent, on
                         </button>
                       ))}
                     </div>
-                    <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 10, color: '#8b7355', letterSpacing: '0.04em', textTransform: 'uppercase' as const }}>
-                      {isCollage ? 'Collage mode' : 'Photo mode'}
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 10, color: '#8b7355', letterSpacing: '0.04em', textTransform: 'uppercase' as const }}>
+                        {isCollage ? 'Collage' : 'Photo'}
+                      </span>
+                      <LookShareMenu
+                        look={{
+                          name: look.name,
+                          description: look.description,
+                          imageUrl: activeImage || lookItem.collageImage || lookItem.lookImage,
+                          products: lookProducts.map(p => ({
+                            name: p.name,
+                            product_code: p.product_code,
+                            slug: p.slug,
+                          })),
+                        } as ShareableLook}
+                        disabledReason={!(activeImage || lookItem.collageImage || lookItem.lookImage) ? 'Generating preview…' : undefined}
+                        onShared={(channel) => onTrackEvent?.('look_share', productCode, { channel, lookProductCodes: look.product_codes })}
+                      />
+                    </div>
                   </div>
                 <div style={{ aspectRatio: '3/4', position: 'relative', overflow: 'hidden', background: isCollage ? '#efeae3' : '#f0ece7' }}>
                   {isGenerating ? (
