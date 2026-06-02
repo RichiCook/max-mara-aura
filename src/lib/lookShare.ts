@@ -142,18 +142,18 @@ export async function copyToClipboard(text: string) {
   }
 }
 
-/** Web Share API with image attachment when supported. */
+/** Web Share API with image attachment + short Italian caption. */
 export async function nativeShare(look: ShareableLook): Promise<'shared' | 'unsupported' | 'cancelled'> {
-  const caption = buildCaption(look);
-  const url = buildLookShareUrl(look);
   if (typeof navigator === 'undefined' || !navigator.share) return 'unsupported';
+  const shortUrl = await createLookShortUrl(look);
+  const caption = buildShortCaption(shortUrl);
 
-  // Try with image file if possible
+  // Try with image file if possible — picture + "Scopri il look: <short url>"
   if (look.imageUrl && (navigator as any).canShare) {
     const file = await fetchLookImageAsFile(look.imageUrl, `${slugify(look.name)}.jpg`);
     if (file && (navigator as any).canShare({ files: [file] })) {
       try {
-        await navigator.share({ title: look.name, text: caption, url, files: [file] } as any);
+        await navigator.share({ title: look.name, text: caption, files: [file] } as any);
         return 'shared';
       } catch (e: any) {
         if (e?.name === 'AbortError') return 'cancelled';
@@ -161,7 +161,7 @@ export async function nativeShare(look: ShareableLook): Promise<'shared' | 'unsu
     }
   }
   try {
-    await navigator.share({ title: look.name, text: caption, url });
+    await navigator.share({ title: look.name, text: caption, url: shortUrl });
     return 'shared';
   } catch (e: any) {
     if (e?.name === 'AbortError') return 'cancelled';
@@ -170,24 +170,36 @@ export async function nativeShare(look: ShareableLook): Promise<'shared' | 'unsu
 }
 
 export async function shareToWhatsApp(look: ShareableLook) {
-  const caption = buildCaption(look);
-  // Send as a text message with the look URL so WhatsApp generates a clickable
-  // link preview card (image from OG tags on /look/share). If we attached the
-  // collage as a file, WhatsApp would deliver it as a plain photo — tapping it
-  // would just open the image fullscreen instead of opening the look page.
-  const text = encodeURIComponent(caption);
-  window.open(`https://wa.me/?text=${text}`, '_blank', 'noopener,noreferrer');
+  const shortUrl = await createLookShortUrl(look);
+  const caption = buildShortCaption(shortUrl);
+
+  // Prefer native share so the collage image is attached as a photo and the
+  // caption ("Scopri il look: <short url>") sits right below it in WhatsApp.
+  if (typeof navigator !== 'undefined' && (navigator as any).canShare && look.imageUrl) {
+    const file = await fetchLookImageAsFile(look.imageUrl, `${slugify(look.name)}.jpg`);
+    if (file && (navigator as any).canShare({ files: [file] })) {
+      try {
+        await navigator.share({ title: look.name, text: caption, files: [file] } as any);
+        return;
+      } catch {
+        /* fall through to wa.me */
+      }
+    }
+  }
+
+  // Fallback: text-only via wa.me (no image attachment available).
+  window.open(`https://wa.me/?text=${encodeURIComponent(caption)}`, '_blank', 'noopener,noreferrer');
 }
 
-export function shareToSMS(look: ShareableLook) {
-  const text = encodeURIComponent(buildCaption(look));
-  // iOS uses &, Android uses ?; both forms generally accept "?&body=" or "?body="
+export async function shareToSMS(look: ShareableLook) {
+  const shortUrl = await createLookShortUrl(look);
+  const text = encodeURIComponent(buildShortCaption(shortUrl));
   window.location.href = `sms:?&body=${text}`;
 }
 
-export function shareToMessenger(look: ShareableLook) {
-  const url = encodeURIComponent(buildLookShareUrl(look));
-  window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank', 'noopener,noreferrer');
+export async function shareToMessenger(look: ShareableLook) {
+  const shortUrl = await createLookShortUrl(look);
+  window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shortUrl)}`, '_blank', 'noopener,noreferrer');
 }
 
 export async function shareToInstagram(look: ShareableLook): Promise<{ status: 'ok' | 'no-image' }> {
