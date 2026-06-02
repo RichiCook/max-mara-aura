@@ -29,14 +29,19 @@ export default function LookSharePage() {
 
   useEffect(() => {
     document.title = `${name} · Look`;
-    const meta = (name: string, content: string) => {
-      let el = document.querySelector(`meta[property="${name}"]`) as HTMLMetaElement | null;
-      if (!el) { el = document.createElement('meta'); el.setAttribute('property', name); document.head.appendChild(el); }
+    const meta = (key: string, content: string) => {
+      let el = document.querySelector(`meta[property="${key}"]`) as HTMLMetaElement | null;
+      if (!el) { el = document.createElement('meta'); el.setAttribute('property', key); document.head.appendChild(el); }
       el.setAttribute('content', content);
     };
     meta('og:title', name);
     meta('og:type', 'website');
-    if (img) meta('og:image', img);
+    meta('og:url', window.location.href);
+    if (img) {
+      meta('og:image', img);
+      meta('og:image:width', '1200');
+      meta('og:image:height', '1200');
+    }
     if (desc) meta('og:description', desc);
   }, [name, desc, img]);
 
