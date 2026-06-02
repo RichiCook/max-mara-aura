@@ -634,4 +634,48 @@ const ProductPage = () => {
   );
 };
 
+const HeaderActions = ({ slug, ownerRegistered, onResetOwnership }: { slug?: string; ownerRegistered: boolean; onResetOwnership: () => void }) => {
+  const { isAdmin } = useIsAdmin();
+  const { productIds: wishlistIds } = useWishlist();
+  const { productIds: wardrobeIds } = useWardrobe();
+  return (
+    <div className="flex items-center gap-1">
+      {import.meta.env.DEV && ownerRegistered && (
+        <Button variant="ghost" size="sm" className="text-xs" onClick={onResetOwnership} title="Reset ownership demo">
+          <span className="text-[10px]">🔄</span>
+        </Button>
+      )}
+      <Button asChild variant="ghost" size="sm" className="text-xs relative" title="Wishlist">
+        <Link to="/account?tab=wishlist" aria-label="Wishlist">
+          <Heart className="w-4 h-4" />
+          {wishlistIds.length > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full text-[9px] font-semibold flex items-center justify-center" style={{ background: '#1a1a1a', color: '#fff' }}>
+              {wishlistIds.length}
+            </span>
+          )}
+        </Link>
+      </Button>
+      <Button asChild variant="ghost" size="sm" className="text-xs relative" title="Wardrobe">
+        <Link to="/account?tab=wardrobe" aria-label="Wardrobe">
+          <Shirt className="w-4 h-4" />
+          {wardrobeIds.length > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full text-[9px] font-semibold flex items-center justify-center" style={{ background: '#8b7355', color: '#fff' }}>
+              {wardrobeIds.length}
+            </span>
+          )}
+        </Link>
+      </Button>
+      {isAdmin && slug && (
+        <Button asChild variant="ghost" size="sm" className="text-xs" title="Edit (admin)">
+          <Link to={`/product/${slug}/edit`}>
+            <Settings className="w-4 h-4" />
+            <span className="hidden sm:inline ml-1.5">Edit</span>
+          </Link>
+        </Button>
+      )}
+      <UserMenu className="ml-1" />
+    </div>
+  );
+};
+
 export default ProductPage;
