@@ -50,6 +50,8 @@ export function buildLookShareUrl(look: ShareableLook): string {
 }
 
 export function buildProductUrl(p: ShareableProduct): string {
+  // Prefer the external e-commerce URL so recipients land on the purchase page.
+  if (p.source_url) return p.source_url;
   if (p.short_code) return `${origin()}/p/${p.short_code}`;
   if (p.slug) return `${origin()}/product/${p.slug}`;
   return origin();
