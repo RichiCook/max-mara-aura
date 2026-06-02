@@ -12,10 +12,13 @@ const corsHeaders = {
 const esc = (s: string) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
+const CRAWLER_UA = /(WhatsApp|facebookexternalhit|Facebot|Slackbot|Discordbot|LinkedInBot|Twitterbot|TelegramBot|SkypeUriPreview|Googlebot|bingbot|DuckDuckBot|crawler|spider|bot)/i;
+
 Deno.serve((req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   const url = new URL(req.url);
+  const userAgent = req.headers.get('user-agent') || '';
 
   const name = url.searchParams.get('name') || 'A curated look';
   const desc = url.searchParams.get('desc') || 'Shop this AI-curated look.';
@@ -26,6 +29,10 @@ Deno.serve((req) => {
   // Allow override via ?app= for flexibility; fall back to referer/origin host.
   const appBase = url.searchParams.get('app') || 'https://maxmara.aitems.dev';
   const spaUrl = `${appBase}/look/share?${url.searchParams.toString()}`;
+
+  if (!CRAWLER_UA.test(userAgent)) {
+    return Response.redirect(spaUrl, 302);
+  }
 
   const html = `<!doctype html>
 <html lang="en">
