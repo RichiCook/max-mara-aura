@@ -6,7 +6,10 @@ import { ActivationRenderer } from '@/components/activations/ActivationRenderer'
 import { ProductGeneratedLook } from '@/components/ProductGeneratedLook';
 import AtelierCompositions from '@/components/product/AtelierCompositions';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, ArrowLeft, Settings } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ArrowLeft, Settings, Heart, Shirt } from 'lucide-react';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
+import { useWishlist } from '@/hooks/useWishlist';
+import { useWardrobe } from '@/hooks/useWardrobe';
 import ShareToResaleModal from '@/components/ShareToResaleModal';
 import { filterImagesBySku } from '@/utils/imageUtils';
 import { useScanTracking } from '@/hooks/useScanTracking';
@@ -305,20 +308,7 @@ const ProductPage = () => {
               </span>
             )}
           </Link>
-          <div className="flex items-center gap-1">
-            {import.meta.env.DEV && ownerRegistered && (
-              <Button variant="ghost" size="sm" className="text-xs" onClick={handleResetOwnership} title="Reset ownership demo">
-                <span className="text-[10px]">🔄</span>
-              </Button>
-            )}
-            <Button asChild variant="ghost" size="sm" className="text-xs">
-              <Link to={`/product/${slug}/edit`}>
-                <Settings className="w-4 h-4" />
-                <span className="hidden sm:inline ml-1.5">Edit</span>
-              </Link>
-            </Button>
-            <UserMenu className="ml-1" />
-          </div>
+          <HeaderActions slug={slug} ownerRegistered={ownerRegistered} onResetOwnership={handleResetOwnership} />
         </div>
       </header>
 
