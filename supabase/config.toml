@@ -1,1 +1,4 @@
 project_id = "vifbscpxguafvhccybhq"
+
+[functions.look-share-og]
+verify_jwt = false
