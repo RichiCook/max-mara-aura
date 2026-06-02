@@ -56,12 +56,18 @@ export function buildProductUrl(p: ShareableProduct): string {
 
 export function buildCaption(look: ShareableLook): string {
   const lines: string[] = [];
-  lines.push(`${look.name} — shop the look:`);
+  // The look URL MUST be the first URL in the message — WhatsApp (and most
+  // chat apps) generate the link-preview card from the first URL they find.
+  // Putting product links first would make the preview thumbnail open a
+  // single product instead of the full look card.
+  lines.push(look.name);
+  lines.push('');
+  lines.push(`See the full look: ${buildLookShareUrl(look)}`);
+  lines.push('');
+  lines.push('Shop each piece:');
   for (const p of look.products) {
     lines.push(`• ${p.name} → ${buildProductUrl(p)}`);
   }
-  lines.push('');
-  lines.push(`Full look: ${buildLookShareUrl(look)}`);
   return lines.join('\n');
 }
 
