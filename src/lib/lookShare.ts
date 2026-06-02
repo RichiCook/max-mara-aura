@@ -19,7 +19,8 @@ export interface ShareableLook {
 const origin = () =>
   (typeof window !== 'undefined' ? window.location.origin : '').replace(/\/$/, '');
 
-export function buildLookShareUrl(look: ShareableLook): string {
+/** The SPA route — used inside the app for direct navigation. */
+export function buildLookSpaUrl(look: ShareableLook): string {
   const params = new URLSearchParams();
   params.set('name', look.name);
   if (look.description) params.set('desc', look.description);
@@ -27,6 +28,24 @@ export function buildLookShareUrl(look: ShareableLook): string {
   const codes = look.products.map((p) => p.product_code).filter(Boolean).join(',');
   if (codes) params.set('codes', codes);
   return `${origin()}/look/share?${params.toString()}`;
+}
+
+/**
+ * Shareable URL that goes through a server-rendered OG edge function.
+ * Social crawlers (WhatsApp, iMessage, Slack, FB) don't run JS, so the
+ * og:image set client-side in LookSharePage is invisible to them.
+ * The edge function returns OG-tagged HTML for crawlers and 302-redirects
+ * real users to the SPA route.
+ */
+export function buildLookShareUrl(look: ShareableLook): string {
+  const params = new URLSearchParams();
+  params.set('name', look.name);
+  if (look.description) params.set('desc', look.description);
+  if (look.imageUrl) params.set('img', look.imageUrl);
+  const codes = look.products.map((p) => p.product_code).filter(Boolean).join(',');
+  if (codes) params.set('codes', codes);
+  params.set('app', origin());
+  return `https://vifbscpxguafvhccybhq.supabase.co/functions/v1/look-share-og?${params.toString()}`;
 }
 
 export function buildProductUrl(p: ShareableProduct): string {
