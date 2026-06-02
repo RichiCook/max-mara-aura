@@ -9,8 +9,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const CRAWLER_UA = /facebookexternalhit|Facebot|Twitterbot|LinkedInBot|Slackbot|TelegramBot|WhatsApp|Discordbot|Pinterest|redditbot|Applebot|bingbot|Googlebot|vkShare|W3C_Validator|Embedly|Yahoo|baiduspider|yandex|quora|nuzzel|outbrain|flipboard|tumblr|bitlybot|skypeuripreview|nuzzel|iframely|preview|crawler|spider|bot/i;
-
 const esc = (s: string) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
@@ -18,29 +16,16 @@ Deno.serve((req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   const url = new URL(req.url);
-  const ua = req.headers.get('user-agent') || '';
-  const isCrawler = CRAWLER_UA.test(ua);
 
   const name = url.searchParams.get('name') || 'A curated look';
   const desc = url.searchParams.get('desc') || 'Shop this AI-curated look.';
   const img = url.searchParams.get('img') || '';
   const codes = url.searchParams.get('codes') || '';
 
-  // Real users go to the SPA. Crawlers get the static OG HTML.
-  const origin = req.headers.get('x-forwarded-host')
-    ? `https://${req.headers.get('x-forwarded-host')}`
-    : url.origin;
   // The SPA lives at the project's web origin, not this function's origin.
   // Allow override via ?app= for flexibility; fall back to referer/origin host.
   const appBase = url.searchParams.get('app') || 'https://maxmara.aitems.dev';
   const spaUrl = `${appBase}/look/share?${url.searchParams.toString()}`;
-
-  if (!isCrawler) {
-    return new Response(null, {
-      status: 302,
-      headers: { ...corsHeaders, Location: spaUrl },
-    });
-  }
 
   const html = `<!doctype html>
 <html lang="en">
@@ -64,6 +49,9 @@ ${img ? `<meta property="og:image" content="${esc(img)}" />
 ${img ? `<meta name="twitter:image" content="${esc(img)}" />` : ''}
 <meta http-equiv="refresh" content="0; url=${esc(spaUrl)}" />
 <link rel="canonical" href="${esc(spaUrl)}" />
+<script>
+window.location.replace(${JSON.stringify(spaUrl)});
+</script>
 </head>
 <body>
 <p>Redirecting… <a href="${esc(spaUrl)}">${esc(name)}</a></p>
