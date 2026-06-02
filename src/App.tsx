@@ -24,6 +24,7 @@ import ImageReviewPage from "./pages/ImageReviewPage";
 import CarouselSettingsPage from "./pages/CarouselSettingsPage";
 
 import AuthPage from "./pages/AuthPage";
+import AccountPage from "./pages/AccountPage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { PlatformSettingsProvider } from "./contexts/PlatformSettingsContext";
 import { AdminLayout } from "./layouts/AdminLayout";
@@ -52,6 +53,8 @@ const App = () => (
           {/* All other routes wrapped in PlatformSettingsProvider */}
           <Route path="/product/:slug" element={<PlatformSettingsProvider><ProductPageRouter /></PlatformSettingsProvider>} />
           <Route path="/auth" element={<PlatformSettingsProvider><AuthPage /></PlatformSettingsProvider>} />
+          <Route path="/account" element={<PlatformSettingsProvider><AccountPage /></PlatformSettingsProvider>} />
+          
           
           {/* Protected dashboard routes — Teal Curator admin theme */}
           <Route path="/" element={<Admin><AitemzDashboard /></Admin>} />

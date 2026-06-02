@@ -14,6 +14,9 @@ import { usePlatformSettingsContext } from '@/contexts/PlatformSettingsContext';
 import { supabase } from '@/integrations/supabase/client';
 import GenuineProductBanner from '@/components/product/GenuineProductBanner';
 import ProductInfoBlock from '@/components/product/ProductInfoBlock';
+import WishlistButton from '@/components/WishlistButton';
+import WardrobeButton from '@/components/WardrobeButton';
+import UserMenu from '@/components/UserMenu';
 import OwnershipStatusBar from '@/components/product/OwnershipStatusBar';
 import AuraDigitalPassportCard from '@/components/product/AuraDigitalPassportCard';
 import AuraPassportModal from '@/components/product/AuraPassportModal';
@@ -314,6 +317,7 @@ const ProductPage = () => {
                 <span className="hidden sm:inline ml-1.5">Edit</span>
               </Link>
             </Button>
+            <UserMenu className="ml-1" />
           </div>
         </div>
       </header>
@@ -459,6 +463,13 @@ const ProductPage = () => {
 
       {/* Activations: above_product_info */}
       {renderActivationsForPosition('above_product_info')}
+
+      <div className="px-5 max-w-6xl mx-auto pt-5">
+        <div className="flex flex-col gap-3">
+          <WishlistButton productId={product.id} variant="pill" />
+          <WardrobeButton productId={product.id} />
+        </div>
+      </div>
 
       <ProductInfoBlock
         productCode={product.product_code}
