@@ -253,6 +253,7 @@ const LookCardV2 = ({ looks, productCode, loading, loadingMore, onTrackEvent, on
                             name: p.name,
                             product_code: p.product_code,
                             slug: p.slug,
+                            source_url: p.source_url,
                           })),
                         } as ShareableLook}
                         disabledReason={!(activeImage || lookItem.collageImage || lookItem.lookImage) ? 'Generating preview…' : undefined}
