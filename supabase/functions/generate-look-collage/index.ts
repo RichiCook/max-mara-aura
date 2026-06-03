@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { Image, decode } from "https://deno.land/x/imagescript@1.2.17/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.87.0";
 
 const corsHeaders = {
@@ -157,31 +156,8 @@ async function runAiCollage(products: ProductInfo[]): Promise<{ image: string; d
     debug: [{ status: 'ai_generated', cache_key: cacheKey, products: fetched }],
   };
 }
+// (removed imagescript-based shrink — caused edge function OOMs)
 
-async function shrinkImageBase64(dataUrl: string, maxWidth = 768): Promise<string> {
-  try {
-    const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
-    if (!match) return dataUrl;
-    const b64 = match[2];
-    const raw = atob(b64);
-    const bytes = new Uint8Array(raw.length);
-    for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
-    const img = (await decode(bytes)) as Image;
-    if (img.width <= maxWidth) return dataUrl;
-    const ratio = maxWidth / img.width;
-    img.resize(maxWidth, Math.round(img.height * ratio));
-    const encoded = await img.encodeJPEG(80);
-    let binary = '';
-    const chunk = 8192;
-    for (let i = 0; i < encoded.length; i += chunk) {
-      binary += String.fromCharCode(...encoded.subarray(i, i + chunk));
-    }
-    return `data:image/jpeg;base64,${btoa(binary)}`;
-  } catch (e) {
-    console.warn('shrinkImageBase64 failed, using original:', e);
-    return dataUrl;
-  }
-}
 
 /**
  * Quick mode: parallel reference fetches, shrunken refs, streaming AI generation.
@@ -229,36 +205,36 @@ async function runAiCollageQuickStream(products: ProductInfo[]): Promise<Respons
           return;
         }
 
-        // Parallel fetch + shrink references
-        const fetchOne = async (s: { name: string; url: string }) => {
-          const b64 = await aiFetchImageAsBase64(s.url, supabaseUrl);
-          const shrunk = await shrinkImageBase64(b64);
-          return { name: s.name, b64: shrunk };
-        };
-        const settled = await Promise.allSettled(sources.map(fetchOne));
+        // Sequential fetch of references — keeps peak memory at 1x image.
         const imageContents: Array<{ type: 'image_url'; image_url: { url: string } }> = [];
         const fetched: string[] = [];
-        for (const r of settled) {
-          if (r.status === 'fulfilled') {
-            imageContents.push({ type: 'image_url', image_url: { url: r.value.b64 } });
-            fetched.push(r.value.name);
-          } else {
-            console.error('AI collage quick: fetch failed:', r.reason);
+        for (const s of sources) {
+          try {
+            const b64 = await aiFetchImageAsBase64(s.url, supabaseUrl);
+            imageContents.push({ type: 'image_url', image_url: { url: b64 } });
+            fetched.push(s.name);
+          } catch (e) {
+            console.error('AI collage quick: fetch failed:', s.name, e);
           }
         }
         if (imageContents.length < 2) throw new Error('AI collage: could not fetch enough product images');
 
+
         const prompt = buildAiCollagePrompt(fetched.join(', '), imageContents.length);
+
+        const requestBody = JSON.stringify({
+          model: 'google/gemini-3.1-flash-image-preview',
+          messages: [{ role: 'user', content: [{ type: 'text', text: prompt }, ...imageContents] }],
+          modalities: ['image', 'text'],
+          stream: true,
+        });
+        // Release the per-reference base64 payloads — they're now embedded in requestBody.
+        imageContents.length = 0;
 
         const aiResp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
           method: 'POST',
           headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: 'google/gemini-3.1-flash-image-preview',
-            messages: [{ role: 'user', content: [{ type: 'text', text: prompt }, ...imageContents] }],
-            modalities: ['image', 'text'],
-            stream: true,
-          }),
+          body: requestBody,
         });
 
         if (!aiResp.ok || !aiResp.body) {
@@ -270,7 +246,8 @@ async function runAiCollageQuickStream(products: ProductInfo[]): Promise<Respons
 
         const reader = aiResp.body.pipeThrough(new TextDecoderStream()).getReader();
         let buf = '';
-        let lastImage: string | null = null;
+        let finalB64: string | null = null;
+        let sawAnyPartial = false;
         while (true) {
           const { value, done } = await reader.read();
           if (done) break;
@@ -288,18 +265,24 @@ async function runAiCollageQuickStream(products: ProductInfo[]): Promise<Respons
             if (dataStr === '[DONE]') continue;
             try {
               const evt = JSON.parse(dataStr);
+              // Forward only the FIRST partial frame — keeps memory bounded and the
+              // user still sees a preview before the final image arrives.
               if (evt.type === 'image_generation.partial_image' && evt.b64_json) {
-                const img = `data:image/png;base64,${evt.b64_json}`;
-                lastImage = img;
-                send({ type: 'partial', image: img });
+                if (!sawAnyPartial) {
+                  sawAnyPartial = true;
+                  send({ type: 'partial', image: `data:image/png;base64,${evt.b64_json}` });
+                }
               } else if (evt.type === 'image_generation.completed' && evt.b64_json) {
-                lastImage = `data:image/png;base64,${evt.b64_json}`;
+                finalB64 = evt.b64_json;
               } else if (evt.choices?.[0]?.delta?.images?.[0]?.image_url?.url) {
-                const img = evt.choices[0].delta.images[0].image_url.url;
-                lastImage = img;
-                send({ type: 'partial', image: img });
+                if (!sawAnyPartial) {
+                  sawAnyPartial = true;
+                  send({ type: 'partial', image: evt.choices[0].delta.images[0].image_url.url });
+                }
               } else if (evt.choices?.[0]?.message?.images?.[0]?.image_url?.url) {
-                lastImage = evt.choices[0].message.images[0].image_url.url;
+                const url: string = evt.choices[0].message.images[0].image_url.url;
+                const m = url.match(/^data:image\/\w+;base64,(.+)$/);
+                if (m) finalB64 = m[1];
               }
             } catch {
               // ignore heartbeats / non-JSON
@@ -307,17 +290,19 @@ async function runAiCollageQuickStream(products: ProductInfo[]): Promise<Respons
           }
         }
 
-        if (!lastImage) throw new Error('AI returned no image');
+        if (!finalB64) throw new Error('AI returned no image');
 
-        const base64Data = lastImage.replace(/^data:image\/\w+;base64,/, '');
-        const raw = atob(base64Data);
+        const raw = atob(finalB64);
         const bytes = new Uint8Array(raw.length);
         for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+        finalB64 = null;
         const { error: uploadErr } = await supabase.storage
           .from('look-images')
           .upload(filePath, bytes, { contentType: 'image/png', upsert: true });
-        let finalUrl = lastImage;
-        if (!uploadErr) {
+        let finalUrl: string;
+        if (uploadErr) {
+          throw new Error(`Upload failed: ${uploadErr.message}`);
+        } else {
           const { data: pub } = supabase.storage.from('look-images').getPublicUrl(filePath);
           finalUrl = `${pub.publicUrl}?t=${Date.now()}`;
         }

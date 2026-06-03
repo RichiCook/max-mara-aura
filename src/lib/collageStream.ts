@@ -31,17 +31,36 @@ export async function invokeCollage(
   const mode = await fetchCollageMode();
 
   if (mode === 'quality') {
-    const { data, error } = await supabase.functions.invoke('generate-look-collage', {
-      body: { products, mode: 'quality' },
-    });
-    if (error) throw error;
-    if (data?.error) throw new Error(data.error);
-    if (!data?.image) throw new Error('No image returned');
-    onFrame?.(data.image, true);
-    return { image: data.image, debug: data.debug };
+    return invokeQuality(products, onFrame);
   }
 
-  // Quick mode: stream SSE
+  // Quick mode: try streaming SSE; on any failure fall back once to Quality.
+  try {
+    return await invokeQuick(products, onFrame);
+  } catch (err) {
+    console.warn('[collage] Quick stream failed, falling back to Quality:', err);
+    return invokeQuality(products, onFrame);
+  }
+}
+
+async function invokeQuality(
+  products: ProductRef[],
+  onFrame?: CollageFrameHandler,
+): Promise<CollageResult> {
+  const { data, error } = await supabase.functions.invoke('generate-look-collage', {
+    body: { products, mode: 'quality' },
+  });
+  if (error) throw error;
+  if (data?.error) throw new Error(data.error);
+  if (!data?.image) throw new Error('No image returned');
+  onFrame?.(data.image, true);
+  return { image: data.image, debug: data.debug };
+}
+
+async function invokeQuick(
+  products: ProductRef[],
+  onFrame?: CollageFrameHandler,
+): Promise<CollageResult> {
   const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
   const url = `https://${projectId}.supabase.co/functions/v1/generate-look-collage`;
   const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -66,6 +85,7 @@ export async function invokeCollage(
 
   let finalImage: string | null = null;
   let finalDebug: Array<Record<string, unknown>> | undefined;
+  let streamError: Error | null = null;
 
   const parser = createParser({
     onEvent(event) {
@@ -76,7 +96,10 @@ export async function invokeCollage(
       } catch {
         return;
       }
-      if (payload.error) throw new Error(payload.error);
+      if (payload.error) {
+        streamError = new Error(payload.error);
+        return;
+      }
       if (payload.type === 'partial' && payload.image) {
         flushSync(() => onFrame?.(payload.image!, false));
       } else if (payload.type === 'final' && payload.image) {
@@ -98,6 +121,8 @@ export async function invokeCollage(
     reader.cancel().catch(() => {});
   }
 
+  if (streamError) throw streamError;
   if (!finalImage) throw new Error('Collage stream ended without a final image');
   return { image: finalImage, debug: finalDebug };
 }
+
