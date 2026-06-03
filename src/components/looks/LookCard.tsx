@@ -173,12 +173,10 @@ export const LookCard = ({ look, onSave, onDelete, isSaved = false }: LookCardPr
     setGenCollage(true);
     try {
       if (collagePayload.length === 0) return;
-      const { data, error } = await collageQueue(() =>
-        supabase.functions.invoke('generate-look-collage', {
-          body: { products: collagePayload }
-        })
+      const { image } = await collageQueue(() =>
+        invokeCollage(collagePayload, (img) => setCollageUrl(img))
       );
-      if (!error && data?.image) setCollageUrl(data.image);
+      if (image) setCollageUrl(image);
     } finally { setGenCollage(false); }
   };
 
