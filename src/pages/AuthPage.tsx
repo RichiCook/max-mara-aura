@@ -29,15 +29,24 @@ export default function AuthPage() {
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/account?tab=wishlist';
 
   useEffect(() => {
+    const resolveDestination = () => {
+      const stored = sessionStorage.getItem('postAuthRedirect');
+      if (stored) {
+        sessionStorage.removeItem('postAuthRedirect');
+        return stored;
+      }
+      return from;
+    };
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
-        navigate(from, { replace: true });
+        navigate(resolveDestination(), { replace: true });
       }
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        navigate(from, { replace: true });
+        navigate(resolveDestination(), { replace: true });
       }
     });
 
