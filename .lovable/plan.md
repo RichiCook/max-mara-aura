@@ -1,29 +1,61 @@
-# Plan
+## Goal
 
-## 1. Auto-suggest sign up when login fails (no account)
+Limit collage image generation to **2 in flight at a time** across the product page, instead of firing all of them in parallel (current behavior staggers them 500 ms apart but lets all N run at once, which trips rate limits and slows the whole batch down).
 
-In `src/pages/AuthPage.tsx`, when `signInWithPassword` returns "Invalid login credentials":
-- Show a toast: "No account found — switching to sign up"
-- Automatically flip `isSignUp` to `true` and keep the email/password the user already typed so they can submit directly
-- Keep current behavior for other errors
+## Approach
 
-Note: Supabase doesn't differentiate "wrong password" vs "no user" for security. We'll treat `Invalid login credentials` as "likely no account" and prompt sign up. A small helper link "Wrong password? Try again" will let users flip back.
+Add a tiny client-side concurrency queue and route every `generateCollageImage` call through it. No edge function changes, no schema changes — purely a frontend throttle.
 
-## 2. Redirect after email confirmation back to scan landing
+### 1. New helper: `src/lib/concurrencyQueue.ts`
 
-Currently `signUp` sets `emailRedirectTo: ${origin}/` which lands on the admin dashboard root (or `/#`).
+A minimal promise-pool with a fixed concurrency:
 
-Fix:
-- When the user arrives at `/auth` from a product/scan page, capture the originating path (already done via `location.state.from` and `sessionStorage.postAuthRedirect`).
-- Persist that path into the signup confirmation URL by passing it as a query param: `emailRedirectTo: ${origin}/auth?redirect=<encoded path>`
-- In `AuthPage` `useEffect`, when a session becomes available and `?redirect=` is present in the URL, navigate there (replacing history). This handles both the post-email-confirmation return and ordinary in-tab sign-ins.
-- Fallback chain for destination: `?redirect=` query → `sessionStorage.postAuthRedirect` → `location.state.from` → `/account?tab=wishlist`.
+```ts
+export function createConcurrencyQueue(limit: number) {
+  let active = 0;
+  const queue: Array<() => void> = [];
+  const next = () => {
+    if (active >= limit || queue.length === 0) return;
+    active++;
+    const run = queue.shift()!;
+    run();
+  };
+  return function enqueue<T>(task: () => Promise<T>): Promise<T> {
+    return new Promise((resolve, reject) => {
+      queue.push(() => {
+        task().then(resolve, reject).finally(() => { active--; next(); });
+      });
+      next();
+    });
+  };
+}
+```
 
-## Files to change
+### 2. Wire it into `src/components/ProductGeneratedLook.tsx`
 
-- `src/pages/AuthPage.tsx` — only file touched. Pure frontend change.
+- Create a module-level queue: `const collageQueue = createConcurrencyQueue(2);`
+- Wrap the body of `generateCollageImage` (the `supabase.functions.invoke('generate-look-collage', …)` block) so that the network call runs inside `collageQueue(() => …)`. State updates (`setLooks`, toasts, cache write) stay outside or inside as they are today — only the invoke needs to be gated.
+- Remove the `idx * 500` stagger at line 532 — the queue replaces it. Just call `generateCollageImage(...)` directly for each look.
+- Retry paths at lines 325 and 353 keep their `setTimeout` backoff; the retried call goes through the queue again automatically.
+- `loadMoreLooks` (line 550) and the V2 `onGenerateCollage` handler (line 633) need no changes — they already call `generateCollageImage`, which is now queued.
 
-## Out of scope
+### 3. Apply the same queue in `src/components/looks/LookCard.tsx`
 
-- No backend, RLS, or edge function changes.
-- No change to the Supabase email template (the `{{ .ConfirmationURL }}` already honors `emailRedirectTo`).
+Reuse the same exported queue instance (import from `@/lib/concurrencyQueue` or share via a singleton in `src/lib/collageQueue.ts`) so the limit is global, not per-component. Wrap the `supabase.functions.invoke('generate-look-collage', …)` call at line 174.
+
+## What stays the same
+
+- Edge function `generate-look-collage` and its rate-limit handling.
+- Collage caching (`collage_cache_version`, `collage_source_signature`).
+- The user-visible "generate collage" CTAs and the auto-trigger on mode switch.
+- Photo generation (`generate-look-image`) is not throttled — only collages, since that's where the contention happens.
+
+## Expected effect
+
+- First two collages start immediately; the rest start as soon as one finishes.
+- Fewer 429s from the AI gateway, so fewer 2–3 s retry backoffs.
+- Total wall-clock time should be similar or slightly better than today on a happy path, and meaningfully better when the gateway is under load.
+
+## Tunability
+
+`createConcurrencyQueue(2)` is a single constant. If 2 turns out too conservative or too aggressive we change one number.
