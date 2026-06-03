@@ -81,7 +81,7 @@ const LookShareMenu = ({ look, onShared, disabledReason }: Props) => {
 
   const handleCopy = async () => {
     const shortUrl = await createLookShortUrl(look);
-    const ok = await copyToClipboard(buildShortCaption(shortUrl));
+    const ok = await copyToClipboard(buildShortCaption(shortUrl, look));
     if (ok) toast.success('Link copiato');
     else toast.error('Copy failed');
     fire('copy');
