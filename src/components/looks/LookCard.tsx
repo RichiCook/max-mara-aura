@@ -7,6 +7,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { getFlatLayImage, parseImages, filterImagesBySku, getCollageSourceImage } from '@/utils/imageUtils';
 import { useImageClassification } from '@/hooks/useImageClassification';
 import { supabase } from '@/integrations/supabase/client';
+import { collageQueue } from '@/lib/collageQueue';
 import { fetchLookModeRules, resolveLookMode, type LookMode, type LookModeRules, DEFAULT_LOOK_MODE_RULES } from '@/lib/lookMode';
 import type { Look, Product } from '@/hooks/useLooks';
 
@@ -171,9 +172,11 @@ export const LookCard = ({ look, onSave, onDelete, isSaved = false }: LookCardPr
     setGenCollage(true);
     try {
       if (collagePayload.length === 0) return;
-      const { data, error } = await supabase.functions.invoke('generate-look-collage', {
-        body: { products: collagePayload }
-      });
+      const { data, error } = await collageQueue(() =>
+        supabase.functions.invoke('generate-look-collage', {
+          body: { products: collagePayload }
+        })
+      );
       if (!error && data?.image) setCollageUrl(data.image);
     } finally { setGenCollage(false); }
   };

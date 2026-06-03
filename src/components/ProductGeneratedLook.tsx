@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { collageQueue } from '@/lib/collageQueue';
 import { normalizeImages } from '@/hooks/useProducts';
 import { Sparkles, RefreshCw, Loader2, ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -314,11 +315,13 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
 
     setLooks(prev => prev.map((l, i) => i === lookIndex ? { ...l, generatingCollage: true } : l));
     try {
-      const { data, error } = await supabase.functions.invoke('generate-look-collage', {
-        body: {
-          products: productRefs,
-        }
-      });
+      const { data, error } = await collageQueue(() =>
+        supabase.functions.invoke('generate-look-collage', {
+          body: {
+            products: productRefs,
+          }
+        })
+      );
       if (error) throw error;
       if (data?.error) {
         if (data.error.includes('Rate limit') && retryCount < 1) {
@@ -529,7 +532,7 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
       newModes[idx] = 'collage';
       if (r.products.length === 0) return;
       if (!r.collageImage) {
-        setTimeout(() => generateCollageImage(r.products, r.look, idx), idx * 500);
+        generateCollageImage(r.products, r.look, idx);
       }
     });
     setInitialModes(prev => ({ ...prev, ...newModes }));
