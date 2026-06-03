@@ -85,8 +85,16 @@ export function buildProductUrl(p: ShareableProduct): string {
 }
 
 /** Short Italian caption used when the picture is sent alongside the link. */
-export function buildShortCaption(shortUrl: string): string {
-  return `Scopri il look:\n${shortUrl}`;
+export function buildShortCaption(shortUrl: string, look?: ShareableLook): string {
+  const lines: string[] = [`Scopri il look:`, shortUrl];
+  if (look && look.products.length) {
+    lines.push('');
+    lines.push('Acquista i singoli pezzi:');
+    for (const p of look.products) {
+      lines.push(`• ${p.name} → ${buildProductUrl(p)}`);
+    }
+  }
+  return lines.join('\n');
 }
 
 export function buildCaption(look: ShareableLook): string {
@@ -94,7 +102,7 @@ export function buildCaption(look: ShareableLook): string {
   const lines: string[] = [];
   lines.push(look.name);
   lines.push('');
-  lines.push('Shop each piece:');
+  lines.push('Acquista i singoli pezzi:');
   for (const p of look.products) {
     lines.push(`• ${p.name} → ${buildProductUrl(p)}`);
   }
@@ -146,7 +154,7 @@ export async function copyToClipboard(text: string) {
 export async function nativeShare(look: ShareableLook): Promise<'shared' | 'unsupported' | 'cancelled'> {
   if (typeof navigator === 'undefined' || !navigator.share) return 'unsupported';
   const shortUrl = await createLookShortUrl(look);
-  const caption = buildShortCaption(shortUrl);
+  const caption = buildShortCaption(shortUrl, look);
 
   // Try with image file if possible — picture + "Scopri il look: <short url>"
   if (look.imageUrl && (navigator as any).canShare) {
@@ -171,7 +179,7 @@ export async function nativeShare(look: ShareableLook): Promise<'shared' | 'unsu
 
 export async function shareToWhatsApp(look: ShareableLook) {
   const shortUrl = await createLookShortUrl(look);
-  const caption = buildShortCaption(shortUrl);
+  const caption = buildShortCaption(shortUrl, look);
 
   // Prefer native share so the collage image is attached as a photo and the
   // caption ("Scopri il look: <short url>") sits right below it in WhatsApp.
@@ -193,7 +201,7 @@ export async function shareToWhatsApp(look: ShareableLook) {
 
 export async function shareToSMS(look: ShareableLook) {
   const shortUrl = await createLookShortUrl(look);
-  const text = encodeURIComponent(buildShortCaption(shortUrl));
+  const text = encodeURIComponent(buildShortCaption(shortUrl, look));
   window.location.href = `sms:?&body=${text}`;
 }
 
@@ -207,7 +215,7 @@ export async function shareToInstagram(look: ShareableLook): Promise<{ status: '
   const file = await fetchLookImageAsFile(look.imageUrl, `${slugify(look.name)}.jpg`);
   if (file) downloadImage(file);
   const shortUrl = await createLookShortUrl(look);
-  await copyToClipboard(buildShortCaption(shortUrl));
+  await copyToClipboard(buildShortCaption(shortUrl, look));
   setTimeout(() => {
     window.location.href = 'instagram://story-camera';
   }, 400);
