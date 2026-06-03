@@ -6,8 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { getFlatLayImage, parseImages, filterImagesBySku, getCollageSourceImage } from '@/utils/imageUtils';
 import { useImageClassification } from '@/hooks/useImageClassification';
-import { supabase } from '@/integrations/supabase/client';
 import { collageQueue } from '@/lib/collageQueue';
+import { invokeCollage } from '@/lib/collageStream';
 import { fetchLookModeRules, resolveLookMode, type LookMode, type LookModeRules, DEFAULT_LOOK_MODE_RULES } from '@/lib/lookMode';
 import type { Look, Product } from '@/hooks/useLooks';
 
