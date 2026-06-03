@@ -104,6 +104,41 @@ const AIGenerationSettingsPage = () => {
         </div>
 
         <div className="space-y-8">
+          {/* Collage Generation Mode */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Zap className="w-5 h-5" />
+                Collage Generation
+              </CardTitle>
+              <CardDescription>
+                Choose between Quick (streaming preview, parallel fetches, shrunken refs — faster perceived speed)
+                and Quality (current production behavior, single final image).
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="inline-flex rounded-md border bg-muted/40 p-0.5">
+                {(['quick', 'quality'] as const).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    disabled={collageModeLoading}
+                    onClick={() => handleCollageModeChange(m)}
+                    className={`px-4 py-1.5 text-sm font-medium rounded transition-colors ${
+                      collageMode === m ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'
+                    } disabled:opacity-50`}
+                  >
+                    {m === 'quick' ? 'Quick' : 'Quality'}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground mt-3">
+                Active: <span className="font-medium text-foreground">{collageMode === 'quick' ? 'Quick' : 'Quality'}</span>.
+                Easy revert — switch back to Quality at any time.
+              </p>
+            </CardContent>
+          </Card>
+
           {/* Look Display Settings */}
           <Card>
             <CardHeader>
