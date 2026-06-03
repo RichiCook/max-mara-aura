@@ -1,0 +1,1 @@
+ALTER TABLE public.looks ADD COLUMN IF NOT EXISTS collage_image_url text; ALTER TABLE public.looks ADD COLUMN IF NOT EXISTS photo_image_url text;
