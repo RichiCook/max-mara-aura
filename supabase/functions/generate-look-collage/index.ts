@@ -222,15 +222,19 @@ async function runAiCollageQuickStream(products: ProductInfo[]): Promise<Respons
 
         const prompt = buildAiCollagePrompt(fetched.join(', '), imageContents.length);
 
+        const requestBody = JSON.stringify({
+          model: 'google/gemini-3.1-flash-image-preview',
+          messages: [{ role: 'user', content: [{ type: 'text', text: prompt }, ...imageContents] }],
+          modalities: ['image', 'text'],
+          stream: true,
+        });
+        // Release the per-reference base64 payloads — they're now embedded in requestBody.
+        imageContents.length = 0;
+
         const aiResp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
           method: 'POST',
           headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: 'google/gemini-3.1-flash-image-preview',
-            messages: [{ role: 'user', content: [{ type: 'text', text: prompt }, ...imageContents] }],
-            modalities: ['image', 'text'],
-            stream: true,
-          }),
+          body: requestBody,
         });
 
         if (!aiResp.ok || !aiResp.body) {
@@ -242,7 +246,8 @@ async function runAiCollageQuickStream(products: ProductInfo[]): Promise<Respons
 
         const reader = aiResp.body.pipeThrough(new TextDecoderStream()).getReader();
         let buf = '';
-        let lastImage: string | null = null;
+        let finalB64: string | null = null;
+        let sawAnyPartial = false;
         while (true) {
           const { value, done } = await reader.read();
           if (done) break;
@@ -260,18 +265,24 @@ async function runAiCollageQuickStream(products: ProductInfo[]): Promise<Respons
             if (dataStr === '[DONE]') continue;
             try {
               const evt = JSON.parse(dataStr);
+              // Forward only the FIRST partial frame — keeps memory bounded and the
+              // user still sees a preview before the final image arrives.
               if (evt.type === 'image_generation.partial_image' && evt.b64_json) {
-                const img = `data:image/png;base64,${evt.b64_json}`;
-                lastImage = img;
-                send({ type: 'partial', image: img });
+                if (!sawAnyPartial) {
+                  sawAnyPartial = true;
+                  send({ type: 'partial', image: `data:image/png;base64,${evt.b64_json}` });
+                }
               } else if (evt.type === 'image_generation.completed' && evt.b64_json) {
-                lastImage = `data:image/png;base64,${evt.b64_json}`;
+                finalB64 = evt.b64_json;
               } else if (evt.choices?.[0]?.delta?.images?.[0]?.image_url?.url) {
-                const img = evt.choices[0].delta.images[0].image_url.url;
-                lastImage = img;
-                send({ type: 'partial', image: img });
+                if (!sawAnyPartial) {
+                  sawAnyPartial = true;
+                  send({ type: 'partial', image: evt.choices[0].delta.images[0].image_url.url });
+                }
               } else if (evt.choices?.[0]?.message?.images?.[0]?.image_url?.url) {
-                lastImage = evt.choices[0].message.images[0].image_url.url;
+                const url: string = evt.choices[0].message.images[0].image_url.url;
+                const m = url.match(/^data:image\/\w+;base64,(.+)$/);
+                if (m) finalB64 = m[1];
               }
             } catch {
               // ignore heartbeats / non-JSON
@@ -279,17 +290,19 @@ async function runAiCollageQuickStream(products: ProductInfo[]): Promise<Respons
           }
         }
 
-        if (!lastImage) throw new Error('AI returned no image');
+        if (!finalB64) throw new Error('AI returned no image');
 
-        const base64Data = lastImage.replace(/^data:image\/\w+;base64,/, '');
-        const raw = atob(base64Data);
+        const raw = atob(finalB64);
         const bytes = new Uint8Array(raw.length);
         for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+        finalB64 = null;
         const { error: uploadErr } = await supabase.storage
           .from('look-images')
           .upload(filePath, bytes, { contentType: 'image/png', upsert: true });
-        let finalUrl = lastImage;
-        if (!uploadErr) {
+        let finalUrl: string;
+        if (uploadErr) {
+          throw new Error(`Upload failed: ${uploadErr.message}`);
+        } else {
           const { data: pub } = supabase.storage.from('look-images').getPublicUrl(filePath);
           finalUrl = `${pub.publicUrl}?t=${Date.now()}`;
         }
