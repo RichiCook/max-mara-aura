@@ -110,10 +110,10 @@ export default function AuthPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">
-            {isSignUp ? 'Create Account' : 'Welcome Back'}
+            {isSignUp ? 'Create your account' : 'Welcome'}
           </CardTitle>
           <CardDescription>
-            {isSignUp ? 'Sign up to get started' : 'Sign in to access the dashboard'}
+            Save your wishlist, wardrobe and shared looks across devices.
           </CardDescription>
         </CardHeader>
         <CardContent>
