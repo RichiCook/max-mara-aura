@@ -97,20 +97,20 @@ export const LookCard = ({ look, onSave, onDelete, isSaved = false }: LookCardPr
     [products]
   );
 
-  // Photo / Collage mode state
+  // Photo / Collage mode state — seed from persisted cache on the look row.
   const [rules, setRules] = useState<LookModeRules>(DEFAULT_LOOK_MODE_RULES);
   const [mode, setMode] = useState<LookMode>('photo');
-  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
-  const [collageUrl, setCollageUrl] = useState<string | null>(null);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(look.photo_image_url ?? null);
+  const [collageUrl, setCollageUrl] = useState<string | null>(look.collage_image_url ?? null);
   const [genPhoto, setGenPhoto] = useState(false);
   const [genCollage, setGenCollage] = useState(false);
 
   useEffect(() => {
-    setPhotoUrl(null);
-    setCollageUrl(null);
+    setPhotoUrl(look.photo_image_url ?? null);
+    setCollageUrl(look.collage_image_url ?? null);
     setGenPhoto(false);
     setGenCollage(false);
-  }, [look.id, look.name, productSignature]);
+  }, [look.id, look.name, look.photo_image_url, look.collage_image_url, productSignature]);
 
   useEffect(() => {
     fetchLookModeRules().then(r => {
