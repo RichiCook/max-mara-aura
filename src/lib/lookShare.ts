@@ -89,7 +89,8 @@ export function buildShortCaption(shortUrl: string, look?: ShareableLook): strin
     lines.push('');
     lines.push('Acquista i singoli pezzi:');
     for (const { p, url } of items) {
-      lines.push(`• ${p.name} → ${url}`);
+      lines.push(`• ${p.name}`);
+      lines.push(String(url));
     }
   }
   return lines.join('\n');
@@ -104,7 +105,8 @@ export function buildCaption(look: ShareableLook): string {
     lines.push('');
     lines.push('Acquista i singoli pezzi:');
     for (const { p, url } of items) {
-      lines.push(`• ${p.name} → ${url}`);
+      lines.push(`• ${p.name}`);
+      lines.push(String(url));
     }
   }
   return lines.join('\n');

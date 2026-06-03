@@ -14,6 +14,7 @@ interface LookProduct {
   slug: string;
   images: string[];
   category: string | null;
+  source_url: string | null;
 }
 
 export default function LookSharePage() {
@@ -50,7 +51,7 @@ export default function LookSharePage() {
     (async () => {
       const { data } = await supabase
         .from('products')
-        .select('id,name,price,product_code,short_code,slug,images,category')
+        .select('id,name,price,product_code,short_code,slug,images,category,source_url')
         .in('product_code', codes);
       const mapped: LookProduct[] = (data || []).map(p => ({
         ...p,
@@ -122,30 +123,57 @@ export default function LookSharePage() {
           <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3 list-none p-0">
             {products.map((p) => {
               const thumb = getFlatLayImage(filterImagesBySku(p.images, p.product_code), p.category) || p.images[0];
-              const href = p.short_code ? `/p/${p.short_code}` : `/product/${p.slug}`;
+              const href = p.source_url || (p.short_code ? `/p/${p.short_code}` : `/product/${p.slug}`);
+              const isExternal = !!p.source_url;
               return (
                 <li key={p.id}>
-                  <Link
-                    to={href}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 12, padding: 12,
-                      background: '#fff', border: '1px solid #e4e0db', borderRadius: 10,
-                      textDecoration: 'none', color: '#1a1a1a',
-                    }}
-                  >
-                    <div style={{ width: 64, height: 64, background: '#f7f3ee', borderRadius: 6, overflow: 'hidden', flexShrink: 0 }}>
-                      {thumb && <img src={thumb} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} referrerPolicy="no-referrer" />}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 500, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
-                        {p.name}
-                      </p>
-                      {p.price && (
-                        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: '#8b7355', margin: '2px 0 0' }}>{p.price}</p>
-                      )}
-                    </div>
-                    <ChevronRight className="w-4 h-4" style={{ color: '#c5c0ba' }} />
-                  </Link>
+                  {isExternal ? (
+                    <a
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 12, padding: 12,
+                        background: '#fff', border: '1px solid #e4e0db', borderRadius: 10,
+                        textDecoration: 'none', color: '#1a1a1a',
+                      }}
+                    >
+                      <div style={{ width: 64, height: 64, background: '#f7f3ee', borderRadius: 6, overflow: 'hidden', flexShrink: 0 }}>
+                        {thumb && <img src={thumb} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} referrerPolicy="no-referrer" />}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 500, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
+                          {p.name}
+                        </p>
+                        {p.price && (
+                          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: '#8b7355', margin: '2px 0 0' }}>{p.price}</p>
+                        )}
+                      </div>
+                      <ChevronRight className="w-4 h-4" style={{ color: '#c5c0ba' }} />
+                    </a>
+                  ) : (
+                    <Link
+                      to={href}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 12, padding: 12,
+                        background: '#fff', border: '1px solid #e4e0db', borderRadius: 10,
+                        textDecoration: 'none', color: '#1a1a1a',
+                      }}
+                    >
+                      <div style={{ width: 64, height: 64, background: '#f7f3ee', borderRadius: 6, overflow: 'hidden', flexShrink: 0 }}>
+                        {thumb && <img src={thumb} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} referrerPolicy="no-referrer" />}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 500, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
+                          {p.name}
+                        </p>
+                        {p.price && (
+                          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: '#8b7355', margin: '2px 0 0' }}>{p.price}</p>
+                        )}
+                      </div>
+                      <ChevronRight className="w-4 h-4" style={{ color: '#c5c0ba' }} />
+                    </Link>
+                  )}
                 </li>
               );
             })}
