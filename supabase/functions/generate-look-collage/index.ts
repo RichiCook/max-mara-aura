@@ -915,7 +915,8 @@ serve(async (req) => {
   }
 
   try {
-    const { products } = await req.json();
+    const body = await req.json();
+    const { products, mode: requestedMode } = body || {};
     if (!Array.isArray(products) || products.length === 0) {
       return new Response(JSON.stringify({ error: 'No products provided' }), {
         status: 400,
@@ -938,6 +939,10 @@ serve(async (req) => {
     const mode = (Deno.env.get('COLLAGE_MODE') || 'ai').toLowerCase();
 
     if (mode === 'ai') {
+      // Quick = streaming + parallel fetches + shrunken refs. Quality = current behavior.
+      if (requestedMode === 'quick') {
+        return await runAiCollageQuickStream(withImages.slice(0, 8));
+      }
       const { image, debug } = await runAiCollage(withImages.slice(0, 8));
       return new Response(
         JSON.stringify({
