@@ -205,17 +205,16 @@ async function runAiCollageQuickStream(products: ProductInfo[]): Promise<Respons
           return;
         }
 
-        // Sequential fetch of references — keeps peak memory at 1x image.
+        // Pass image URLs directly to the AI gateway — no base64 encoding,
+        // no in-memory image buffers. Biggest memory win: the edge function
+        // only forwards small URL strings; the gateway fetches the bytes
+        // itself. Use export-image-proxy so it gets a CORS/hotlink-safe origin.
         const imageContents: Array<{ type: 'image_url'; image_url: { url: string } }> = [];
         const fetched: string[] = [];
         for (const s of sources) {
-          try {
-            const b64 = await aiFetchImageAsBase64(s.url, supabaseUrl);
-            imageContents.push({ type: 'image_url', image_url: { url: b64 } });
-            fetched.push(s.name);
-          } catch (e) {
-            console.error('AI collage quick: fetch failed:', s.name, e);
-          }
+          const proxied = `${supabaseUrl}/functions/v1/export-image-proxy?url=${encodeURIComponent(s.url)}`;
+          imageContents.push({ type: 'image_url', image_url: { url: proxied } });
+          fetched.push(s.name);
         }
         if (imageContents.length < 2) throw new Error('AI collage: could not fetch enough product images');
 
@@ -228,7 +227,6 @@ async function runAiCollageQuickStream(products: ProductInfo[]): Promise<Respons
           modalities: ['image', 'text'],
           stream: true,
         });
-        // Release the per-reference base64 payloads — they're now embedded in requestBody.
         imageContents.length = 0;
 
         const aiResp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
