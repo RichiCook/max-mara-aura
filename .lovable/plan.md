@@ -1,61 +1,64 @@
+
 ## Goal
 
-Limit collage image generation to **2 in flight at a time** across the product page, instead of firing all of them in parallel (current behavior staggers them 500 ms apart but lets all N run at once, which trips rate limits and slows the whole batch down).
+Make collage generation feel faster by adding three opt-in optimizations, gated behind a global **Quick / Quality** toggle on the AI Generation Settings dashboard. Quality = current behavior (zero risk, easy revert). Quick = streaming + parallel reference fetches + shrunk reference images.
 
-## Approach
+## 1. Settings toggle (dashboard)
 
-Add a tiny client-side concurrency queue and route every `generateCollageImage` call through it. No edge function changes, no schema changes — purely a frontend throttle.
+- Add a new row in `src/pages/AIGenerationSettingsPage.tsx`, inside the existing "Look Display Settings" card (or a new sibling card "Collage Generation"), with a segmented control: **Quick** | **Quality**. Default = Quality so nothing changes for existing users until they flip it.
+- Persist in `app_settings` under id `collage_generation_mode` → `{ mode: 'quick' | 'quality' }`. Follow the same pattern as `look_display_settings` already in this file (upsert on change, fetch on mount).
+- Small helper `src/lib/collageMode.ts` exporting `fetchCollageMode(): Promise<'quick' | 'quality'>` with an in-memory cache + a `subscribeCollageMode` so consumers refresh when the admin toggles it. Default `'quality'` on error.
 
-### 1. New helper: `src/lib/concurrencyQueue.ts`
+## 2. Edge function changes — `supabase/functions/generate-look-collage/index.ts`
 
-A minimal promise-pool with a fixed concurrency:
+Add an optional `mode: 'quick' | 'quality'` field on the request body (default `'quality'` if missing → 100% backward compatible).
 
-```ts
-export function createConcurrencyQueue(limit: number) {
-  let active = 0;
-  const queue: Array<() => void> = [];
-  const next = () => {
-    if (active >= limit || queue.length === 0) return;
-    active++;
-    const run = queue.shift()!;
-    run();
-  };
-  return function enqueue<T>(task: () => Promise<T>): Promise<T> {
-    return new Promise((resolve, reject) => {
-      queue.push(() => {
-        task().then(resolve, reject).finally(() => { active--; next(); });
-      });
-      next();
-    });
-  };
-}
-```
+When `mode === 'quick'`:
 
-### 2. Wire it into `src/components/ProductGeneratedLook.tsx`
+a. **Parallel reference fetches** — replace the sequential `for` loop that downloads each product image with `Promise.all(products.map(fetchAndEncode))`. Same per-item error handling; one failure shouldn't kill the batch (use `Promise.allSettled` and drop failures, matching current behavior).
 
-- Create a module-level queue: `const collageQueue = createConcurrencyQueue(2);`
-- Wrap the body of `generateCollageImage` (the `supabase.functions.invoke('generate-look-collage', …)` block) so that the network call runs inside `collageQueue(() => …)`. State updates (`setLooks`, toasts, cache write) stay outside or inside as they are today — only the invoke needs to be gated.
-- Remove the `idx * 500` stagger at line 532 — the queue replaces it. Just call `generateCollageImage(...)` directly for each look.
-- Retry paths at lines 325 and 353 keep their `setTimeout` backoff; the retried call goes through the queue again automatically.
-- `loadMoreLooks` (line 550) and the V2 `onGenerateCollage` handler (line 633) need no changes — they already call `generateCollageImage`, which is now queued.
+b. **Shrink reference images** — after fetching each product image, resize to max width 768px before base64-encoding, using Deno-compatible image processing (`https://deno.land/x/imagescript`). Keep aspect ratio. Skip resize if image is already ≤768px wide. Wrap in try/catch — on resize failure fall back to the original bytes.
 
-### 3. Apply the same queue in `src/components/looks/LookCard.tsx`
+c. **Streaming generation** — call the AI gateway with `stream: true` and `partial_images: 1` (OpenAI) or natural streaming (Gemini), and forward the SSE body to the client unchanged (same pattern as the `ai-image-generation` guidance: pass `upstream.body` through with `Content-Type: text/event-stream`).
 
-Reuse the same exported queue instance (import from `@/lib/concurrencyQueue` or share via a singleton in `src/lib/collageQueue.ts`) so the limit is global, not per-component. Wrap the `supabase.functions.invoke('generate-look-collage', …)` call at line 174.
+When `mode === 'quality'`: **zero changes** — existing sequential fetch, full-resolution refs, non-streaming response. Same JSON `{ image: dataUrl }` return shape.
 
-## What stays the same
+## 3. Client changes
 
-- Edge function `generate-look-collage` and its rate-limit handling.
-- Collage caching (`collage_cache_version`, `collage_source_signature`).
-- The user-visible "generate collage" CTAs and the auto-trigger on mode switch.
-- Photo generation (`generate-look-image`) is not throttled — only collages, since that's where the contention happens.
+**`src/lib/collageStream.ts`** (new) — small helper that:
+- Reads current mode via `fetchCollageMode()`.
+- If `quality`: calls `supabase.functions.invoke('generate-look-collage', { body: { products, mode: 'quality' } })` exactly as today, returns final `{ image }`.
+- If `quick`: uses `fetch()` against the function URL (built from `VITE_SUPABASE_PROJECT_ID`) with `mode: 'quick'`, parses the SSE stream with `eventsource-parser`, and calls an `onFrame(dataUrl, isFinal)` callback. Uses `flushSync` per the streaming guidance so partials actually render.
 
-## Expected effect
+**`src/components/looks/LookCard.tsx`** and **`src/components/ProductGeneratedLook.tsx`**:
+- Replace direct `supabase.functions.invoke('generate-look-collage', …)` calls inside the `collageQueue(() => …)` wrappers with a call to the new helper.
+- Add an `onFrame` handler that sets the collage URL on every event, plus a `isFinal` state so we can apply a CSS blur to partial frames (`filter: blur(16px)` while streaming, none on final) — matches the documented UX.
+- `collageQueue` (concurrency = 2) stays in place for both modes.
 
-- First two collages start immediately; the rest start as soon as one finishes.
-- Fewer 429s from the AI gateway, so fewer 2–3 s retry backoffs.
-- Total wall-clock time should be similar or slightly better than today on a happy path, and meaningfully better when the gateway is under load.
+Install: `bun add eventsource-parser`.
 
-## Tunability
+## 4. Revert path
 
-`createConcurrencyQueue(2)` is a single constant. If 2 turns out too conservative or too aggressive we change one number.
+Three knobs make this safe:
+- Default mode is `'quality'` — no user sees Quick until an admin flips it.
+- Edge function's quality branch is the exact current code path.
+- To fully revert: delete `collageStream.ts`, `collageMode.ts`, the settings row, the `mode` param in the edge function, and restore the direct `supabase.functions.invoke` calls in the two components. No schema migration needed (we use `app_settings` which already exists).
+
+## Technical notes
+
+- `imagescript` is pure TS, no native deps, works under Deno edge runtime.
+- SSE through Supabase Edge Functions: confirmed supported by streaming the upstream `ReadableStream` directly (do not wrap or rebuild it).
+- `partial_images` only applies to OpenAI models; current function targets `google/gemini-2.5-flash-image` per `app_settings.image_provider` — Gemini emits partials natively, so just send `stream: true`.
+- Cache key (`collage_source_signature`) should incorporate `mode` so a cached Quality collage isn't returned for a Quick request and vice versa — append `:q` or `:hq` suffix.
+
+## Files touched
+
+- `src/pages/AIGenerationSettingsPage.tsx` (toggle UI)
+- `src/lib/collageMode.ts` (new)
+- `src/lib/collageStream.ts` (new)
+- `src/components/looks/LookCard.tsx` (use helper, render partials with blur)
+- `src/components/ProductGeneratedLook.tsx` (same)
+- `supabase/functions/generate-look-collage/index.ts` (mode branch: parallel fetch + resize + stream)
+- `package.json` (add `eventsource-parser`)
+
+No DB migration. No new secrets.
