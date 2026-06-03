@@ -29,15 +29,24 @@ export default function AuthPage() {
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/account?tab=wishlist';
 
   useEffect(() => {
+    const resolveDestination = () => {
+      const stored = sessionStorage.getItem('postAuthRedirect');
+      if (stored) {
+        sessionStorage.removeItem('postAuthRedirect');
+        return stored;
+      }
+      return from;
+    };
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
-        navigate(from, { replace: true });
+        navigate(resolveDestination(), { replace: true });
       }
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        navigate(from, { replace: true });
+        navigate(resolveDestination(), { replace: true });
       }
     });
 
@@ -186,8 +195,9 @@ export default function AuthPage() {
             className="w-full"
             disabled={loading}
             onClick={async () => {
+              sessionStorage.setItem('postAuthRedirect', from);
               const result = await lovable.auth.signInWithOAuth('google', {
-                redirect_uri: `${window.location.origin}${from}`,
+                redirect_uri: `${window.location.origin}/auth`,
               });
               if (result.error) {
                 toast({ title: 'Google sign-in failed', description: result.error.message, variant: 'destructive' });
