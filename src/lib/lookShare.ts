@@ -84,11 +84,12 @@ export function buildProductUrl(p: ShareableProduct): string | null {
 /** Short Italian caption used when the picture is sent alongside the link. */
 export function buildShortCaption(shortUrl: string, look?: ShareableLook): string {
   const lines: string[] = [`Scopri il look:`, shortUrl];
-  if (look && look.products.length) {
+  const items = look?.products.map(p => ({ p, url: buildProductUrl(p) })).filter(x => x.url) ?? [];
+  if (items.length) {
     lines.push('');
     lines.push('Acquista i singoli pezzi:');
-    for (const p of look.products) {
-      lines.push(`• ${p.name} → ${buildProductUrl(p)}`);
+    for (const { p, url } of items) {
+      lines.push(`• ${p.name} → ${url}`);
     }
   }
   return lines.join('\n');
@@ -98,10 +99,13 @@ export function buildCaption(look: ShareableLook): string {
   // Long-form fallback caption (used by copy-to-clipboard).
   const lines: string[] = [];
   lines.push(look.name);
-  lines.push('');
-  lines.push('Acquista i singoli pezzi:');
-  for (const p of look.products) {
-    lines.push(`• ${p.name} → ${buildProductUrl(p)}`);
+  const items = look.products.map(p => ({ p, url: buildProductUrl(p) })).filter(x => x.url);
+  if (items.length) {
+    lines.push('');
+    lines.push('Acquista i singoli pezzi:');
+    for (const { p, url } of items) {
+      lines.push(`• ${p.name} → ${url}`);
+    }
   }
   return lines.join('\n');
 }
