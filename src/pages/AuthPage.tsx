@@ -28,15 +28,19 @@ export default function AuthPage() {
 
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/account?tab=wishlist';
 
+  const resolveDestination = () => {
+    const params = new URLSearchParams(location.search);
+    const queryRedirect = params.get('redirect');
+    if (queryRedirect) return queryRedirect;
+    const stored = sessionStorage.getItem('postAuthRedirect');
+    if (stored) {
+      sessionStorage.removeItem('postAuthRedirect');
+      return stored;
+    }
+    return from;
+  };
+
   useEffect(() => {
-    const resolveDestination = () => {
-      const stored = sessionStorage.getItem('postAuthRedirect');
-      if (stored) {
-        sessionStorage.removeItem('postAuthRedirect');
-        return stored;
-      }
-      return from;
-    };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
@@ -72,11 +76,14 @@ export default function AuthPage() {
 
     try {
       if (isSignUp) {
+        const params = new URLSearchParams(location.search);
+        const destination = params.get('redirect') || sessionStorage.getItem('postAuthRedirect') || from;
+        const redirectUrl = `${window.location.origin}/auth?redirect=${encodeURIComponent(destination)}`;
         const { error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/`,
+            emailRedirectTo: redirectUrl,
           },
         });
         if (error) {
@@ -87,8 +94,8 @@ export default function AuthPage() {
           });
         } else {
           toast({
-            title: 'Account created',
-            description: 'Your wishlist and wardrobe are ready to save.',
+            title: 'Check your email',
+            description: 'Confirm your address to finish creating your account.',
           });
         }
       } else {
@@ -96,10 +103,10 @@ export default function AuthPage() {
         if (error) {
           if (error.message.includes('Invalid login credentials')) {
             toast({
-              title: 'Login failed',
-              description: 'Invalid email or password. Please try again.',
-              variant: 'destructive',
+              title: 'No account found',
+              description: "We couldn't sign you in. Create an account to continue.",
             });
+            setIsSignUp(true);
           } else {
             toast({
               title: 'Login failed',
