@@ -156,31 +156,8 @@ async function runAiCollage(products: ProductInfo[]): Promise<{ image: string; d
     debug: [{ status: 'ai_generated', cache_key: cacheKey, products: fetched }],
   };
 }
+// (removed imagescript-based shrink — caused edge function OOMs)
 
-async function shrinkImageBase64(dataUrl: string, maxWidth = 768): Promise<string> {
-  try {
-    const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
-    if (!match) return dataUrl;
-    const b64 = match[2];
-    const raw = atob(b64);
-    const bytes = new Uint8Array(raw.length);
-    for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
-    const img = (await decode(bytes)) as Image;
-    if (img.width <= maxWidth) return dataUrl;
-    const ratio = maxWidth / img.width;
-    img.resize(maxWidth, Math.round(img.height * ratio));
-    const encoded = await img.encodeJPEG(80);
-    let binary = '';
-    const chunk = 8192;
-    for (let i = 0; i < encoded.length; i += chunk) {
-      binary += String.fromCharCode(...encoded.subarray(i, i + chunk));
-    }
-    return `data:image/jpeg;base64,${btoa(binary)}`;
-  } catch (e) {
-    console.warn('shrinkImageBase64 failed, using original:', e);
-    return dataUrl;
-  }
-}
 
 /**
  * Quick mode: parallel reference fetches, shrunken refs, streaming AI generation.
