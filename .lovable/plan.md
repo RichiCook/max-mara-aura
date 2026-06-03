@@ -1,64 +1,58 @@
+## What the error means
 
-## Goal
+The red "Collage failed — Collage stream failed: 500 Network connection lost" toast is the new **Quick** collage mode crashing the edge function. Logs for `generate-look-collage` at the time of the screenshot show repeated `ERROR Memory limit exceeded` followed by `shutdown`. When the worker dies mid-stream, the browser sees the SSE connection drop as HTTP 500 and `collageStream.ts` throws that exact message.
 
-Make collage generation feel faster by adding three opt-in optimizations, gated behind a global **Quick / Quality** toggle on the AI Generation Settings dashboard. Quality = current behavior (zero risk, easy revert). Quick = streaming + parallel reference fetches + shrunk reference images.
+Quality mode is unaffected.
 
-## 1. Settings toggle (dashboard)
+## Why Quick OOMs
 
-- Add a new row in `src/pages/AIGenerationSettingsPage.tsx`, inside the existing "Look Display Settings" card (or a new sibling card "Collage Generation"), with a segmented control: **Quick** | **Quality**. Default = Quality so nothing changes for existing users until they flip it.
-- Persist in `app_settings` under id `collage_generation_mode` → `{ mode: 'quick' | 'quality' }`. Follow the same pattern as `look_display_settings` already in this file (upsert on change, fetch on mount).
-- Small helper `src/lib/collageMode.ts` exporting `fetchCollageMode(): Promise<'quick' | 'quality'>` with an in-memory cache + a `subscribeCollageMode` so consumers refresh when the admin toggles it. Default `'quality'` on error.
+In `supabase/functions/generate-look-collage/index.ts`, the `runAiCollageQuickStream` path does, per request:
 
-## 2. Edge function changes — `supabase/functions/generate-look-collage/index.ts`
+1. `Promise.all` fetch of every reference image → all original bytes resident at once.
+2. Decodes each with `imagescript` and resizes to 768px → multiple full RGBA bitmaps + re-encoded PNGs in memory simultaneously.
+3. Base64-encodes the resized PNGs for the AI gateway prompt.
+4. Buffers every `image_generation.partial_image` payload (~1–2 MB base64 each) to re-emit as SSE.
 
-Add an optional `mode: 'quick' | 'quality'` field on the request body (default `'quality'` if missing → 100% backward compatible).
+Combined footprint easily exceeds the edge function memory cap with 4–6 references.
 
-When `mode === 'quick'`:
+## Fix
 
-a. **Parallel reference fetches** — replace the sequential `for` loop that downloads each product image with `Promise.all(products.map(fetchAndEncode))`. Same per-item error handling; one failure shouldn't kill the batch (use `Promise.allSettled` and drop failures, matching current behavior).
+Keep the Quick/Quality toggle and SSE transport. Strip the two things that cause the OOM and make the stream cheaper.
 
-b. **Shrink reference images** — after fetching each product image, resize to max width 768px before base64-encoding, using Deno-compatible image processing (`https://deno.land/x/imagescript`). Keep aspect ratio. Skip resize if image is already ≤768px wide. Wrap in try/catch — on resize failure fall back to the original bytes.
+### 1. Drop `imagescript` resizing entirely (biggest win)
 
-c. **Streaming generation** — call the AI gateway with `stream: true` and `partial_images: 1` (OpenAI) or natural streaming (Gemini), and forward the SSE body to the client unchanged (same pattern as the `ai-image-generation` guidance: pass `upstream.body` through with `Content-Type: text/event-stream`).
+- Remove the `imagescript` import and the decode/resize step.
+- Send the original reference image URL or its raw base64 to the AI gateway without re-encoding. The model already handles arbitrary input sizes; client-side shrink was a perceived-speed optimization, not a correctness one.
+- This removes the largest allocations (decoded bitmaps + re-encoded PNGs).
 
-When `mode === 'quality'`: **zero changes** — existing sequential fetch, full-resolution refs, non-streaming response. Same JSON `{ image: dataUrl }` return shape.
+### 2. Sequential, not parallel, reference fetches in Quick mode
 
-## 3. Client changes
+- Replace `Promise.all(refs.map(fetch))` with a small `for…of` loop. Same total latency on a warm gateway; peak memory drops from N×image to 1×image.
 
-**`src/lib/collageStream.ts`** (new) — small helper that:
-- Reads current mode via `fetchCollageMode()`.
-- If `quality`: calls `supabase.functions.invoke('generate-look-collage', { body: { products, mode: 'quality' } })` exactly as today, returns final `{ image }`.
-- If `quick`: uses `fetch()` against the function URL (built from `VITE_SUPABASE_PROJECT_ID`) with `mode: 'quick'`, parses the SSE stream with `eventsource-parser`, and calls an `onFrame(dataUrl, isFinal)` callback. Uses `flushSync` per the streaming guidance so partials actually render.
+### 3. Slim the SSE forwarding
 
-**`src/components/looks/LookCard.tsx`** and **`src/components/ProductGeneratedLook.tsx`**:
-- Replace direct `supabase.functions.invoke('generate-look-collage', …)` calls inside the `collageQueue(() => …)` wrappers with a call to the new helper.
-- Add an `onFrame` handler that sets the collage URL on every event, plus a `isFinal` state so we can apply a CSS blur to partial frames (`filter: blur(16px)` while streaming, none on final) — matches the documented UX.
-- `collageQueue` (concurrency = 2) stays in place for both modes.
+- Don't buffer each partial frame into a JS string before emitting. Pipe the gateway SSE bytes through with a `TransformStream` and only parse the terminating `image_generation.completed` to know when to upload-to-storage and emit `final`.
+- Reduce `partial_images` from whatever the current value is to `1` (one preview) for Quick. Fewer in-flight base64 PNGs.
 
-Install: `bun add eventsource-parser`.
+### 4. Client safety net
 
-## 4. Revert path
+- In `src/lib/collageStream.ts`, if the SSE stream errors or ends without `final`, automatically retry **once** in Quality mode (non-streaming `supabase.functions.invoke`) before showing the toast. This way a Quick-path OOM degrades to a slower-but-working result instead of a red error.
+- Keep the toast only if the Quality fallback also fails.
 
-Three knobs make this safe:
-- Default mode is `'quality'` — no user sees Quick until an admin flips it.
-- Edge function's quality branch is the exact current code path.
-- To fully revert: delete `collageStream.ts`, `collageMode.ts`, the settings row, the `mode` param in the edge function, and restore the direct `supabase.functions.invoke` calls in the two components. No schema migration needed (we use `app_settings` which already exists).
+### 5. Verify
 
-## Technical notes
+- Deploy `generate-look-collage`.
+- Open the affected look on the product page, confirm the collage renders end-to-end on Quick mode without the red toast.
+- Re-check edge function logs for `Memory limit exceeded` — should be gone.
 
-- `imagescript` is pure TS, no native deps, works under Deno edge runtime.
-- SSE through Supabase Edge Functions: confirmed supported by streaming the upstream `ReadableStream` directly (do not wrap or rebuild it).
-- `partial_images` only applies to OpenAI models; current function targets `google/gemini-2.5-flash-image` per `app_settings.image_provider` — Gemini emits partials natively, so just send `stream: true`.
-- Cache key (`collage_source_signature`) should incorporate `mode` so a cached Quality collage isn't returned for a Quick request and vice versa — append `:q` or `:hq` suffix.
+## Revert path
 
-## Files touched
+All changes are inside `generate-look-collage/index.ts` and `collageStream.ts`. The Quick/Quality toggle, settings row, and `collageMode.ts` are untouched, so users can still flip to Quality at any time, and a full revert is a single redeploy of the previous function version.
 
-- `src/pages/AIGenerationSettingsPage.tsx` (toggle UI)
-- `src/lib/collageMode.ts` (new)
-- `src/lib/collageStream.ts` (new)
-- `src/components/looks/LookCard.tsx` (use helper, render partials with blur)
-- `src/components/ProductGeneratedLook.tsx` (same)
-- `supabase/functions/generate-look-collage/index.ts` (mode branch: parallel fetch + resize + stream)
-- `package.json` (add `eventsource-parser`)
+## Files
+
+- `supabase/functions/generate-look-collage/index.ts` — remove imagescript, sequentialize fetches, slim SSE forwarder, cap `partial_images: 1`.
+- `src/lib/collageStream.ts` — one-shot fallback to Quality on Quick stream failure.
+- `package.json` — `imagescript` may become unused in the edge function (Deno import, so no npm change needed, but the import line is removed).
 
 No DB migration. No new secrets.
