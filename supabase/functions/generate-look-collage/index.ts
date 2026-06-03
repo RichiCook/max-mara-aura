@@ -97,17 +97,13 @@ async function runAiCollage(products: ProductInfo[]): Promise<{ image: string; d
     };
   }
 
-  // Fetch all product images as base64
+  // Pass image URLs directly to AI gateway (no base64) — keeps memory low.
   const imageContents: Array<{ type: 'image_url'; image_url: { url: string } }> = [];
   const fetched: string[] = [];
   for (const s of sources) {
-    try {
-      const b64 = await aiFetchImageAsBase64(s.url, supabaseUrl);
-      imageContents.push({ type: 'image_url', image_url: { url: b64 } });
-      fetched.push(s.name);
-    } catch (e) {
-      console.error(`AI collage: failed to fetch ${s.name}:`, e);
-    }
+    const proxied = `${supabaseUrl}/functions/v1/export-image-proxy?url=${encodeURIComponent(s.url)}`;
+    imageContents.push({ type: 'image_url', image_url: { url: proxied } });
+    fetched.push(s.name);
   }
   if (imageContents.length < 2) {
     throw new Error('AI collage: could not fetch enough product images');
