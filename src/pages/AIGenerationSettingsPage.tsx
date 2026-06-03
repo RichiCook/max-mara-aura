@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Palette, User, Sparkles, Upload, Trash2, Loader2, ImagePlus, Link2, Mountain, X, Eye } from 'lucide-react';
+import { ArrowLeft, Palette, User, Sparkles, Upload, Trash2, Loader2, ImagePlus, Link2, Mountain, X, Eye, Zap } from 'lucide-react';
 import { AppHeader } from '@/components/AppHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,12 +16,15 @@ import { ModelReferencesSection } from '@/components/ai-settings/ModelReferences
 import { StyleReferencesSection } from '@/components/ai-settings/StyleReferencesSection';
 import { AnimationControls } from '@/components/ai-settings/AnimationControls';
 import { LookModeRulesSection } from '@/components/ai-settings/LookModeRulesSection';
+import { fetchCollageMode, setCollageMode, type CollageMode } from '@/lib/collageMode';
 import logo from '@/assets/logo.png';
 
 const AIGenerationSettingsPage = () => {
   const { toast } = useToast();
   const [panningEnabled, setPanningEnabled] = useState(false);
   const [panningLoading, setPanningLoading] = useState(true);
+  const [collageMode, setCollageModeState] = useState<CollageMode>('quality');
+  const [collageModeLoading, setCollageModeLoading] = useState(true);
 
   useEffect(() => {
     const fetchDisplaySettings = async () => {
@@ -41,7 +44,22 @@ const AIGenerationSettingsPage = () => {
       }
     };
     fetchDisplaySettings();
+    fetchCollageMode(true)
+      .then((m) => setCollageModeState(m))
+      .finally(() => setCollageModeLoading(false));
   }, []);
+
+  const handleCollageModeChange = async (mode: CollageMode) => {
+    const prev = collageMode;
+    setCollageModeState(mode);
+    try {
+      await setCollageMode(mode);
+      toast({ title: mode === 'quick' ? 'Quick mode enabled' : 'Quality mode enabled' });
+    } catch {
+      setCollageModeState(prev);
+      toast({ title: 'Failed to update collage mode', variant: 'destructive' });
+    }
+  };
 
   const togglePanning = async (enabled: boolean) => {
     setPanningEnabled(enabled);
@@ -86,6 +104,41 @@ const AIGenerationSettingsPage = () => {
         </div>
 
         <div className="space-y-8">
+          {/* Collage Generation Mode */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Zap className="w-5 h-5" />
+                Collage Generation
+              </CardTitle>
+              <CardDescription>
+                Choose between Quick (streaming preview, parallel fetches, shrunken refs — faster perceived speed)
+                and Quality (current production behavior, single final image).
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="inline-flex rounded-md border bg-muted/40 p-0.5">
+                {(['quick', 'quality'] as const).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    disabled={collageModeLoading}
+                    onClick={() => handleCollageModeChange(m)}
+                    className={`px-4 py-1.5 text-sm font-medium rounded transition-colors ${
+                      collageMode === m ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'
+                    } disabled:opacity-50`}
+                  >
+                    {m === 'quick' ? 'Quick' : 'Quality'}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground mt-3">
+                Active: <span className="font-medium text-foreground">{collageMode === 'quick' ? 'Quick' : 'Quality'}</span>.
+                Easy revert — switch back to Quality at any time.
+              </p>
+            </CardContent>
+          </Card>
+
           {/* Look Display Settings */}
           <Card>
             <CardHeader>

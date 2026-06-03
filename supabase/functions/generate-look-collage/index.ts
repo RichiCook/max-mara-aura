@@ -158,6 +158,186 @@ async function runAiCollage(products: ProductInfo[]): Promise<{ image: string; d
   };
 }
 
+async function shrinkImageBase64(dataUrl: string, maxWidth = 768): Promise<string> {
+  try {
+    const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+    if (!match) return dataUrl;
+    const b64 = match[2];
+    const raw = atob(b64);
+    const bytes = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+    const img = (await decode(bytes)) as Image;
+    if (img.width <= maxWidth) return dataUrl;
+    const ratio = maxWidth / img.width;
+    img.resize(maxWidth, Math.round(img.height * ratio));
+    const encoded = await img.encodeJPEG(80);
+    let binary = '';
+    const chunk = 8192;
+    for (let i = 0; i < encoded.length; i += chunk) {
+      binary += String.fromCharCode(...encoded.subarray(i, i + chunk));
+    }
+    return `data:image/jpeg;base64,${btoa(binary)}`;
+  } catch (e) {
+    console.warn('shrinkImageBase64 failed, using original:', e);
+    return dataUrl;
+  }
+}
+
+/**
+ * Quick mode: parallel reference fetches, shrunken refs, streaming AI generation.
+ * Returns an SSE Response emitting `event: collage` frames:
+ *   { type: 'partial', image: 'data:image/...' }   (zero or more)
+ *   { type: 'final',   image: '<storage url>', debug: [...] }
+ *   { type: 'error',   error: '...' }              (terminal on failure)
+ */
+async function runAiCollageQuickStream(products: ProductInfo[]): Promise<Response> {
+  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const supabase = createClient(supabaseUrl, supabaseKey);
+
+  const sources = products
+    .map((p) => ({ name: p.name, url: (p.trusted_image || p.image || '').trim() }))
+    .filter((p) => !!p.url);
+
+  const encoder = new TextEncoder();
+  const sseHeaders = {
+    ...corsHeaders,
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+  };
+
+  const stream = new ReadableStream({
+    async start(controller) {
+      const send = (payload: Record<string, unknown>) => {
+        controller.enqueue(encoder.encode(`event: collage\ndata: ${JSON.stringify(payload)}\n\n`));
+      };
+      try {
+        if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY is not configured');
+        if (sources.length < 2) throw new Error('AI collage needs at least 2 product images');
+
+        const cacheKey = await hashCacheKey(sources.map((s) => s.url));
+        const filePath = `looks/${cacheKey}.png`;
+        const { data: existing } = await supabase.storage
+          .from('look-images')
+          .list('looks', { search: `${cacheKey}.png` });
+        if (existing && existing.length > 0) {
+          const { data: pub } = supabase.storage.from('look-images').getPublicUrl(filePath);
+          send({ type: 'final', image: `${pub.publicUrl}?t=${Date.now()}`, debug: [{ status: 'cache_hit', cache_key: cacheKey }] });
+          controller.close();
+          return;
+        }
+
+        // Parallel fetch + shrink references
+        const fetchOne = async (s: { name: string; url: string }) => {
+          const b64 = await aiFetchImageAsBase64(s.url, supabaseUrl);
+          const shrunk = await shrinkImageBase64(b64);
+          return { name: s.name, b64: shrunk };
+        };
+        const settled = await Promise.allSettled(sources.map(fetchOne));
+        const imageContents: Array<{ type: 'image_url'; image_url: { url: string } }> = [];
+        const fetched: string[] = [];
+        for (const r of settled) {
+          if (r.status === 'fulfilled') {
+            imageContents.push({ type: 'image_url', image_url: { url: r.value.b64 } });
+            fetched.push(r.value.name);
+          } else {
+            console.error('AI collage quick: fetch failed:', r.reason);
+          }
+        }
+        if (imageContents.length < 2) throw new Error('AI collage: could not fetch enough product images');
+
+        const prompt = buildAiCollagePrompt(fetched.join(', '), imageContents.length);
+
+        const aiResp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: 'google/gemini-3.1-flash-image-preview',
+            messages: [{ role: 'user', content: [{ type: 'text', text: prompt }, ...imageContents] }],
+            modalities: ['image', 'text'],
+            stream: true,
+          }),
+        });
+
+        if (!aiResp.ok || !aiResp.body) {
+          const errText = await aiResp.text().catch(() => '');
+          if (aiResp.status === 429) throw new Error('Rate limit reached, please try again shortly.');
+          if (aiResp.status === 402) throw new Error('AI credits exhausted.');
+          throw new Error(`AI gateway error: ${aiResp.status} ${errText}`);
+        }
+
+        const reader = aiResp.body.pipeThrough(new TextDecoderStream()).getReader();
+        let buf = '';
+        let lastImage: string | null = null;
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          buf += value;
+          let sepIdx: number;
+          while ((sepIdx = buf.indexOf('\n\n')) !== -1) {
+            const rawEvent = buf.slice(0, sepIdx);
+            buf = buf.slice(sepIdx + 2);
+            const dataLines = rawEvent
+              .split('\n')
+              .filter((l) => l.startsWith('data:'))
+              .map((l) => l.slice(5).trim());
+            if (dataLines.length === 0) continue;
+            const dataStr = dataLines.join('\n');
+            if (dataStr === '[DONE]') continue;
+            try {
+              const evt = JSON.parse(dataStr);
+              if (evt.type === 'image_generation.partial_image' && evt.b64_json) {
+                const img = `data:image/png;base64,${evt.b64_json}`;
+                lastImage = img;
+                send({ type: 'partial', image: img });
+              } else if (evt.type === 'image_generation.completed' && evt.b64_json) {
+                lastImage = `data:image/png;base64,${evt.b64_json}`;
+              } else if (evt.choices?.[0]?.delta?.images?.[0]?.image_url?.url) {
+                const img = evt.choices[0].delta.images[0].image_url.url;
+                lastImage = img;
+                send({ type: 'partial', image: img });
+              } else if (evt.choices?.[0]?.message?.images?.[0]?.image_url?.url) {
+                lastImage = evt.choices[0].message.images[0].image_url.url;
+              }
+            } catch {
+              // ignore heartbeats / non-JSON
+            }
+          }
+        }
+
+        if (!lastImage) throw new Error('AI returned no image');
+
+        const base64Data = lastImage.replace(/^data:image\/\w+;base64,/, '');
+        const raw = atob(base64Data);
+        const bytes = new Uint8Array(raw.length);
+        for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+        const { error: uploadErr } = await supabase.storage
+          .from('look-images')
+          .upload(filePath, bytes, { contentType: 'image/png', upsert: true });
+        let finalUrl = lastImage;
+        if (!uploadErr) {
+          const { data: pub } = supabase.storage.from('look-images').getPublicUrl(filePath);
+          finalUrl = `${pub.publicUrl}?t=${Date.now()}`;
+        }
+        send({ type: 'final', image: finalUrl, debug: [{ status: 'ai_generated_quick', cache_key: cacheKey, products: fetched }] });
+        controller.close();
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Unknown error';
+        try {
+          controller.enqueue(encoder.encode(`event: collage\ndata: ${JSON.stringify({ type: 'error', error: msg })}\n\n`));
+        } catch {
+          // ignore
+        }
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, { headers: sseHeaders });
+}
+
 interface ProductInfo {
   name: string;
   color: string | null;
@@ -735,7 +915,8 @@ serve(async (req) => {
   }
 
   try {
-    const { products } = await req.json();
+    const body = await req.json();
+    const { products, mode: requestedMode } = body || {};
     if (!Array.isArray(products) || products.length === 0) {
       return new Response(JSON.stringify({ error: 'No products provided' }), {
         status: 400,
@@ -758,6 +939,10 @@ serve(async (req) => {
     const mode = (Deno.env.get('COLLAGE_MODE') || 'ai').toLowerCase();
 
     if (mode === 'ai') {
+      // Quick = streaming + parallel fetches + shrunken refs. Quality = current behavior.
+      if (requestedMode === 'quick') {
+        return await runAiCollageQuickStream(withImages.slice(0, 8));
+      }
       const { image, debug } = await runAiCollage(withImages.slice(0, 8));
       return new Response(
         JSON.stringify({

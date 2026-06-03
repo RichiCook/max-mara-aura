@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { collageQueue } from '@/lib/collageQueue';
+import { invokeCollage } from '@/lib/collageStream';
 import { normalizeImages } from '@/hooks/useProducts';
 import { Sparkles, RefreshCw, Loader2, ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -315,36 +316,29 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
 
     setLooks(prev => prev.map((l, i) => i === lookIndex ? { ...l, generatingCollage: true } : l));
     try {
-      const { data, error } = await collageQueue(() =>
-        supabase.functions.invoke('generate-look-collage', {
-          body: {
-            products: productRefs,
+      const { image: generatedImage, debug: collageDebug } = await collageQueue(() =>
+        invokeCollage(productRefs, (partialImage, isFinal) => {
+          if (!isFinal) {
+            // Show partial frame immediately (data URL, blurred via CSS if desired)
+            setLooks(prev => prev.map((l, i) => i === lookIndex ? { ...l, collageImage: partialImage } : l));
           }
         })
       );
-      if (error) throw error;
-      if (data?.error) {
-        if (data.error.includes('Rate limit') && retryCount < 1) {
-          setTimeout(() => generateCollageImage(products, lookData, lookIndex, retryCount + 1), 3000);
-          return;
-        }
-        toast({ title: 'Collage failed', description: data.error, variant: 'destructive' });
-        return;
-      }
-      if (data?.image) {
-        const storageUrl = await uploadImageToStorage(data.image, lookIndex);
-        const finalImage = storageUrl || data.image;
+      if (generatedImage) {
+        const storageUrl = generatedImage.startsWith('http')
+          ? generatedImage
+          : (await uploadImageToStorage(generatedImage, lookIndex)) || generatedImage;
         setLooks(prev => {
           const updated = prev.map((l, i) => i === lookIndex ? {
             ...l,
-            collageImage: finalImage,
+            collageImage: storageUrl,
             generatingCollage: false,
             look: {
               ...l.look,
-              collage_image: finalImage,
+              collage_image: storageUrl,
               collage_cache_version: COLLAGE_CACHE_VERSION,
               collage_source_signature: buildCollageSourceSignature(l.products),
-              collage_debug: Array.isArray(data?.debug) ? data.debug : [],
+              collage_debug: Array.isArray(collageDebug) ? collageDebug : [],
             }
           } : l);
           cacheLooks(updated);
