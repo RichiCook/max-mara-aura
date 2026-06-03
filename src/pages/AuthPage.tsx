@@ -78,8 +78,8 @@ export default function AuthPage() {
           });
         } else {
           toast({
-            title: 'Account created!',
-            description: 'You can now access the dashboard.',
+            title: 'Account created',
+            description: 'Your wishlist and wardrobe are ready to save.',
           });
         }
       } else {
