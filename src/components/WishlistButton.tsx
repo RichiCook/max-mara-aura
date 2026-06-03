@@ -1,4 +1,5 @@
 import { Heart } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useWishlist } from '@/hooks/useWishlist';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -13,16 +14,29 @@ interface Props {
 export const WishlistButton = ({ productId, className, size = 20, variant = 'icon' }: Props) => {
   const { has, toggle, isGuest } = useWishlist();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const active = has(productId);
 
   const handleClick = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     const nowActive = await toggle(productId);
-    toast({
-      title: nowActive ? 'Added to wishlist' : 'Removed from wishlist',
-      description: nowActive && isGuest ? 'Sign in to save it to your account.' : undefined,
-    });
+    if (nowActive && isGuest) {
+      toast({
+        title: 'Saved to wishlist',
+        description: 'Sign in to keep it across devices.',
+        action: (
+          <button
+            onClick={() => navigate('/auth', { state: { from: { pathname: window.location.pathname } } })}
+            className="text-xs underline whitespace-nowrap"
+          >
+            Sign in
+          </button>
+        ) as any,
+      });
+    } else {
+      toast({ title: nowActive ? 'Added to wishlist' : 'Removed from wishlist' });
+    }
   };
 
   if (variant === 'pill') {

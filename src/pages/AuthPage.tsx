@@ -26,7 +26,7 @@ export default function AuthPage() {
   const location = useLocation();
   const { toast } = useToast();
 
-  const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/';
+  const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/account?tab=wishlist';
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -78,8 +78,8 @@ export default function AuthPage() {
           });
         } else {
           toast({
-            title: 'Account created!',
-            description: 'You can now access the dashboard.',
+            title: 'Account created',
+            description: 'Your wishlist and wardrobe are ready to save.',
           });
         }
       } else {
@@ -110,10 +110,10 @@ export default function AuthPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">
-            {isSignUp ? 'Create Account' : 'Welcome Back'}
+            {isSignUp ? 'Create your account' : 'Welcome'}
           </CardTitle>
           <CardDescription>
-            {isSignUp ? 'Sign up to get started' : 'Sign in to access the dashboard'}
+            Save your wishlist, wardrobe and shared looks across devices.
           </CardDescription>
         </CardHeader>
         <CardContent>
