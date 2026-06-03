@@ -205,24 +205,20 @@ async function runAiCollageQuickStream(products: ProductInfo[]): Promise<Respons
           return;
         }
 
-        // Parallel fetch + shrink references
-        const fetchOne = async (s: { name: string; url: string }) => {
-          const b64 = await aiFetchImageAsBase64(s.url, supabaseUrl);
-          const shrunk = await shrinkImageBase64(b64);
-          return { name: s.name, b64: shrunk };
-        };
-        const settled = await Promise.allSettled(sources.map(fetchOne));
+        // Sequential fetch of references — keeps peak memory at 1x image.
         const imageContents: Array<{ type: 'image_url'; image_url: { url: string } }> = [];
         const fetched: string[] = [];
-        for (const r of settled) {
-          if (r.status === 'fulfilled') {
-            imageContents.push({ type: 'image_url', image_url: { url: r.value.b64 } });
-            fetched.push(r.value.name);
-          } else {
-            console.error('AI collage quick: fetch failed:', r.reason);
+        for (const s of sources) {
+          try {
+            const b64 = await aiFetchImageAsBase64(s.url, supabaseUrl);
+            imageContents.push({ type: 'image_url', image_url: { url: b64 } });
+            fetched.push(s.name);
+          } catch (e) {
+            console.error('AI collage quick: fetch failed:', s.name, e);
           }
         }
         if (imageContents.length < 2) throw new Error('AI collage: could not fetch enough product images');
+
 
         const prompt = buildAiCollagePrompt(fetched.join(', '), imageContents.length);
 
