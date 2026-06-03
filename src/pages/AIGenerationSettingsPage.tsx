@@ -44,7 +44,22 @@ const AIGenerationSettingsPage = () => {
       }
     };
     fetchDisplaySettings();
+    fetchCollageMode(true)
+      .then((m) => setCollageModeState(m))
+      .finally(() => setCollageModeLoading(false));
   }, []);
+
+  const handleCollageModeChange = async (mode: CollageMode) => {
+    const prev = collageMode;
+    setCollageModeState(mode);
+    try {
+      await setCollageMode(mode);
+      toast({ title: mode === 'quick' ? 'Quick mode enabled' : 'Quality mode enabled' });
+    } catch {
+      setCollageModeState(prev);
+      toast({ title: 'Failed to update collage mode', variant: 'destructive' });
+    }
+  };
 
   const togglePanning = async (enabled: boolean) => {
     setPanningEnabled(enabled);
