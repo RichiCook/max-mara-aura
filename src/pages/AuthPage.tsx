@@ -28,15 +28,19 @@ export default function AuthPage() {
 
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/account?tab=wishlist';
 
+  const resolveDestination = () => {
+    const params = new URLSearchParams(location.search);
+    const queryRedirect = params.get('redirect');
+    if (queryRedirect) return queryRedirect;
+    const stored = sessionStorage.getItem('postAuthRedirect');
+    if (stored) {
+      sessionStorage.removeItem('postAuthRedirect');
+      return stored;
+    }
+    return from;
+  };
+
   useEffect(() => {
-    const resolveDestination = () => {
-      const stored = sessionStorage.getItem('postAuthRedirect');
-      if (stored) {
-        sessionStorage.removeItem('postAuthRedirect');
-        return stored;
-      }
-      return from;
-    };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {

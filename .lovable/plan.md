@@ -1,26 +1,29 @@
-## Plan
+# Plan
 
-1. Update the Google sign-in flow so it uses a fixed redirect URL instead of a page-specific path.
-   - This avoids Google rejecting the request with `redirect_uri_mismatch`.
-   - I’ll preserve the intended return page separately so scanners still land back on wishlist/product/account after sign-in.
+## 1. Auto-suggest sign up when login fails (no account)
 
-2. Keep the customer redirect behavior after OAuth.
-   - Store the intended destination before sending the user to Google.
-   - After the session comes back, redirect to that saved destination or fall back to `/account?tab=wishlist`.
+In `src/pages/AuthPage.tsx`, when `signInWithPassword` returns "Invalid login credentials":
+- Show a toast: "No account found — switching to sign up"
+- Automatically flip `isSignUp` to `true` and keep the email/password the user already typed so they can submit directly
+- Keep current behavior for other errors
 
-3. Verify the Google provider setup for your own branded credentials.
-   - Confirm the exact callback URL in backend auth settings.
-   - Make sure the same exact callback is listed in the Google Cloud OAuth client.
-   - This is also what prevents Lovable branding from appearing when using your own Google client.
+Note: Supabase doesn't differentiate "wrong password" vs "no user" for security. We'll treat `Invalid login credentials` as "likely no account" and prompt sign up. A small helper link "Wrong password? Try again" will let users flip back.
 
-4. Validate the full scanner journey.
-   - Signed-out scanner taps save/sign-up with Google.
-   - Google auth opens without the mismatch error.
-   - After success, the user returns to the correct customer area, not admin/dashboard.
+## 2. Redirect after email confirmation back to scan landing
 
-## Technical details
+Currently `signUp` sets `emailRedirectTo: ${origin}/` which lands on the admin dashboard root (or `/#`).
 
-- Current risk in the code: the Google button is passing a dynamic `redirect_uri` based on `from`, which can become paths like product pages or account tabs.
-- With your own Google OAuth client, Google expects an exact allowed redirect URI, so dynamic paths can trigger the 400 error you showed.
-- I’ll switch the OAuth call to a stable redirect target and keep the post-login destination in app state/session storage instead.
-- No database or permissions changes are needed.
+Fix:
+- When the user arrives at `/auth` from a product/scan page, capture the originating path (already done via `location.state.from` and `sessionStorage.postAuthRedirect`).
+- Persist that path into the signup confirmation URL by passing it as a query param: `emailRedirectTo: ${origin}/auth?redirect=<encoded path>`
+- In `AuthPage` `useEffect`, when a session becomes available and `?redirect=` is present in the URL, navigate there (replacing history). This handles both the post-email-confirmation return and ordinary in-tab sign-ins.
+- Fallback chain for destination: `?redirect=` query → `sessionStorage.postAuthRedirect` → `location.state.from` → `/account?tab=wishlist`.
+
+## Files to change
+
+- `src/pages/AuthPage.tsx` — only file touched. Pure frontend change.
+
+## Out of scope
+
+- No backend, RLS, or edge function changes.
+- No change to the Supabase email template (the `{{ .ConfirmationURL }}` already honors `emailRedirectTo`).
