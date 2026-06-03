@@ -76,12 +76,9 @@ export async function createLookShortUrl(look: ShareableLook): Promise<string> {
   }
 }
 
-export function buildProductUrl(p: ShareableProduct): string {
-  // Prefer the external e-commerce URL so recipients land on the purchase page.
-  if (p.source_url) return p.source_url;
-  if (p.short_code) return `${origin()}/p/${p.short_code}`;
-  if (p.slug) return `${origin()}/product/${p.slug}`;
-  return origin();
+export function buildProductUrl(p: ShareableProduct): string | null {
+  // Only return the external e-commerce URL — never link back to aitems.
+  return p.source_url || null;
 }
 
 /** Short Italian caption used when the picture is sent alongside the link. */
