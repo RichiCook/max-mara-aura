@@ -13,6 +13,8 @@ export interface Look {
   total_price: string | null;
   ai_reasoning: string | null;
   created_at: string;
+  collage_image_url?: string | null;
+  photo_image_url?: string | null;
   products?: Product[];
 }
 
