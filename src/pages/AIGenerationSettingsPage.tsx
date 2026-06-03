@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Palette, User, Sparkles, Upload, Trash2, Loader2, ImagePlus, Link2, Mountain, X, Eye } from 'lucide-react';
+import { ArrowLeft, Palette, User, Sparkles, Upload, Trash2, Loader2, ImagePlus, Link2, Mountain, X, Eye, Zap } from 'lucide-react';
 import { AppHeader } from '@/components/AppHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,12 +16,15 @@ import { ModelReferencesSection } from '@/components/ai-settings/ModelReferences
 import { StyleReferencesSection } from '@/components/ai-settings/StyleReferencesSection';
 import { AnimationControls } from '@/components/ai-settings/AnimationControls';
 import { LookModeRulesSection } from '@/components/ai-settings/LookModeRulesSection';
+import { fetchCollageMode, setCollageMode, type CollageMode } from '@/lib/collageMode';
 import logo from '@/assets/logo.png';
 
 const AIGenerationSettingsPage = () => {
   const { toast } = useToast();
   const [panningEnabled, setPanningEnabled] = useState(false);
   const [panningLoading, setPanningLoading] = useState(true);
+  const [collageMode, setCollageModeState] = useState<CollageMode>('quality');
+  const [collageModeLoading, setCollageModeLoading] = useState(true);
 
   useEffect(() => {
     const fetchDisplaySettings = async () => {
