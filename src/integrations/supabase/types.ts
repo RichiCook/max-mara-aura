@@ -527,12 +527,14 @@ export type Database = {
       looks: {
         Row: {
           ai_reasoning: string | null
+          collage_image_url: string | null
           color_palette: string[] | null
           composition: string
           created_at: string
           description: string | null
           id: string
           name: string
+          photo_image_url: string | null
           product_ids: string[]
           style: string | null
           total_price: string | null
@@ -540,12 +542,14 @@ export type Database = {
         }
         Insert: {
           ai_reasoning?: string | null
+          collage_image_url?: string | null
           color_palette?: string[] | null
           composition: string
           created_at?: string
           description?: string | null
           id?: string
           name: string
+          photo_image_url?: string | null
           product_ids: string[]
           style?: string | null
           total_price?: string | null
@@ -553,12 +557,14 @@ export type Database = {
         }
         Update: {
           ai_reasoning?: string | null
+          collage_image_url?: string | null
           color_palette?: string[] | null
           composition?: string
           created_at?: string
           description?: string | null
           id?: string
           name?: string
+          photo_image_url?: string | null
           product_ids?: string[]
           style?: string | null
           total_price?: string | null
