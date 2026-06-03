@@ -76,7 +76,8 @@ export default function AuthPage() {
 
     try {
       if (isSignUp) {
-        const destination = resolveDestinationRaw();
+        const params = new URLSearchParams(location.search);
+        const destination = params.get('redirect') || sessionStorage.getItem('postAuthRedirect') || from;
         const redirectUrl = `${window.location.origin}/auth?redirect=${encodeURIComponent(destination)}`;
         const { error } = await supabase.auth.signUp({
           email,
