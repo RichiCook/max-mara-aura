@@ -375,8 +375,11 @@ serve(async (req) => {
         if (!look || typeof look !== 'object') return look;
         const version = typeof look.collage_cache_version === 'number' ? look.collage_cache_version : 0;
         const debug = Array.isArray(look.collage_debug) ? look.collage_debug : [];
-        const hasUsedEntries = debug.some((d: any) => d?.status === 'used');
-        const collageIsTrusted = version >= MIN_COLLAGE_CACHE_VERSION && hasUsedEntries;
+        const hasTrustedCollageEvidence =
+          debug.length > 0 ||
+          typeof look.collage_image === 'string' ||
+          typeof look.collage_source_signature === 'string';
+        const collageIsTrusted = version >= MIN_COLLAGE_CACHE_VERSION && hasTrustedCollageEvidence;
         if (collageIsTrusted) return look;
         // Strip the stale collage so the storefront regenerates it from
         // verified flat-lay packshots. Leave look_image and metadata intact.
