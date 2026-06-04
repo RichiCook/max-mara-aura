@@ -168,9 +168,13 @@ async function runAiCollageQuickStream(products: ProductInfo[]): Promise<Respons
   const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const supabase = createClient(supabaseUrl, supabaseKey);
 
+  // Quick mode tradeoffs: cap to 3 references (faster + cheaper, smaller prompt).
+  const QUICK_MAX_REFS = 3;
   const sources = products
     .map((p) => ({ name: p.name, url: (p.trusted_image || p.image || '').trim() }))
-    .filter((p) => !!p.url);
+    .filter((p) => !!p.url)
+    .slice(0, QUICK_MAX_REFS);
+
 
   const encoder = new TextEncoder();
   const sseHeaders = {
