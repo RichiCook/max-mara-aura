@@ -430,28 +430,36 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
     if (!lookItem) return;
 
     if (mode === 'collage') {
-      setLooks((prev) => prev.map((item, idx) => idx === lookIndex ? {
-        ...item,
-        collageImage: null,
-        look: {
-          ...item.look,
-          collage_image: undefined,
-        },
-      } : item));
+      setLooks((prev) => {
+        const updated = prev.map((item, idx) => idx === lookIndex ? {
+          ...item,
+          collageImage: null,
+          look: {
+            ...item.look,
+            collage_image: undefined,
+          },
+        } : item);
+        cacheLooks(updated);
+        return updated;
+      });
       if (!lookItem.generatingCollage) {
         generateCollageImage(lookItem.products, lookItem.look, lookIndex);
       }
       return;
     }
 
-    setLooks((prev) => prev.map((item, idx) => idx === lookIndex ? {
-      ...item,
-      lookImage: null,
-      look: {
-        ...item.look,
-        look_image: undefined,
-      },
-    } : item));
+    setLooks((prev) => {
+      const updated = prev.map((item, idx) => idx === lookIndex ? {
+        ...item,
+        lookImage: null,
+        look: {
+          ...item.look,
+          look_image: undefined,
+        },
+      } : item);
+      cacheLooks(updated);
+      return updated;
+    });
     if (!lookItem.generatingImage) {
       generateLookImage(lookItem.products, lookItem.look, lookIndex);
     }
