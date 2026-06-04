@@ -96,26 +96,44 @@ const LookShareMenu = ({ look, onShared, disabledReason, variant = 'text' }: Pro
             type="button"
             disabled={!!disabledReason}
             title={disabledReason ?? 'Share this look'}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '6px 10px',
-              borderRadius: 6,
-              background: disabledReason ? '#e4e0db' : '#1a1a1a',
-              color: '#fff',
-              border: 'none',
-              cursor: disabledReason ? 'not-allowed' : 'pointer',
-              fontFamily: "'Inter', sans-serif",
-              fontSize: 10,
-              fontWeight: 600,
-              letterSpacing: '0.05em',
-              textTransform: 'uppercase',
-              opacity: disabledReason ? 0.6 : 1,
-            }}
+            aria-label="Share this look"
+            style={
+              variant === 'icon'
+                ? {
+                    width: 32,
+                    height: 32,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: 6,
+                    background: '#1a1a1a',
+                    color: '#fff',
+                    border: '1px solid #1a1a1a',
+                    cursor: disabledReason ? 'not-allowed' : 'pointer',
+                    opacity: disabledReason ? 0.5 : 1,
+                    padding: 0,
+                  }
+                : {
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '6px 10px',
+                    borderRadius: 6,
+                    background: disabledReason ? '#e4e0db' : '#1a1a1a',
+                    color: '#fff',
+                    border: 'none',
+                    cursor: disabledReason ? 'not-allowed' : 'pointer',
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: 10,
+                    fontWeight: 600,
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase',
+                    opacity: disabledReason ? 0.6 : 1,
+                  }
+            }
           >
-            {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Share2 className="w-3 h-3" />}
-            Share
+            {busy ? <Loader2 className={variant === 'icon' ? 'w-3.5 h-3.5 animate-spin' : 'w-3 h-3 animate-spin'} /> : <Share2 className={variant === 'icon' ? 'w-3.5 h-3.5' : 'w-3 h-3'} />}
+            {variant === 'icon' ? null : 'Share'}
           </button>
         </PopoverTrigger>
         <PopoverContent align="end" className="w-56 p-1">
