@@ -54,10 +54,11 @@ interface LookCardV2Props {
   variant?: 'refined' | 'editorial';
   onGenerateCollage?: (lookIndex: number) => void;
   onGeneratePhoto?: (lookIndex: number) => void;
+  onImageError?: (lookIndex: number, mode: 'photo' | 'collage') => void;
   initialModes?: Record<number, 'photo' | 'collage'>;
 }
 
-const LookCardV2 = ({ looks, productCode, loading, loadingMore, onTrackEvent, onScroll, calculateTotal, variant = 'refined', onGenerateCollage, onGeneratePhoto, initialModes }: LookCardV2Props) => {
+const LookCardV2 = ({ looks, productCode, loading, loadingMore, onTrackEvent, onScroll, calculateTotal, variant = 'refined', onGenerateCollage, onGeneratePhoto, onImageError, initialModes }: LookCardV2Props) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [expandedNotes, setExpandedNotes] = useState<Set<number>>(new Set());
   const [previewProduct, setPreviewProduct] = useState<LookProduct | null>(null);
@@ -285,7 +286,18 @@ const LookCardV2 = ({ looks, productCode, loading, loadingMore, onTrackEvent, on
                     </>
                   ) : activeImage ? (
                     <>
-                      <img src={activeImage} alt={look.name} style={{ width: '100%', height: '100%', objectFit: isCollage ? 'contain' : 'cover', zIndex: 2, position: 'relative' }} />
+                      <img
+                        src={activeImage}
+                        alt={look.name}
+                        onError={(event) => {
+                          const target = event.currentTarget;
+                          if (target.dataset.errorHandled === 'true') return;
+                          target.dataset.errorHandled = 'true';
+                          target.style.display = 'none';
+                          onImageError?.(lookIdx, mode);
+                        }}
+                        style={{ width: '100%', height: '100%', objectFit: isCollage ? 'contain' : 'cover', zIndex: 2, position: 'relative' }}
+                      />
                       <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 3, background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(8px)', borderRadius: 5, padding: '4px 9px', fontFamily: "'Inter', sans-serif", fontSize: 9, fontWeight: 500, color: '#fff' }}>
                         {badge}
                       </div>
