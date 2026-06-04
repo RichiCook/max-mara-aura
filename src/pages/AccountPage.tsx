@@ -175,7 +175,7 @@ export default function AccountPage() {
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
                 {savedLooks.savedLooks.map((l) => {
-                  const linkTo = buildLookSpaUrl({
+                  const shareUrl = buildLookSpaUrl({
                     name: l.name ?? 'Saved look',
                     description: l.description,
                     imageUrl: l.image_url,
@@ -184,6 +184,8 @@ export default function AccountPage() {
                       name: product_code,
                     })),
                   });
+                  const parsedUrl = new URL(shareUrl);
+                  const linkTo = `${parsedUrl.pathname}${parsedUrl.search}`;
                   return (
                     <div key={l.id} className="group relative">
                       <Link to={linkTo} className="block">
