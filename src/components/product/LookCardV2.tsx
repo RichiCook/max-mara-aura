@@ -5,6 +5,7 @@ import ProductPreviewSheet from './ProductPreviewSheet';
 import { useShopifyCheckout } from '@/hooks/useShopifyCheckout';
 import CheckoutModal from './CheckoutModal';
 import LookShareMenu from './LookShareMenu';
+import SaveLookButton from './SaveLookButton';
 import type { ShareableLook } from '@/lib/lookShare';
 
 interface LookProduct {
@@ -244,6 +245,16 @@ const LookCardV2 = ({ looks, productCode, loading, loadingMore, onTrackEvent, on
                       <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 10, color: '#8b7355', letterSpacing: '0.04em', textTransform: 'uppercase' as const }}>
                         {isCollage ? 'Collage' : 'Photo'}
                       </span>
+                      <SaveLookButton
+                        look={{
+                          name: look.name,
+                          description: look.description,
+                          image_url: activeImage || lookItem.collageImage || lookItem.lookImage,
+                          product_codes: look.product_codes,
+                        }}
+                        disabledReason={!(activeImage || lookItem.collageImage || lookItem.lookImage) ? 'Generating preview…' : undefined}
+                        onSaved={() => onTrackEvent?.('look_save', productCode, { lookProductCodes: look.product_codes })}
+                      />
                       <LookShareMenu
                         look={{
                           name: look.name,

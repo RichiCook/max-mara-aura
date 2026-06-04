@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { normalizeImages } from '@/hooks/useProducts';
 import { useShopifyCheckout } from '@/hooks/useShopifyCheckout';
 import CheckoutModal from './CheckoutModal';
+import WishlistButton from '@/components/WishlistButton';
 
 interface LookProduct {
   id: string;
@@ -315,6 +316,11 @@ const ProductPreviewSheet = ({ product, onClose }: ProductPreviewSheetProps) => 
               <ExternalLink style={{ width: 13, height: 13, opacity: 0.5 }} />
             </a>
           ) : null}
+          {p?.id && (
+            <div style={{ marginTop: 10 }}>
+              <WishlistButton productId={p.id} variant="pill" />
+            </div>
+          )}
         </div>
 
         {/* You May Also Like */}
