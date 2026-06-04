@@ -1003,7 +1003,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { products, mode: requestedMode } = body || {};
+    const { products, mode: requestedMode, persist } = body || {};
     if (!Array.isArray(products) || products.length === 0) {
       return new Response(JSON.stringify({ error: 'No products provided' }), {
         status: 400,
@@ -1028,9 +1028,9 @@ serve(async (req) => {
     if (mode === 'ai') {
       // Quick = streaming + parallel fetches + shrunken refs. Quality = current behavior.
       if (requestedMode === 'quick') {
-        return await runAiCollageQuickStream(withImages.slice(0, 8));
+        return await runAiCollageQuickStream(withImages.slice(0, 8), persist);
       }
-      const { image, debug } = await runAiCollage(withImages.slice(0, 8));
+      const { image, debug } = await runAiCollage(withImages.slice(0, 8), persist);
       return new Response(
         JSON.stringify({
           image,
