@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { User as UserIcon, LogOut, Heart, Shirt } from 'lucide-react';
+import { User as UserIcon, LogOut, Heart, Shirt, Sparkles } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import {
   DropdownMenu,
@@ -47,6 +47,9 @@ export const UserMenu = ({ className }: Props) => {
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => navigate('/account?tab=wishlist')}>
           <Heart className="mr-2 h-4 w-4" /> Wishlist
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => navigate('/account?tab=looks')}>
+          <Sparkles className="mr-2 h-4 w-4" /> Looks
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => navigate('/account?tab=wardrobe')}>
           <Shirt className="mr-2 h-4 w-4" /> Wardrobe
