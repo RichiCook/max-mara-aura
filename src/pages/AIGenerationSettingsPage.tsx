@@ -112,9 +112,10 @@ const AIGenerationSettingsPage = () => {
                 Collage Generation
               </CardTitle>
               <CardDescription>
-                Choose between Quick (streaming preview, parallel fetches, shrunken refs — faster perceived speed)
-                and Quality (current production behavior, single final image).
+                Quick: faster + cheaper Gemini 2.5 image model, capped at 3 reference products, streaming preview.
+                Quality: Gemini 3.1 with all products, single final image (current production behavior).
               </CardDescription>
+
             </CardHeader>
             <CardContent>
               <div className="inline-flex rounded-md border bg-muted/40 p-0.5">
