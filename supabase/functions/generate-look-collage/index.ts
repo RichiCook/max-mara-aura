@@ -48,6 +48,93 @@ async function hashCacheKey(urls: string[]): Promise<string> {
   return hex.slice(0, 24);
 }
 
+type PersistPayload = {
+  hero_product_code: string;
+  look: Record<string, unknown> & {
+    product_codes: string[];
+    collage_cache_version?: number;
+    collage_source_signature?: string | null;
+  };
+};
+
+function buildLookKey(productCodes: string[]): string {
+  return [...productCodes].map((code) => String(code || '').trim().toUpperCase()).sort().join('|');
+}
+
+async function persistCollageToProduct(
+  supabase: ReturnType<typeof createClient>,
+  persist: PersistPayload | undefined,
+  image: string,
+  debug: Array<Record<string, unknown>>,
+) {
+  if (!persist?.hero_product_code || !Array.isArray(persist.look?.product_codes) || persist.look.product_codes.length === 0) {
+    return;
+  }
+
+  const { data: rows, error: selectError } = await supabase
+    .from('products')
+    .select('generated_look')
+    .eq('product_code', persist.hero_product_code)
+    .order('created_at', { ascending: false })
+    .limit(1);
+
+  if (selectError) {
+    console.error('Failed to load product for collage persistence:', selectError);
+    return;
+  }
+
+  const existingGeneratedLook = rows?.[0]?.generated_look;
+  const existingLooks = Array.isArray(existingGeneratedLook)
+    ? existingGeneratedLook
+    : existingGeneratedLook
+      ? [existingGeneratedLook]
+      : [];
+  const targetKey = buildLookKey(persist.look.product_codes);
+  let replaced = false;
+
+  const mergedLooks = existingLooks.map((entry) => {
+    if (!entry || typeof entry !== 'object') return entry;
+    const entryCodes = Array.isArray((entry as Record<string, unknown>).product_codes)
+      ? ((entry as Record<string, unknown>).product_codes as string[])
+      : [];
+    if (buildLookKey(entryCodes) !== targetKey) return entry;
+    replaced = true;
+    return {
+      ...entry,
+      ...persist.look,
+      collage_image: image,
+      collage_debug: debug,
+      collage_cache_version: persist.look.collage_cache_version ?? 0,
+      collage_source_signature: persist.look.collage_source_signature ?? null,
+    };
+  });
+
+  if (!replaced) {
+    mergedLooks.unshift({
+      ...persist.look,
+      collage_image: image,
+      collage_debug: debug,
+      collage_cache_version: persist.look.collage_cache_version ?? 0,
+      collage_source_signature: persist.look.collage_source_signature ?? null,
+    });
+  }
+
+  const nextGeneratedLook = Array.isArray(existingGeneratedLook)
+    ? mergedLooks
+    : mergedLooks.length === 1
+      ? mergedLooks[0]
+      : mergedLooks;
+
+  const { error: updateError } = await supabase
+    .from('products')
+    .update({ generated_look: nextGeneratedLook })
+    .eq('product_code', persist.hero_product_code);
+
+  if (updateError) {
+    console.error('Failed to persist collage on product:', updateError);
+  }
+}
+
 function buildAiCollagePrompt(productNames: string, count: number): string {
   return `You are given ${count} product photographs of fashion garments and accessories. Create a single elegant still-life flat-lay photograph that arranges ALL of these EXACT products together on a shared surface, as if styled for an editorial "look" feature.
 
@@ -68,7 +155,10 @@ ABSOLUTE RULES — VIOLATIONS WILL MAKE THE IMAGE UNUSABLE:
 The products in the reference images are: ${productNames}.`;
 }
 
-async function runAiCollage(products: ProductInfo[]): Promise<{ image: string; debug: Array<Record<string, unknown>> }> {
+async function runAiCollage(
+  products: ProductInfo[],
+  persist?: PersistPayload,
+): Promise<{ image: string; debug: Array<Record<string, unknown>> }> {
   const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
   if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY is not configured');
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -91,9 +181,12 @@ async function runAiCollage(products: ProductInfo[]): Promise<{ image: string; d
     .list('looks', { search: `${cacheKey}.png` });
   if (existing && existing.length > 0) {
     const { data: pub } = supabase.storage.from('look-images').getPublicUrl(filePath);
+    const image = `${pub.publicUrl}?t=${Date.now()}`;
+    const debug = [{ status: 'cache_hit', cache_key: cacheKey, products: sources.map((s) => s.name) }];
+    await persistCollageToProduct(supabase, persist, image, debug);
     return {
-      image: `${pub.publicUrl}?t=${Date.now()}`,
-      debug: [{ status: 'cache_hit', cache_key: cacheKey, products: sources.map((s) => s.name) }],
+      image,
+      debug,
     };
   }
 
@@ -147,9 +240,12 @@ async function runAiCollage(products: ProductInfo[]): Promise<{ image: string; d
   if (uploadErr) throw new Error(`Upload failed: ${uploadErr.message}`);
 
   const { data: pub } = supabase.storage.from('look-images').getPublicUrl(filePath);
+  const image = `${pub.publicUrl}?t=${Date.now()}`;
+  const debug = [{ status: 'ai_generated', cache_key: cacheKey, products: fetched }];
+  await persistCollageToProduct(supabase, persist, image, debug);
   return {
-    image: `${pub.publicUrl}?t=${Date.now()}`,
-    debug: [{ status: 'ai_generated', cache_key: cacheKey, products: fetched }],
+    image,
+    debug,
   };
 }
 // (removed imagescript-based shrink — caused edge function OOMs)
@@ -162,7 +258,7 @@ async function runAiCollage(products: ProductInfo[]): Promise<{ image: string; d
  *   { type: 'final',   image: '<storage url>', debug: [...] }
  *   { type: 'error',   error: '...' }              (terminal on failure)
  */
-async function runAiCollageQuickStream(products: ProductInfo[]): Promise<Response> {
+async function runAiCollageQuickStream(products: ProductInfo[], persist?: PersistPayload): Promise<Response> {
   const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
   const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -200,7 +296,10 @@ async function runAiCollageQuickStream(products: ProductInfo[]): Promise<Respons
           .list('looks', { search: `${cacheKey}.png` });
         if (existing && existing.length > 0) {
           const { data: pub } = supabase.storage.from('look-images').getPublicUrl(filePath);
-          send({ type: 'final', image: `${pub.publicUrl}?t=${Date.now()}`, debug: [{ status: 'cache_hit', cache_key: cacheKey }] });
+          const image = `${pub.publicUrl}?t=${Date.now()}`;
+          const debug = [{ status: 'cache_hit', cache_key: cacheKey }];
+          await persistCollageToProduct(supabase, persist, image, debug);
+          send({ type: 'final', image, debug });
           controller.close();
           return;
         }
@@ -307,7 +406,9 @@ async function runAiCollageQuickStream(products: ProductInfo[]): Promise<Respons
           const { data: pub } = supabase.storage.from('look-images').getPublicUrl(filePath);
           finalUrl = `${pub.publicUrl}?t=${Date.now()}`;
         }
-        send({ type: 'final', image: finalUrl, debug: [{ status: 'ai_generated_quick', cache_key: cacheKey, products: fetched }] });
+        const debug = [{ status: 'ai_generated_quick', cache_key: cacheKey, products: fetched }];
+        await persistCollageToProduct(supabase, persist, finalUrl, debug);
+        send({ type: 'final', image: finalUrl, debug });
         controller.close();
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Unknown error';
