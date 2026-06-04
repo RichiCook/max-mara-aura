@@ -317,12 +317,23 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
     setLooks(prev => prev.map((l, i) => i === lookIndex ? { ...l, generatingCollage: true } : l));
     try {
       const { image: generatedImage, debug: collageDebug } = await collageQueue(() =>
-        invokeCollage(productRefs, (partialImage, isFinal) => {
-          if (!isFinal) {
-            // Show partial frame immediately (data URL, blurred via CSS if desired)
-            setLooks(prev => prev.map((l, i) => i === lookIndex ? { ...l, collageImage: partialImage } : l));
+        invokeCollage(
+          productRefs,
+          {
+            hero_product_code: productCode,
+            look: {
+              ...lookData,
+              collage_cache_version: COLLAGE_CACHE_VERSION,
+              collage_source_signature: buildCollageSourceSignature(products),
+            },
+          },
+          (partialImage, isFinal) => {
+            if (!isFinal) {
+              // Show partial frame immediately (data URL, blurred via CSS if desired)
+              setLooks(prev => prev.map((l, i) => i === lookIndex ? { ...l, collageImage: partialImage } : l));
+            }
           }
-        })
+        )
       );
       if (generatedImage) {
         const storageUrl = generatedImage.startsWith('http')
