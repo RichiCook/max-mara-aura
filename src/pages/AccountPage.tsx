@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useWishlist } from '@/hooks/useWishlist';
 import { useWardrobe } from '@/hooks/useWardrobe';
 import { useSavedLooks } from '@/hooks/useSavedLooks';
+import { buildLookSpaUrl } from '@/lib/lookShare';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Heart, Shirt, Sparkles, X, LogOut } from 'lucide-react';
@@ -91,7 +92,6 @@ export default function AccountPage() {
   const wardrobe = useWardrobe();
   const savedLooks = useSavedLooks();
   const [products, setProducts] = useState<ProductLite[]>([]);
-  const [lookProductsMap, setLookProductsMap] = useState<Record<string, ProductLite | null>>({});
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -127,38 +127,6 @@ export default function AccountPage() {
         );
       });
   }, [allIds]);
-
-  // Resolve first product of each saved look to its slug (for click-through)
-  useEffect(() => {
-    const codes = Array.from(
-      new Set(savedLooks.savedLooks.flatMap((l) => l.product_codes).filter(Boolean))
-    );
-    if (codes.length === 0) {
-      setLookProductsMap({});
-      return;
-    }
-    supabase
-      .from('products')
-      .select('id, name, slug, product_code, category, price, images')
-      .in('product_code', codes)
-      .then(({ data }) => {
-        const map: Record<string, ProductLite> = {};
-        (data ?? []).forEach((p: any) => {
-          if (p.product_code) {
-            map[p.product_code] = {
-              id: p.id,
-              name: p.name,
-              slug: p.slug,
-              product_code: p.product_code,
-              category: p.category,
-              price: p.price,
-              images: normalizeImages(p.images),
-            };
-          }
-        });
-        setLookProductsMap(map);
-      });
-  }, [savedLooks.savedLooks]);
 
   const wishlistProducts = useMemo(
     () => products.filter((p) => wishlist.productIds.includes(p.id)),
@@ -207,9 +175,17 @@ export default function AccountPage() {
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
                 {savedLooks.savedLooks.map((l) => {
-                  const firstCode = l.product_codes[0];
-                  const firstProduct = firstCode ? lookProductsMap[firstCode] : null;
-                  const linkTo = firstProduct ? `/product/${firstProduct.slug}` : '#';
+                  const shareUrl = buildLookSpaUrl({
+                    name: l.name ?? 'Saved look',
+                    description: l.description,
+                    imageUrl: l.image_url,
+                    products: l.product_codes.map((product_code) => ({
+                      product_code,
+                      name: product_code,
+                    })),
+                  });
+                  const parsedUrl = new URL(shareUrl);
+                  const linkTo = `${parsedUrl.pathname}${parsedUrl.search}`;
                   return (
                     <div key={l.id} className="group relative">
                       <Link to={linkTo} className="block">
