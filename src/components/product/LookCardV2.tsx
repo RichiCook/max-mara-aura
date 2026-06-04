@@ -241,11 +241,9 @@ const LookCardV2 = ({ looks, productCode, loading, loadingMore, onTrackEvent, on
                         </button>
                       ))}
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 10, color: '#8b7355', letterSpacing: '0.04em', textTransform: 'uppercase' as const }}>
-                        {isCollage ? 'Collage' : 'Photo'}
-                      </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <SaveLookButton
+                        variant="icon"
                         look={{
                           name: look.name,
                           description: look.description,
@@ -256,6 +254,7 @@ const LookCardV2 = ({ looks, productCode, loading, loadingMore, onTrackEvent, on
                         onSaved={() => onTrackEvent?.('look_save', productCode, { lookProductCodes: look.product_codes })}
                       />
                       <LookShareMenu
+                        variant="icon"
                         look={{
                           name: look.name,
                           description: look.description,
