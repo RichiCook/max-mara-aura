@@ -131,7 +131,7 @@ export const AitemzDashboard = () => {
   }, []);
 
   return (
-    <div className="px-8 py-10 max-w-[1400px] mx-auto">
+    <div className="px-4 sm:px-6 lg:px-8 py-6 lg:py-10 max-w-[1400px] mx-auto">
       {/* Page header */}
       <div className="mb-10">
         <div className="admin-subtitle mb-2">{brand} Studio</div>
