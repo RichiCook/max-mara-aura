@@ -24,6 +24,7 @@ import { usePlatformSettingsContext } from '@/contexts/PlatformSettingsContext';
 const NAV = [
   { to: '/', label: 'Dashboard', Icon: LayoutDashboard },
   { to: '/looks', label: 'Total Looks', Icon: Sparkles },
+  { to: '/looks/ai-settings', label: 'AI Settings', Icon: Sparkles },
   { to: '/celebrity-content', label: 'Celebrity', Icon: Star },
   { to: '/activations', label: 'Activations', Icon: Layers },
   { to: '/admin/media-manager', label: 'Campaign Assets', Icon: ImageIcon },

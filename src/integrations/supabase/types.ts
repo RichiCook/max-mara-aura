@@ -1241,6 +1241,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_saved_looks: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          look_key: string
+          name: string | null
+          product_codes: string[]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          look_key: string
+          name?: string | null
+          product_codes?: string[]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          look_key?: string
+          name?: string | null
+          product_codes?: string[]
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_wardrobe: {
         Row: {
           acquired_at: string | null

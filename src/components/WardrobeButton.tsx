@@ -52,7 +52,7 @@ export const WardrobeButton = ({ productId, className }: Props) => {
       aria-pressed={owned}
     >
       {owned ? <Check size={18} strokeWidth={1.75} /> : <Shirt size={18} strokeWidth={1.5} />}
-      {owned ? 'In Your Wardrobe' : 'I Own This'}
+      {owned ? 'In Your Wardrobe' : 'Add to Wardrobe'}
     </button>
   );
 };
