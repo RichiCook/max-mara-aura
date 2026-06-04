@@ -425,6 +425,38 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
     }
   };
 
+  const handleImageError = useCallback((lookIndex: number, mode: 'photo' | 'collage') => {
+    const lookItem = looks[lookIndex];
+    if (!lookItem) return;
+
+    if (mode === 'collage') {
+      setLooks((prev) => prev.map((item, idx) => idx === lookIndex ? {
+        ...item,
+        collageImage: null,
+        look: {
+          ...item.look,
+          collage_image: undefined,
+        },
+      } : item));
+      if (!lookItem.generatingCollage) {
+        generateCollageImage(lookItem.products, lookItem.look, lookIndex);
+      }
+      return;
+    }
+
+    setLooks((prev) => prev.map((item, idx) => idx === lookIndex ? {
+      ...item,
+      lookImage: null,
+      look: {
+        ...item.look,
+        look_image: undefined,
+      },
+    } : item));
+    if (!lookItem.generatingImage) {
+      generateLookImage(lookItem.products, lookItem.look, lookIndex);
+    }
+  }, [looks]);
+
   const generateSingleLook = async (forceRegenerate = true): Promise<LookWithProducts | null> => {
     try {
       const excludeCodes = Array.from(usedProductCodesRef.current);
@@ -640,6 +672,7 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
           const l = looks[idx];
           if (l && !l.generatingImage) generateLookImage(l.products, l.look, idx);
         }}
+        onImageError={handleImageError}
         initialModes={initialModes}
       />
     );
