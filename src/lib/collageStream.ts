@@ -26,12 +26,16 @@ export type CollageFrameHandler = (image: string, isFinal: boolean) => void;
  */
 export async function invokeCollage(
   products: ProductRef[],
-  persist?: {
-    hero_product_code: string;
-    look: Record<string, unknown>;
-  },
-  onFrame?: CollageFrameHandler,
+  persistOrOnFrame?:
+    | {
+        hero_product_code: string;
+        look: Record<string, unknown>;
+      }
+    | CollageFrameHandler,
+  maybeOnFrame?: CollageFrameHandler,
 ): Promise<CollageResult> {
+  const persist = typeof persistOrOnFrame === 'function' ? undefined : persistOrOnFrame;
+  const onFrame = typeof persistOrOnFrame === 'function' ? persistOrOnFrame : maybeOnFrame;
   const mode = await fetchCollageMode();
 
   if (mode === 'quality') {
