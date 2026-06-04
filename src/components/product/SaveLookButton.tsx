@@ -8,9 +8,10 @@ interface Props {
   look: SavedLookInput;
   disabledReason?: string;
   onSaved?: () => void;
+  variant?: 'text' | 'icon';
 }
 
-const SaveLookButton = ({ look, disabledReason, onSaved }: Props) => {
+const SaveLookButton = ({ look, disabledReason, onSaved, variant = 'text' }: Props) => {
   const { has, save, remove, requiresAuth } = useSavedLooks();
   const [busy, setBusy] = useState(false);
   const navigate = useNavigate();
@@ -37,6 +38,39 @@ const SaveLookButton = ({ look, disabledReason, onSaved }: Props) => {
     }
     setBusy(false);
   };
+
+  if (variant === 'icon') {
+    return (
+      <button
+        type="button"
+        onClick={handleClick}
+        disabled={!!disabledReason}
+        title={disabledReason ?? (saved ? 'Remove from saved' : 'Save this look')}
+        aria-label={saved ? 'Remove from saved' : 'Save this look'}
+        aria-pressed={saved}
+        style={{
+          width: 32,
+          height: 32,
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: 6,
+          background: saved ? '#1a1a1a' : '#fff',
+          color: saved ? '#fff' : '#1a1a1a',
+          border: '1px solid #1a1a1a',
+          cursor: disabledReason ? 'not-allowed' : 'pointer',
+          opacity: disabledReason ? 0.5 : 1,
+          padding: 0,
+        }}
+      >
+        {busy ? (
+          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+        ) : (
+          <Bookmark className="w-3.5 h-3.5" fill={saved ? 'currentColor' : 'none'} />
+        )}
+      </button>
+    );
+  }
 
   return (
     <button

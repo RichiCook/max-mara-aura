@@ -9,26 +9,37 @@ export interface SavedLookInput {
   product_codes: string[];
 }
 
+export interface SavedLookRow {
+  id: string;
+  look_key: string;
+  name: string | null;
+  description: string | null;
+  image_url: string | null;
+  product_codes: string[];
+  created_at: string;
+}
+
 export const buildLookKey = (productCodes: string[]) =>
   [...productCodes].map((c) => c.trim().toUpperCase()).sort().join('|');
 
 export function useSavedLooks() {
   const { user, loading: authLoading } = useAuth();
-  const [keys, setKeys] = useState<string[]>([]);
+  const [savedLooks, setSavedLooks] = useState<SavedLookRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   const refetch = useCallback(async () => {
     if (!user) {
-      setKeys([]);
+      setSavedLooks([]);
       setLoading(false);
       return;
     }
     setLoading(true);
     const { data } = await supabase
       .from('user_saved_looks')
-      .select('look_key')
-      .eq('user_id', user.id);
-    setKeys((data ?? []).map((r: any) => r.look_key));
+      .select('id, look_key, name, description, image_url, product_codes, created_at')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+    setSavedLooks((data ?? []) as any);
     setLoading(false);
   }, [user]);
 
@@ -37,13 +48,33 @@ export function useSavedLooks() {
     refetch();
   }, [authLoading, refetch]);
 
-  const has = useCallback((productCodes: string[]) => keys.includes(buildLookKey(productCodes)), [keys]);
+  const keys = savedLooks.map((l) => l.look_key);
+  const has = useCallback(
+    (productCodes: string[]) => keys.includes(buildLookKey(productCodes)),
+    [keys]
+  );
 
   const save = useCallback(
     async (look: SavedLookInput) => {
       if (!user) return { error: new Error('Not signed in') };
       const look_key = buildLookKey(look.product_codes);
-      setKeys((k) => (k.includes(look_key) ? k : [...k, look_key]));
+      // optimistic
+      setSavedLooks((prev) =>
+        prev.some((l) => l.look_key === look_key)
+          ? prev
+          : [
+              {
+                id: 'tmp-' + look_key,
+                look_key,
+                name: look.name ?? null,
+                description: look.description ?? null,
+                image_url: look.image_url ?? null,
+                product_codes: look.product_codes,
+                created_at: new Date().toISOString(),
+              },
+              ...prev,
+            ]
+      );
       const { error } = await supabase.from('user_saved_looks').insert({
         user_id: user.id,
         look_key,
@@ -52,16 +83,17 @@ export function useSavedLooks() {
         image_url: look.image_url ?? null,
         product_codes: look.product_codes,
       } as any);
+      if (!error) refetch();
       return { error };
     },
-    [user]
+    [user, refetch]
   );
 
   const remove = useCallback(
     async (productCodes: string[]) => {
       if (!user) return;
       const look_key = buildLookKey(productCodes);
-      setKeys((k) => k.filter((x) => x !== look_key));
+      setSavedLooks((prev) => prev.filter((l) => l.look_key !== look_key));
       await supabase
         .from('user_saved_looks')
         .delete()
@@ -71,5 +103,5 @@ export function useSavedLooks() {
     [user]
   );
 
-  return { keys, has, save, remove, loading, refetch, requiresAuth: !user };
+  return { keys, savedLooks, has, save, remove, loading, refetch, requiresAuth: !user };
 }
