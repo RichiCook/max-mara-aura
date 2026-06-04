@@ -26,29 +26,37 @@ export type CollageFrameHandler = (image: string, isFinal: boolean) => void;
  */
 export async function invokeCollage(
   products: ProductRef[],
+  persist?: {
+    hero_product_code: string;
+    look: Record<string, unknown>;
+  },
   onFrame?: CollageFrameHandler,
 ): Promise<CollageResult> {
   const mode = await fetchCollageMode();
 
   if (mode === 'quality') {
-    return invokeQuality(products, onFrame);
+    return invokeQuality(products, persist, onFrame);
   }
 
   // Quick mode: try streaming SSE; on any failure fall back once to Quality.
   try {
-    return await invokeQuick(products, onFrame);
+    return await invokeQuick(products, persist, onFrame);
   } catch (err) {
     console.warn('[collage] Quick stream failed, falling back to Quality:', err);
-    return invokeQuality(products, onFrame);
+    return invokeQuality(products, persist, onFrame);
   }
 }
 
 async function invokeQuality(
   products: ProductRef[],
+  persist: {
+    hero_product_code: string;
+    look: Record<string, unknown>;
+  } | undefined,
   onFrame?: CollageFrameHandler,
 ): Promise<CollageResult> {
   const { data, error } = await supabase.functions.invoke('generate-look-collage', {
-    body: { products, mode: 'quality' },
+    body: { products, mode: 'quality', persist },
   });
   if (error) throw error;
   if (data?.error) throw new Error(data.error);
@@ -59,6 +67,10 @@ async function invokeQuality(
 
 async function invokeQuick(
   products: ProductRef[],
+  persist: {
+    hero_product_code: string;
+    look: Record<string, unknown>;
+  } | undefined,
   onFrame?: CollageFrameHandler,
 ): Promise<CollageResult> {
   const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
@@ -75,7 +87,7 @@ async function invokeQuick(
       apikey: anonKey,
       Accept: 'text/event-stream',
     },
-    body: JSON.stringify({ products, mode: 'quick' }),
+    body: JSON.stringify({ products, mode: 'quick', persist }),
   });
 
   if (!res.ok || !res.body) {
