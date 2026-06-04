@@ -455,9 +455,7 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
         const expectedSignature = buildCollageSourceSignature(products);
         const cachedVersion = (cl as any).collage_cache_version ?? 0;
         const cachedSignature = (cl as any).collage_source_signature ?? null;
-        const cachedDebug = Array.isArray((cl as any).collage_debug) ? (cl as any).collage_debug : [];
-        const hasUsedEntries = cachedDebug.some((item: any) => item?.status === 'used');
-        const collageStale = cachedVersion < COLLAGE_CACHE_VERSION || cachedSignature !== expectedSignature || !hasUsedEntries;
+        const collageStale = cachedVersion < COLLAGE_CACHE_VERSION || cachedSignature !== expectedSignature;
         results.push({
           look: {
             ...cl,
