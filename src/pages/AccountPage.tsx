@@ -4,9 +4,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useWishlist } from '@/hooks/useWishlist';
 import { useWardrobe } from '@/hooks/useWardrobe';
+import { useSavedLooks } from '@/hooks/useSavedLooks';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Heart, Shirt, X, LogOut } from 'lucide-react';
+import { Heart, Shirt, Sparkles, X, LogOut } from 'lucide-react';
 import { getMainProductImage } from '@/utils/imageUtils';
 import { normalizeImages } from '@/hooks/useProducts';
 
@@ -81,11 +82,16 @@ export default function AccountPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
-  const initialTab = tabParam === 'wardrobe' || tabParam === 'profile' ? tabParam : 'wishlist';
+  const initialTab =
+    tabParam === 'wardrobe' || tabParam === 'profile' || tabParam === 'looks'
+      ? tabParam
+      : 'wishlist';
 
   const wishlist = useWishlist();
   const wardrobe = useWardrobe();
+  const savedLooks = useSavedLooks();
   const [products, setProducts] = useState<ProductLite[]>([]);
+  const [lookProductsMap, setLookProductsMap] = useState<Record<string, ProductLite | null>>({});
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -122,6 +128,38 @@ export default function AccountPage() {
       });
   }, [allIds]);
 
+  // Resolve first product of each saved look to its slug (for click-through)
+  useEffect(() => {
+    const codes = Array.from(
+      new Set(savedLooks.savedLooks.flatMap((l) => l.product_codes).filter(Boolean))
+    );
+    if (codes.length === 0) {
+      setLookProductsMap({});
+      return;
+    }
+    supabase
+      .from('products')
+      .select('id, name, slug, product_code, category, price, images')
+      .in('product_code', codes)
+      .then(({ data }) => {
+        const map: Record<string, ProductLite> = {};
+        (data ?? []).forEach((p: any) => {
+          if (p.product_code) {
+            map[p.product_code] = {
+              id: p.id,
+              name: p.name,
+              slug: p.slug,
+              product_code: p.product_code,
+              category: p.category,
+              price: p.price,
+              images: normalizeImages(p.images),
+            };
+          }
+        });
+        setLookProductsMap(map);
+      });
+  }, [savedLooks.savedLooks]);
+
   const wishlistProducts = useMemo(
     () => products.filter((p) => wishlist.productIds.includes(p.id)),
     [products, wishlist.productIds]
@@ -146,6 +184,9 @@ export default function AccountPage() {
           onValueChange={(v) => setSearchParams({ tab: v }, { replace: true })}
         >
           <TabsList className="mb-8">
+            <TabsTrigger value="looks" className="gap-2">
+              <Sparkles size={14} /> Looks ({savedLooks.savedLooks.length})
+            </TabsTrigger>
             <TabsTrigger value="wishlist" className="gap-2">
               <Heart size={14} /> Wishlist ({wishlistProducts.length})
             </TabsTrigger>
@@ -154,6 +195,60 @@ export default function AccountPage() {
             </TabsTrigger>
             <TabsTrigger value="profile">Profile</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="looks">
+            {savedLooks.savedLooks.length === 0 ? (
+              <div className="text-center py-20 border border-dashed border-border rounded-lg">
+                <p className="font-serif text-xl text-foreground mb-2">No saved looks yet</p>
+                <p className="font-sans text-sm text-muted-foreground">
+                  Tap the bookmark on any AI-curated look to save it here.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+                {savedLooks.savedLooks.map((l) => {
+                  const firstCode = l.product_codes[0];
+                  const firstProduct = firstCode ? lookProductsMap[firstCode] : null;
+                  const linkTo = firstProduct ? `/product/${firstProduct.slug}` : '#';
+                  return (
+                    <div key={l.id} className="group relative">
+                      <Link to={linkTo} className="block">
+                        <div className="aspect-[3/4] bg-muted overflow-hidden rounded-md">
+                          {l.image_url ? (
+                            <img
+                              src={l.image_url}
+                              alt={l.name ?? 'Saved look'}
+                              loading="lazy"
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                              <Sparkles size={24} />
+                            </div>
+                          )}
+                        </div>
+                        <div className="mt-3">
+                          <p className="font-serif text-[15px] text-foreground line-clamp-1">
+                            {l.name ?? 'Untitled look'}
+                          </p>
+                          <p className="font-sans text-[12px] text-muted-foreground mt-0.5">
+                            {l.product_codes.length} pieces
+                          </p>
+                        </div>
+                      </Link>
+                      <button
+                        onClick={() => savedLooks.remove(l.product_codes)}
+                        aria-label="Remove from saved looks"
+                        className="absolute top-2 right-2 w-8 h-8 rounded-full bg-background/85 backdrop-blur-sm border border-border/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </TabsContent>
 
           <TabsContent value="wishlist">
             <ProductGrid
@@ -170,7 +265,7 @@ export default function AccountPage() {
               products={wardrobeProducts}
               onRemove={(id) => wardrobe.remove(id)}
               emptyTitle="Your wardrobe is empty"
-              emptyHint="Tap “I own this” on a product page to add it here."
+              emptyHint="Tap “Add to wardrobe” on a product page to add it here."
               removeLabel="Remove from wardrobe"
             />
           </TabsContent>
