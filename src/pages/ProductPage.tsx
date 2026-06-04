@@ -6,7 +6,7 @@ import { ActivationRenderer } from '@/components/activations/ActivationRenderer'
 import { ProductGeneratedLook } from '@/components/ProductGeneratedLook';
 import AtelierCompositions from '@/components/product/AtelierCompositions';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, ArrowLeft, Heart, Shirt } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ArrowLeft, Heart, Shirt, Sparkles } from 'lucide-react';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { useWishlist } from '@/hooks/useWishlist';
 import { useWardrobe } from '@/hooks/useWardrobe';
@@ -653,6 +653,11 @@ const HeaderActions = ({ slug, ownerRegistered, onResetOwnership }: { slug?: str
               {wishlistIds.length}
             </span>
           )}
+        </Link>
+      </Button>
+      <Button asChild variant="ghost" size="sm" className="text-xs" title="Looks">
+        <Link to="/account?tab=looks" aria-label="Looks">
+          <Sparkles className="w-4 h-4" />
         </Link>
       </Button>
       <Button asChild variant="ghost" size="sm" className="text-xs relative" title="Wardrobe">
