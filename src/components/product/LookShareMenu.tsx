@@ -31,9 +31,10 @@ interface Props {
   look: ShareableLook;
   onShared?: (channel: string) => void;
   disabledReason?: string;
+  variant?: 'text' | 'icon';
 }
 
-const LookShareMenu = ({ look, onShared, disabledReason }: Props) => {
+const LookShareMenu = ({ look, onShared, disabledReason, variant = 'text' }: Props) => {
   const [open, setOpen] = useState(false);
   const [wechatOpen, setWechatOpen] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
