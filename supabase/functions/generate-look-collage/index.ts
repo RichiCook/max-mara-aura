@@ -222,11 +222,14 @@ async function runAiCollageQuickStream(products: ProductInfo[]): Promise<Respons
         const prompt = buildAiCollagePrompt(fetched.join(', '), imageContents.length);
 
         const requestBody = JSON.stringify({
-          model: 'google/gemini-3.1-flash-image-preview',
+          // Quick mode uses the faster/cheaper Gemini 2.5 image model.
+          // Quality mode (runAiCollage) stays on 3.1 for max fidelity.
+          model: 'google/gemini-2.5-flash-image-preview',
           messages: [{ role: 'user', content: [{ type: 'text', text: prompt }, ...imageContents] }],
           modalities: ['image', 'text'],
           stream: true,
         });
+
         imageContents.length = 0;
 
         const aiResp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
