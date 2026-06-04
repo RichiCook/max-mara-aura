@@ -139,25 +139,25 @@ const ScanAnalyticsPage = () => {
         <div className="mb-6 lg:hidden">
           <AppHeader />
         </div>
-        <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between mb-6 lg:mb-8">
           <div>
             <h1 className="admin-page-title">Analytics</h1>
             <p className="text-sm mt-1" style={{ color: 'var(--admin-text-tertiary)' }}>
               Performance insights and audience engagement metrics.
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <Button onClick={() => exportCsv()} variant="outline" size="sm" className="gap-1.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button onClick={() => exportCsv()} variant="outline" size="sm" className="gap-1.5 flex-1 sm:flex-none">
               <Download className="w-4 h-4" />
-              Export CSV
+              Export
             </Button>
-            <Button onClick={() => aggregate()} disabled={aggregating} variant="outline" size="sm">
+            <Button onClick={() => aggregate()} disabled={aggregating} variant="outline" size="sm" className="flex-1 sm:flex-none">
               {aggregating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />}
               Aggregate
             </Button>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="destructive" size="sm" className="gap-1.5" disabled={clearing}>
+                <Button variant="destructive" size="sm" className="gap-1.5 flex-1 sm:flex-none" disabled={clearing}>
                   <Trash2 className="w-4 h-4" />
                   Clear
                 </Button>
@@ -179,7 +179,7 @@ const ScanAnalyticsPage = () => {
         </div>
 
         {/* Filters */}
-        <div className="flex flex-wrap items-center gap-4 mb-8">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3 sm:gap-4 mb-6 lg:mb-8">
           <DateRangeFilter
             datePreset={datePreset}
             setDatePreset={setDatePreset}
@@ -190,6 +190,7 @@ const ScanAnalyticsPage = () => {
           />
           <SourceFilter value={sourceFilter} onChange={setSourceFilter} />
         </div>
+
 
         {/* Hero metrics — Teal Curator */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -202,12 +203,13 @@ const ScanAnalyticsPage = () => {
 
         {/* Tabs */}
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList>
+          <TabsList className="w-full sm:w-auto overflow-x-auto justify-start">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="products">Products</TabsTrigger>
             <TabsTrigger value="sessions">Sessions</TabsTrigger>
             <TabsTrigger value="events">Event Log</TabsTrigger>
           </TabsList>
+
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
