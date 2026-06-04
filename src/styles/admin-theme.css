@@ -203,11 +203,20 @@
 
 .admin-theme .admin-hero-metric {
   font-family: var(--admin-font-display);
-  font-size: 3rem;
+  font-size: 2rem;
   font-weight: 500;
   line-height: 1;
   letter-spacing: -0.03em;
   color: var(--admin-black);
+}
+@media (min-width: 768px) {
+  .admin-theme .admin-hero-metric { font-size: 3rem; }
+}
+.admin-theme .admin-page-title {
+  font-size: 1.5rem;
+}
+@media (min-width: 768px) {
+  .admin-theme .admin-page-title { font-size: 2rem; }
 }
 
 .admin-theme .admin-hero-metric-label,
