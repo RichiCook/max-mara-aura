@@ -2,13 +2,12 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
-import { lovable } from '@/integrations/lovable';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Mail, Lock, LogIn, UserPlus } from 'lucide-react';
+import { Mail, Lock, LogIn } from 'lucide-react';
 
 const authSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -16,17 +15,16 @@ const authSchema = z.object({
 });
 
 export default function AuthPage() {
-  const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
-  
+
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
 
-  const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/account?tab=wishlist';
+  const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/';
 
   const resolveDestination = () => {
     const params = new URLSearchParams(location.search);
@@ -41,8 +39,7 @@ export default function AuthPage() {
   };
 
   useEffect(() => {
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
         navigate(resolveDestination(), { replace: true });
       }
@@ -55,7 +52,8 @@ export default function AuthPage() {
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate, from]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,48 +71,14 @@ export default function AuthPage() {
     }
 
     setLoading(true);
-
     try {
-      if (isSignUp) {
-        const params = new URLSearchParams(location.search);
-        const destination = params.get('redirect') || sessionStorage.getItem('postAuthRedirect') || from;
-        const redirectUrl = `${window.location.origin}/auth?redirect=${encodeURIComponent(destination)}`;
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: redirectUrl,
-          },
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        toast({
+          title: 'Sign in failed',
+          description: error.message,
+          variant: 'destructive',
         });
-        if (error) {
-          toast({
-            title: 'Sign up failed',
-            description: error.message,
-            variant: 'destructive',
-          });
-        } else {
-          toast({
-            title: 'Check your email',
-            description: 'Confirm your address to finish creating your account.',
-          });
-        }
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) {
-          if (error.message.includes('Invalid login credentials')) {
-            toast({
-              title: 'No account found',
-              description: "We couldn't sign you in. Create an account to continue.",
-            });
-            setIsSignUp(true);
-          } else {
-            toast({
-              title: 'Login failed',
-              description: error.message,
-              variant: 'destructive',
-            });
-          }
-        }
       }
     } finally {
       setLoading(false);
@@ -125,11 +89,9 @@ export default function AuthPage() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">
-            {isSignUp ? 'Create your account' : 'Welcome'}
-          </CardTitle>
+          <CardTitle className="text-2xl font-bold">Admin sign in</CardTitle>
           <CardDescription>
-            Save your wishlist, wardrobe and shared looks across devices.
+            Internal access only. Please sign in with your admin credentials.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -146,6 +108,7 @@ export default function AuthPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   className="pl-10"
                   disabled={loading}
+                  autoComplete="email"
                 />
               </div>
               {errors.email && (
@@ -165,6 +128,7 @@ export default function AuthPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   className="pl-10"
                   disabled={loading}
+                  autoComplete="current-password"
                 />
               </div>
               {errors.password && (
@@ -175,11 +139,6 @@ export default function AuthPage() {
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? (
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground" />
-              ) : isSignUp ? (
-                <>
-                  <UserPlus className="mr-2 h-4 w-4" />
-                  Create Account
-                </>
               ) : (
                 <>
                   <LogIn className="mr-2 h-4 w-4" />
@@ -189,20 +148,9 @@ export default function AuthPage() {
             </Button>
           </form>
 
-
-          <div className="mt-6 text-center text-sm">
-            <span className="text-muted-foreground">
-              {isSignUp ? 'Already have an account? ' : "Don't have an account? "}
-            </span>
-            <button
-              type="button"
-              onClick={() => setIsSignUp(!isSignUp)}
-              className="text-primary hover:underline font-medium"
-              disabled={loading}
-            >
-              {isSignUp ? 'Sign in' : 'Sign up'}
-            </button>
-          </div>
+          <p className="mt-6 text-center text-xs text-muted-foreground">
+            Accounts are provisioned by an administrator. Contact your admin if you need access.
+          </p>
         </CardContent>
       </Card>
     </div>
