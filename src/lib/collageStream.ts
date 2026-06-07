@@ -62,7 +62,17 @@ async function invokeQuality(
   const { data, error } = await supabase.functions.invoke('generate-look-collage', {
     body: { products, mode: 'quality', persist },
   });
-  if (error) throw error;
+  if (error) {
+    let message = error.message || 'Collage edge function failed';
+    try {
+      const ctx = (error as { context?: Response }).context;
+      if (ctx && typeof ctx.json === 'function') {
+        const body = await ctx.clone().json().catch(() => null);
+        if (body?.error) message = body.error;
+      }
+    } catch {}
+    throw new Error(message);
+  }
   if (data?.error) throw new Error(data.error);
   if (!data?.image) throw new Error('No image returned');
   onFrame?.(data.image, true);

@@ -307,8 +307,14 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
 
 
 
-    if (productRefs.length === 0) {
-      toast({ title: 'Collage failed', description: 'No products in this look have an approved lay-flat image yet. Approve images in Image Review first.', variant: 'destructive' });
+    if (productRefs.length < 2) {
+      toast({
+        title: 'Collage needs more images',
+        description: productRefs.length === 0
+          ? 'No products in this look have an approved lay-flat image yet. Approve images in Image Review first.'
+          : 'Need at least 2 approved lay-flat images in this look. Approve more in Image Review to compose a collage.',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -357,11 +363,13 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
         });
       }
     } catch (err) {
-      if (retryCount < 1) {
+      const message = err instanceof Error ? err.message : 'Please try again.';
+      const isValidation = /at least 2 product images/i.test(message);
+      if (!isValidation && retryCount < 1) {
         setTimeout(() => generateCollageImage(products, lookData, lookIndex, retryCount + 1), 2000);
         return;
       }
-      toast({ title: 'Collage failed', description: err instanceof Error ? err.message : 'Please try again.', variant: 'destructive' });
+      toast({ title: 'Collage failed', description: message, variant: 'destructive' });
     } finally {
       setLooks(prev => prev.map((l, i) => i === lookIndex ? { ...l, generatingCollage: false } : l));
     }
