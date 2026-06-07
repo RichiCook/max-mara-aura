@@ -363,11 +363,13 @@ export const ProductGeneratedLook = ({ productCode, cachedLook, onTrackEvent, on
         });
       }
     } catch (err) {
-      if (retryCount < 1) {
+      const message = err instanceof Error ? err.message : 'Please try again.';
+      const isValidation = /at least 2 product images/i.test(message);
+      if (!isValidation && retryCount < 1) {
         setTimeout(() => generateCollageImage(products, lookData, lookIndex, retryCount + 1), 2000);
         return;
       }
-      toast({ title: 'Collage failed', description: err instanceof Error ? err.message : 'Please try again.', variant: 'destructive' });
+      toast({ title: 'Collage failed', description: message, variant: 'destructive' });
     } finally {
       setLooks(prev => prev.map((l, i) => i === lookIndex ? { ...l, generatingCollage: false } : l));
     }
