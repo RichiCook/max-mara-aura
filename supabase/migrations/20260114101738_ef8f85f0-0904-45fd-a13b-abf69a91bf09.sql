@@ -4,6 +4,10 @@ CREATE TRIGGER on_auth_user_created_assign_admin
   FOR EACH ROW
   EXECUTE FUNCTION public.auto_assign_admin_role();
 
--- Manually assign admin role to your existing user
+-- Manually assign admin role to your existing user (guarded: no-op on a fresh
+-- clone where this Lovable demo user does not exist)
 INSERT INTO public.user_roles (user_id, role)
-VALUES ('e275e135-d305-4412-b03f-afeb08c7e552', 'admin');
+SELECT 'e275e135-d305-4412-b03f-afeb08c7e552', 'admin'
+WHERE EXISTS (
+  SELECT 1 FROM auth.users WHERE id = 'e275e135-d305-4412-b03f-afeb08c7e552'
+);

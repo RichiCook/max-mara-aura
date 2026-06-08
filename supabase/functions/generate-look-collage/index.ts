@@ -41,6 +41,51 @@ async function aiFetchImageAsBase64(url: string, supabaseUrl: string): Promise<s
   return `data:${contentType};base64,${arrayBufferToBase64(buffer)}`;
 }
 
+// Fetch an image and return it as a Gemini inlineData part (base64, no data: prefix).
+async function aiFetchInlinePart(
+  url: string,
+  supabaseUrl: string,
+): Promise<{ inlineData: { mimeType: string; data: string } }> {
+  const dataUri = await aiFetchImageAsBase64(url, supabaseUrl);
+  const m = dataUri.match(/^data:([^;]+);base64,(.*)$/s);
+  if (!m) throw new Error('Could not parse image data URI');
+  return { inlineData: { mimeType: m[1], data: m[2] } };
+}
+
+// Call Google's native Gemini image-generation endpoint; returns the first image as base64 (no data: prefix).
+async function geminiGenerateImage(
+  apiKey: string,
+  model: string,
+  prompt: string,
+  imageParts: Array<{ inlineData: { mimeType: string; data: string } }>,
+): Promise<string> {
+  const resp = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+    {
+      method: 'POST',
+      headers: { 'x-goog-api-key': apiKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: prompt }, ...imageParts] }],
+        generationConfig: { responseModalities: ['IMAGE'] },
+      }),
+    },
+  );
+  if (!resp.ok) {
+    const errText = await resp.text().catch(() => '');
+    console.error('Gemini API error:', resp.status, errText);
+    if (resp.status === 429) throw new Error('Rate limit reached, please try again shortly.');
+    throw new Error(`Gemini API error: ${resp.status}`);
+  }
+  const data = await resp.json();
+  const parts = data.candidates?.[0]?.content?.parts ?? [];
+  const inline = parts.find((p: { inlineData?: { data?: string } }) => p.inlineData?.data)?.inlineData;
+  if (!inline?.data) {
+    console.error('No image in Gemini response:', JSON.stringify(data).substring(0, 500));
+    throw new Error('AI returned no image');
+  }
+  return inline.data;
+}
+
 async function hashCacheKey(urls: string[]): Promise<string> {
   const joined = [...urls].sort().join('|');
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(joined));
@@ -159,8 +204,8 @@ async function runAiCollage(
   products: ProductInfo[],
   persist?: PersistPayload,
 ): Promise<{ image: string; debug: Array<Record<string, unknown>> }> {
-  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-  if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY is not configured');
+  const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
+  if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY is not configured');
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
   const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const supabase = createClient(supabaseUrl, supabaseKey);
@@ -190,46 +235,29 @@ async function runAiCollage(
     };
   }
 
-  // Pass image URLs directly to AI gateway (no base64) — keeps memory low.
-  const imageContents: Array<{ type: 'image_url'; image_url: { url: string } }> = [];
+  // Fetch product images as base64 inlineData parts (Gemini can't fetch URLs itself).
+  const imageParts: Array<{ inlineData: { mimeType: string; data: string } }> = [];
   const fetched: string[] = [];
   for (const s of sources) {
-    const proxied = `${supabaseUrl}/functions/v1/export-image-proxy?url=${encodeURIComponent(s.url)}`;
-    imageContents.push({ type: 'image_url', image_url: { url: proxied } });
-    fetched.push(s.name);
+    try {
+      imageParts.push(await aiFetchInlinePart(s.url, supabaseUrl));
+      fetched.push(s.name);
+    } catch (e) {
+      console.error(`Failed to fetch image for ${s.name}:`, e);
+    }
   }
-  if (imageContents.length < 2) {
+  if (imageParts.length < 2) {
     throw new Error('AI collage: could not fetch enough product images');
   }
 
-  const prompt = buildAiCollagePrompt(fetched.join(', '), imageContents.length);
+  const prompt = buildAiCollagePrompt(fetched.join(', '), imageParts.length);
 
-  const aiResp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${LOVABLE_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'google/gemini-3.1-flash-image-preview',
-      messages: [{ role: 'user', content: [{ type: 'text', text: prompt }, ...imageContents] }],
-      modalities: ['image', 'text'],
-    }),
-  });
-
-  if (!aiResp.ok) {
-    const errText = await aiResp.text();
-    console.error('AI gateway error:', aiResp.status, errText);
-    if (aiResp.status === 429) throw new Error('Rate limit reached, please try again shortly.');
-    if (aiResp.status === 402) throw new Error('AI credits exhausted.');
-    throw new Error(`AI gateway error: ${aiResp.status}`);
-  }
-
-  const data = await aiResp.json();
-  const dataUrl: string | undefined = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-  if (!dataUrl) throw new Error('AI returned no image');
-
-  const base64Data = dataUrl.replace(/^data:image\/\w+;base64,/, '');
+  const base64Data = await geminiGenerateImage(
+    GEMINI_API_KEY,
+    'gemini-3.1-flash-image-preview',
+    prompt,
+    imageParts,
+  );
   const raw = atob(base64Data);
   const bytes = new Uint8Array(raw.length);
   for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
@@ -259,7 +287,7 @@ async function runAiCollage(
  *   { type: 'error',   error: '...' }              (terminal on failure)
  */
 async function runAiCollageQuickStream(products: ProductInfo[], persist?: PersistPayload): Promise<Response> {
-  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+  const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
   const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const supabase = createClient(supabaseUrl, supabaseKey);
@@ -286,7 +314,7 @@ async function runAiCollageQuickStream(products: ProductInfo[], persist?: Persis
         controller.enqueue(encoder.encode(`event: collage\ndata: ${JSON.stringify(payload)}\n\n`));
       };
       try {
-        if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY is not configured');
+        if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY is not configured');
         if (sources.length < 2) throw new Error('AI collage needs at least 2 product images');
 
         const cacheKey = await hashCacheKey(sources.map((s) => s.url));
@@ -304,98 +332,33 @@ async function runAiCollageQuickStream(products: ProductInfo[], persist?: Persis
           return;
         }
 
-        // Pass image URLs directly to the AI gateway — no base64 encoding,
-        // no in-memory image buffers. Biggest memory win: the edge function
-        // only forwards small URL strings; the gateway fetches the bytes
-        // itself. Use export-image-proxy so it gets a CORS/hotlink-safe origin.
-        const imageContents: Array<{ type: 'image_url'; image_url: { url: string } }> = [];
+        // Fetch product images as base64 inlineData parts (Gemini can't fetch URLs itself).
+        const imageParts: Array<{ inlineData: { mimeType: string; data: string } }> = [];
         const fetched: string[] = [];
         for (const s of sources) {
-          const proxied = `${supabaseUrl}/functions/v1/export-image-proxy?url=${encodeURIComponent(s.url)}`;
-          imageContents.push({ type: 'image_url', image_url: { url: proxied } });
-          fetched.push(s.name);
-        }
-        if (imageContents.length < 2) throw new Error('AI collage: could not fetch enough product images');
-
-
-        const prompt = buildAiCollagePrompt(fetched.join(', '), imageContents.length);
-
-        const requestBody = JSON.stringify({
-          // Quick mode uses the faster/cheaper Gemini 2.5 image model.
-          // Quality mode (runAiCollage) stays on 3.1 for max fidelity.
-          model: 'google/gemini-2.5-flash-image-preview',
-          messages: [{ role: 'user', content: [{ type: 'text', text: prompt }, ...imageContents] }],
-          modalities: ['image', 'text'],
-          stream: true,
-        });
-
-        imageContents.length = 0;
-
-        const aiResp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, 'Content-Type': 'application/json' },
-          body: requestBody,
-        });
-
-        if (!aiResp.ok || !aiResp.body) {
-          const errText = await aiResp.text().catch(() => '');
-          if (aiResp.status === 429) throw new Error('Rate limit reached, please try again shortly.');
-          if (aiResp.status === 402) throw new Error('AI credits exhausted.');
-          throw new Error(`AI gateway error: ${aiResp.status} ${errText}`);
-        }
-
-        const reader = aiResp.body.pipeThrough(new TextDecoderStream()).getReader();
-        let buf = '';
-        let finalB64: string | null = null;
-        let sawAnyPartial = false;
-        while (true) {
-          const { value, done } = await reader.read();
-          if (done) break;
-          buf += value;
-          let sepIdx: number;
-          while ((sepIdx = buf.indexOf('\n\n')) !== -1) {
-            const rawEvent = buf.slice(0, sepIdx);
-            buf = buf.slice(sepIdx + 2);
-            const dataLines = rawEvent
-              .split('\n')
-              .filter((l) => l.startsWith('data:'))
-              .map((l) => l.slice(5).trim());
-            if (dataLines.length === 0) continue;
-            const dataStr = dataLines.join('\n');
-            if (dataStr === '[DONE]') continue;
-            try {
-              const evt = JSON.parse(dataStr);
-              // Forward only the FIRST partial frame — keeps memory bounded and the
-              // user still sees a preview before the final image arrives.
-              if (evt.type === 'image_generation.partial_image' && evt.b64_json) {
-                if (!sawAnyPartial) {
-                  sawAnyPartial = true;
-                  send({ type: 'partial', image: `data:image/png;base64,${evt.b64_json}` });
-                }
-              } else if (evt.type === 'image_generation.completed' && evt.b64_json) {
-                finalB64 = evt.b64_json;
-              } else if (evt.choices?.[0]?.delta?.images?.[0]?.image_url?.url) {
-                if (!sawAnyPartial) {
-                  sawAnyPartial = true;
-                  send({ type: 'partial', image: evt.choices[0].delta.images[0].image_url.url });
-                }
-              } else if (evt.choices?.[0]?.message?.images?.[0]?.image_url?.url) {
-                const url: string = evt.choices[0].message.images[0].image_url.url;
-                const m = url.match(/^data:image\/\w+;base64,(.+)$/);
-                if (m) finalB64 = m[1];
-              }
-            } catch {
-              // ignore heartbeats / non-JSON
-            }
+          try {
+            imageParts.push(await aiFetchInlinePart(s.url, supabaseUrl));
+            fetched.push(s.name);
+          } catch (e) {
+            console.error(`Failed to fetch image for ${s.name}:`, e);
           }
         }
+        if (imageParts.length < 2) throw new Error('AI collage: could not fetch enough product images');
 
-        if (!finalB64) throw new Error('AI returned no image');
+        const prompt = buildAiCollagePrompt(fetched.join(', '), imageParts.length);
+
+        // Quick mode uses the faster/cheaper Gemini 2.5 image model. Google's native
+        // generateContent is non-streaming, so we just emit a single final frame.
+        const finalB64 = await geminiGenerateImage(
+          GEMINI_API_KEY,
+          'gemini-2.5-flash-image-preview',
+          prompt,
+          imageParts,
+        );
 
         const raw = atob(finalB64);
         const bytes = new Uint8Array(raw.length);
         for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
-        finalB64 = null;
         const { error: uploadErr } = await supabase.storage
           .from('look-images')
           .upload(filePath, bytes, { contentType: 'image/png', upsert: true });

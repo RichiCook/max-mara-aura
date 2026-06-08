@@ -22,6 +22,9 @@ export interface ShareableLook {
 const origin = () =>
   (typeof window !== 'undefined' ? window.location.origin : '').replace(/\/$/, '');
 
+/** Supabase edge-functions base, derived from env so it follows the configured project. */
+const FUNCTIONS_BASE = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
+
 /** The SPA route — used inside the app for direct navigation. */
 export function buildLookSpaUrl(look: ShareableLook): string {
   const params = new URLSearchParams();
@@ -48,7 +51,7 @@ export function buildLookShareUrl(look: ShareableLook): string {
   const codes = look.products.map((p) => p.product_code).filter(Boolean).join(',');
   if (codes) params.set('codes', codes);
   params.set('app', origin());
-  return `https://vifbscpxguafvhccybhq.supabase.co/functions/v1/look-share-og?${params.toString()}`;
+  return `${FUNCTIONS_BASE}/look-share-og?${params.toString()}`;
 }
 
 /**
@@ -122,7 +125,7 @@ export async function fetchLookImageAsFile(imageUrl: string, filename = 'look.jp
     return new File([blob], filename, { type: blob.type || 'image/jpeg' });
   } catch {
     try {
-      const proxied = `https://vifbscpxguafvhccybhq.supabase.co/functions/v1/export-image-proxy?url=${encodeURIComponent(imageUrl)}`;
+      const proxied = `${FUNCTIONS_BASE}/export-image-proxy?url=${encodeURIComponent(imageUrl)}`;
       const resp = await fetch(proxied);
       if (!resp.ok) return null;
       const blob = await resp.blob();

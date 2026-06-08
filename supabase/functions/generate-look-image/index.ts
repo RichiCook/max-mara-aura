@@ -126,23 +126,65 @@ async function fetchImageAsDataUrl(rawUrl: string): Promise<string | null> {
 }
 
 // Generate with Lovable AI using product images and configuration references
+// --- Google Gemini native image generation (replaces the Lovable AI gateway) ---
+function dataUriToInlinePart(uri: string): { inlineData: { mimeType: string; data: string } } | null {
+  const m = uri.match(/^data:([^;]+);base64,(.*)$/s);
+  return m ? { inlineData: { mimeType: m[1], data: m[2] } } : null;
+}
+
+// Calls Google's native generateContent image endpoint; returns the image as a data: URI
+// (same shape the rest of this function expects, so callers are unchanged).
+async function geminiGenerateImageDataUrl(
+  apiKey: string,
+  model: string,
+  parts: any[],
+): Promise<string> {
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+    {
+      method: 'POST',
+      headers: { 'x-goog-api-key': apiKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts }],
+        generationConfig: { responseModalities: ['IMAGE'] },
+      }),
+    },
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => '');
+    console.error('Gemini API error:', response.status, errorText);
+    if (response.status === 429) throw new Error('Rate limit exceeded');
+    throw new Error(`Gemini API error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const respParts = data.candidates?.[0]?.content?.parts ?? [];
+  const inline = respParts.find((p: any) => p.inlineData?.data)?.inlineData;
+  if (!inline?.data) {
+    console.error('No image in Gemini response:', JSON.stringify(data).substring(0, 1000));
+    throw new Error('No image generated');
+  }
+  return `data:${inline.mimeType || 'image/png'};base64,${inline.data}`;
+}
+
 async function generateWithLovableAI(
-  prompt: string, 
-  productImages: string[], 
+  prompt: string,
+  productImages: string[],
   modelReferenceImage: string | null,
   environmentReferenceImage: string | null,
   styleReferenceImages: string[]
 ): Promise<string> {
-  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-  if (!LOVABLE_API_KEY) {
-    throw new Error('LOVABLE_API_KEY is not configured');
+  const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
+  if (!GEMINI_API_KEY) {
+    throw new Error('GEMINI_API_KEY is not configured');
   }
 
   // Limit to max 2 product images to avoid failures
   const limitedProductImages = productImages.slice(0, 2);
   // Limit style references to max 1
   const limitedStyleRefs = styleReferenceImages.slice(0, 1);
-  
+
   console.log(`Using ${limitedProductImages.length} product refs, ${modelReferenceImage ? 1 : 0} model ref, ${environmentReferenceImage ? 1 : 0} env ref, ${limitedStyleRefs.length} style refs`);
 
   // Pre-fetch all reference images and inline as base64 to bypass CDN hotlink protection
@@ -153,102 +195,33 @@ async function generateWithLovableAI(
     Promise.all(limitedProductImages.map(fetchImageAsDataUrl)),
   ]);
 
-  // Build message content with text and images
-  const messageContent: any[] = [{ type: 'text', text: prompt }];
+  // Build Gemini parts: leading text prompt, then inlineData reference images
+  const parts: any[] = [{ text: prompt }];
+  const pushImg = (uri: string | null) => {
+    if (!uri) return;
+    const part = dataUriToInlinePart(uri);
+    if (part) parts.push(part);
+  };
+  pushImg(inlinedModel);
+  pushImg(inlinedEnv);
+  for (const styleUrl of inlinedStyles) pushImg(styleUrl);
+  for (const imageUrl of inlinedProducts) pushImg(imageUrl);
 
-  if (inlinedModel) {
-    messageContent.push({ type: 'image_url', image_url: { url: inlinedModel } });
-  }
-  if (inlinedEnv) {
-    messageContent.push({ type: 'image_url', image_url: { url: inlinedEnv } });
-  }
-  for (const styleUrl of inlinedStyles) {
-    if (styleUrl) messageContent.push({ type: 'image_url', image_url: { url: styleUrl } });
-  }
-  for (const imageUrl of inlinedProducts) {
-    if (imageUrl) messageContent.push({ type: 'image_url', image_url: { url: imageUrl } });
-  }
+  console.log(`Generating image with ${parts.length - 1} total reference images`);
 
-  console.log(`Generating image with ${messageContent.length - 1} total reference images`);
-
-  const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'google/gemini-2.5-flash-image',
-      messages: [{ role: 'user', content: messageContent }],
-      modalities: ['image', 'text']
-    }),
-  });
-
-  if (!response.ok) {
-    if (response.status === 429) throw new Error('Rate limit exceeded');
-    if (response.status === 402) throw new Error('Payment required');
-    const errorText = await response.text();
-    console.error('AI gateway error:', response.status, errorText);
-    throw new Error(`AI gateway error: ${response.status}`);
-  }
-
-  const data = await response.json();
-  
-  // Enhanced logging for debugging
-  console.log('Lovable AI response:', JSON.stringify({
-    hasChoices: !!data.choices,
-    choicesLength: data.choices?.length || 0,
-    hasMessage: !!data.choices?.[0]?.message,
-    hasImages: !!data.choices?.[0]?.message?.images,
-    imageCount: data.choices?.[0]?.message?.images?.length || 0,
-    textContent: data.choices?.[0]?.message?.content?.substring(0, 300) || 'no text content'
-  }));
-
-  const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-  if (!imageUrl) {
-    console.error('No image in response. Full response:', JSON.stringify(data).substring(0, 1000));
-    throw new Error('No image generated');
-  }
-  return imageUrl;
+  return await geminiGenerateImageDataUrl(GEMINI_API_KEY, 'gemini-2.5-flash-image', parts);
 }
 
 // Generate with text-only prompt (fallback)
 async function generateWithLovableAITextOnly(prompt: string): Promise<string> {
-  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-  if (!LOVABLE_API_KEY) {
-    throw new Error('LOVABLE_API_KEY is not configured');
+  const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
+  if (!GEMINI_API_KEY) {
+    throw new Error('GEMINI_API_KEY is not configured');
   }
 
   console.log('Fallback: Generating with text-only prompt (no reference images)');
 
-  const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'google/gemini-2.5-flash-image',
-      messages: [{ role: 'user', content: prompt }],
-      modalities: ['image', 'text']
-    }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('AI gateway error (text-only):', response.status, errorText);
-    throw new Error(`AI gateway error: ${response.status}`);
-  }
-
-  const data = await response.json();
-  console.log('Text-only response:', JSON.stringify({
-    hasImages: !!data.choices?.[0]?.message?.images,
-    imageCount: data.choices?.[0]?.message?.images?.length || 0
-  }));
-
-  const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-  if (!imageUrl) throw new Error('No image generated (text-only fallback)');
-  return imageUrl;
+  return await geminiGenerateImageDataUrl(GEMINI_API_KEY, 'gemini-2.5-flash-image', [{ text: prompt }]);
 }
 
 // Generate with OpenAI (can't use reference images effectively)
