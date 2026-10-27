@@ -25,6 +25,8 @@ export function useScanTracking() {
       metadata?: Record<string, unknown>;
     }
   ) => {
+    // Admin dashboard previews must not count as real visits
+    if (new URLSearchParams(window.location.search).get('preview') === '1') return;
     // Deduplicate page_view per product per session
     if (eventType === 'page_view') {
       const dedupeKey = `${eventType}:${productCode}`;
