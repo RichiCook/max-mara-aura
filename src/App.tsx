@@ -24,6 +24,7 @@ import ImageReviewPage from "./pages/ImageReviewPage";
 import CarouselSettingsPage from "./pages/CarouselSettingsPage";
 
 import AuthPage from "./pages/AuthPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 import AccountPage from "./pages/AccountPage";
 import LookSharePage from "./pages/LookSharePage";
 import LookShortRedirect from "./pages/LookShortRedirect";
@@ -56,6 +57,7 @@ const App = () => (
           {/* All other routes wrapped in PlatformSettingsProvider */}
           <Route path="/product/:slug" element={<PlatformSettingsProvider><ProductPageRouter /></PlatformSettingsProvider>} />
           <Route path="/auth" element={<PlatformSettingsProvider><AuthPage /></PlatformSettingsProvider>} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/account" element={<PlatformSettingsProvider><AccountPage /></PlatformSettingsProvider>} />
           <Route path="/look/share" element={<PlatformSettingsProvider><LookSharePage /></PlatformSettingsProvider>} />
           
