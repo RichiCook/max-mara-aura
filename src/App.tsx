@@ -23,6 +23,8 @@ import AdminMediaManager from "./pages/AdminMediaManager";
 import ImageReviewPage from "./pages/ImageReviewPage";
 import CarouselSettingsPage from "./pages/CarouselSettingsPage";
 
+import ProductsAdminPage from "./pages/ProductsAdminPage";
+import ProductAdminDetailPage from "./pages/ProductAdminDetailPage";
 import AuthPage from "./pages/AuthPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import AccountPage from "./pages/AccountPage";
@@ -65,6 +67,8 @@ const App = () => (
           {/* Protected dashboard routes — Teal Curator admin theme */}
           <Route path="/" element={<Admin><AitemzDashboard /></Admin>} />
           <Route path="/import" element={<Admin><ImportPage /></Admin>} />
+          <Route path="/products" element={<Admin><ProductsAdminPage /></Admin>} />
+          <Route path="/products/:id" element={<Admin><ProductAdminDetailPage /></Admin>} />
           <Route path="/product/:slug/edit" element={<Admin><ProductEditPage /></Admin>} />
           <Route path="/activations" element={<Admin><ActivationsPage /></Admin>} />
           <Route path="/looks" element={<Admin><LooksPage /></Admin>} />

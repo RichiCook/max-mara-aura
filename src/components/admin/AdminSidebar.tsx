@@ -16,6 +16,7 @@ import {
   Download,
   BadgeCheck,
   Menu,
+  Package,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
@@ -26,6 +27,7 @@ import { Button } from '@/components/ui/button';
 
 const NAV = [
   { to: '/', label: 'Dashboard', Icon: LayoutDashboard },
+  { to: '/products', label: 'Products', Icon: Package },
   { to: '/looks', label: 'Total Looks', Icon: Sparkles },
   { to: '/looks/ai-settings', label: 'AI Settings', Icon: Sparkles },
   { to: '/celebrity-content', label: 'Celebrity', Icon: Star },
