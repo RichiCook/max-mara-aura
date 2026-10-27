@@ -148,6 +148,25 @@ export default function AuthPage() {
             </Button>
           </form>
 
+          <button
+            type="button"
+            className="mt-4 w-full text-center text-sm text-muted-foreground underline"
+            onClick={async () => {
+              if (!z.string().email().safeParse(email).success) {
+                setErrors({ email: 'Enter your email above first' });
+                return;
+              }
+              const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                redirectTo: `${window.location.origin}/reset-password`,
+              });
+              toast(error
+                ? { title: 'Could not send reset email', description: error.message, variant: 'destructive' }
+                : { title: 'Check your inbox', description: 'We sent you a link to set a new password.' });
+            }}
+          >
+            Forgot password?
+          </button>
+
           <p className="mt-6 text-center text-xs text-muted-foreground">
             Accounts are provisioned by an administrator. Contact your admin if you need access.
           </p>
