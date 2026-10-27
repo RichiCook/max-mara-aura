@@ -1,23 +1,14 @@
-## Root cause
+# Restore sign-in for riccardo.cook@customix.it
 
-Edge function `generate-look-collage` returns a 500 with body `{ "error": "AI collage needs at least 2 product images" }` whenever fewer than 2 of the look's products have an **approved lay-flat image** (`approved_lay_flat_image_url`). The Teddy Bear coat look in the screenshot only has 1 product approved, so the call fails.
+## What I found
+- The account exists, its email is confirmed, and it has the **admin** role. Last sign-in: 4 June 2026.
+- The app's login screen is pointed at a different backend from the one that holds your account. That means the correct password still gets rejected.
 
-Two compounding issues in the frontend:
+## Steps
+1. Reconnect the app to the right backend so the login screen checks the database where your account is stored. This is done through the platform's connection refresh, not by editing settings by hand.
+2. Add a **"Forgot password?"** link on the login page. It sends a reset email and opens a page where you set a new password. Sign-up stays disabled.
+3. Test it: sign the preview in as riccardo.cook@customix.it and check that the admin dashboard opens.
 
-1. **`ProductGeneratedLook.tsx` only validates `productRefs.length === 0`** (line 310), so it lets a single-image payload through to the edge function, which then 500s.
-2. **`collageStream.ts` ignores the JSON error body.** `supabase.functions.invoke` returns a `FunctionsHttpError` on non-2xx whose `.message` is the generic `"Edge Function returned a non-2xx status code"` — exactly what the toast shows. The actual `{ error }` body is never read.
-
-## Fix
-
-### 1. `src/components/ProductGeneratedLook.tsx`
-- In `generateCollageImage` (around line 310), change the guard to `productRefs.length < 2` with a clearer message: _"Need at least 2 approved lay-flat images in this look. Approve more in Image Review to compose a collage."_
-- Disable the auto-retry (line 360) when the failure is the "at least 2" validation error — retrying can't help.
-
-### 2. `src/lib/collageStream.ts`
-- In `invokeQuality`, when `error` comes back from `supabase.functions.invoke`, attempt to read the body via `error.context.json()` (or `.text()`) and throw a new `Error` with that message so the toast shows the real reason instead of "non-2xx status code".
-
-### Files touched
-- `src/components/ProductGeneratedLook.tsx` — stricter pre-flight check + clearer toast
-- `src/lib/collageStream.ts` — surface edge-function error body
-
-No edge function or DB changes.
+## Technical details
+- The client `.env` points at ref `zwpeeoqmykppiojdelzh`, but the Cloud instance is `vifbscpxguafvhccybhq`. Fix this by regenerating the connection, without editing `.env` by hand.
+- Add a `/reset-password` public route that uses `supabase.auth.resetPasswordForEmail` with `redirectTo: ${origin}/reset-password` and `updateUser({ password })`.
